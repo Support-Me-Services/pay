@@ -47,6 +47,12 @@ class ResolveTenant
             'platform.shop_kind' => $tenant['kind'],
         ]);
 
+        // 1a) Klucz API bramki per-host — shop1 i shop2 mają różne klucze,
+        //     więc w trybie multi-host musi być ustawiany z mapy tenanta.
+        if (! empty($tenant['gateway_api_key'])) {
+            config(['shop.gateway_api_key' => $tenant['gateway_api_key']]);
+        }
+
         // 2) Przełączenie bazy danych — MUSI nastąpić przed jakimkolwiek
         //    odczytem DB/sesji (dlatego middleware jest pierwszy w grupie).
         if (config('database.connections.mysql.database') !== $tenant['db']) {
