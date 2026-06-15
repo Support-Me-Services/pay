@@ -41,7 +41,7 @@ img{ display:block; max-width:100%; }
     position:relative; z-index:5;
 }
 .lp-logo{ height:42px; width:auto; }
-.lp-nav{ display:flex; align-items:center; gap:40px; }
+.lp-nav{ display:flex; align-items:center; gap:38px; margin-right:-5px; }   /* prawy brzeg 1244 wg Figmy */
 .lp-nav a{ font-size:14px; line-height:33px; color:var(--lp-ink); white-space:nowrap; }
 .lp-nav a:hover{ color:var(--lp-blue-b); }
 
@@ -212,8 +212,8 @@ img{ display:block; max-width:100%; }
     .lp-nav{ display:none; }
     .lp-burger{ display:flex; }
     .lp-hero{ min-height:0; background:linear-gradient(93.7deg, rgba(78,127,167,.22) 13.6%, rgba(20,115,192,.22) 99.4%); }
-    .lp-hero__inner{ flex-direction:column; align-items:center; padding:64px 22px 56px; gap:36px; }
-    .lp-hero__copy{ width:100%; max-width:360px; text-align:center; }
+    .lp-hero__inner{ flex-direction:column; align-items:center; padding:64px 22px 60px; gap:54px; }
+    .lp-hero__copy{ width:100%; max-width:350px; text-align:center; }
     .lp-hero__copy h1{ font-size:40px; }
     .lp-hero__copy .br-m{ display:inline; }   /* łamanie mobilne (H1 + podtytuł) */
     .lp-hero__copy .br-d{ display:none; }      /* łamanie desktopowe wyłączone */
@@ -240,9 +240,10 @@ img{ display:block; max-width:100%; }
 }
 
 /* hamburger (tylko mobile) — wg Figmy: logo + ikona menu */
-.lp-burger{ display:none; flex-direction:column; gap:4px; width:24px; height:17px; justify-content:center; background:none; border:0; cursor:pointer; padding:0; }
-.lp-burger span{ display:block; height:2px; width:100%; background:var(--lp-ink); border-radius:2px; }
+.lp-burger{ display:none; flex-direction:column; justify-content:space-between; width:23px; height:17px; background:none; border:0; cursor:pointer; padding:0; }
+.lp-burger span{ display:block; height:2.5px; width:100%; background:var(--lp-blue-b); border-radius:2px; }
 @media (max-width:560px){
+    .lp-burger{ display:flex; margin-right:23px; }   /* niebieski, pozycja wg Figmy (prawy brzeg ~357) */
     .lp-header.lp-open .lp-nav{
         display:flex; flex-direction:column; gap:14px;
         position:absolute; top:100%; right:22px; margin-top:8px;
