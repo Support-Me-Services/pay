@@ -1,9 +1,17 @@
-@extends('layouts.public')
-
-@section('title', 'Logowanie — panel sklepu')
-@section('bare', true)
-
-@section('content')
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logowanie — panel · {{ config('shop.name') }}</title>
+    {{-- Panel ZAWSZE używa theme.css (style admina: auth-card, form-group…),
+         niezależnie od motywu publicznego hosta (church.css/theme.css). --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
+</head>
+<body>
     <div class="auth-wrap">
         <div class="auth-card">
             <h2 class="text-center">{{ config('shop.name') }}<span class="text-brand">.</span></h2>
@@ -24,4 +32,5 @@
             </form>
         </div>
     </div>
-@endsection
+</body>
+</html>

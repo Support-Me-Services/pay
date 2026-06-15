@@ -10,6 +10,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/church.css') }}?v={{ filemtime(public_path('css/church.css')) }}">
+    <style>
+        .header-nav { display: flex; gap: 18px; }
+        .header-nav a { color: #f6f1e6; opacity: .85; font-size: .92rem; font-weight: 500; text-decoration: none; }
+        .header-nav a:hover { opacity: 1; color: #e2bf6a; }
+    </style>
     @stack('head')
 </head>
 <body class="@yield('body-class')">
@@ -21,7 +26,10 @@
             <a href="{{ route('home') }}" class="wordmark">
                 <span class="plate" aria-hidden="true"></span>{{ config('shop.name') }}
             </a>
-            <span class="header-note">cyfrowa taca parafialna</span>
+            <nav class="header-nav">
+                <a href="{{ route('careers') }}">Praca</a>
+                <a href="{{ route('contact.show') }}">Kontakt</a>
+            </nav>
         </div>
     </header>
 
@@ -34,7 +42,7 @@
             Twoje wsparcie trafia w całości do wybranej parafii.
             <div class="fine">
                 Operator płatności: MICHAŁ ŻOŁĄDKOWICZ SULI · ul. Jana Kilińskiego 13/36, 19-300 Ełk · NIP 8481749996<br>
-                <a href="{{ route('regulamin') }}">Regulamin</a> · kontakt: michal@suli.pl · tel. 691 102 010 · &copy; {{ date('Y') }}
+                <a href="{{ route('careers') }}">Praca</a> · <a href="{{ route('contact.show') }}">Kontakt</a> · <a href="{{ route('regulamin') }}">Regulamin</a> · kontakt: michal@suli.pl · tel. 691 102 010 · &copy; {{ date('Y') }}
             </div>
         </div>
     </footer>

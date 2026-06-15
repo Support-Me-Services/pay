@@ -8,6 +8,16 @@
         <span class="badge badge-brand">tryb płatności: {{ config('shop.payment_mode') }}</span>
     </div>
 
+    @php
+        $dashUnread = \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count();
+    @endphp
+    @if($dashUnread > 0)
+        <div class="alert alert-success" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <span>Masz <strong>{{ $dashUnread }}</strong> nieprzeczytanych wiadomości z formularza kontaktowego.</span>
+            <a href="{{ route('panel.messages.index') }}" class="btn btn-primary btn-sm">Zobacz wiadomości</a>
+        </div>
+    @endif
+
     <h3 class="mb-1">Łącznie</h3>
     <div class="stat-grid">
         <div class="stat-card stat-brand"><div class="stat-label">Przychód</div><div class="stat-value">{{ \App\Services\ShopStatsService::formatPln($total['revenue']) }}</div></div>
