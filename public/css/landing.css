@@ -225,7 +225,15 @@ img{ display:block; max-width:100%; }
     .lp-grid{ grid-template-columns:1fr; }
     /* mobile: brak nagłówka „Jak to działa?" (nie ma go w ramce mobilnej Figmy) */
     .lp-how .lp-head{ display:none; }
-    .lp-how{ margin:14px 0 0; padding:140px 0 36px; }
+    .lp-how{ margin:14px 0 0; padding:140px 0 36px; background:var(--lp-wave); }
+    /* mobile: jednolity niebieski panel na pełną szerokość (jak w ramce Figmy),
+       z falującą białą krawędzią u góry — zamiast desktopowej fali */
+    .lp-how::before{
+        background:#fff; top:auto; bottom:auto; height:48px; max-width:none; width:100%;
+        left:0; transform:none;
+        -webkit-mask:url('/img/landing/wave-cap.svg') top center/100% 48px no-repeat;
+        mask:url('/img/landing/wave-cap.svg') top center/100% 48px no-repeat;
+    }
     .lp-steps{ margin-top:0; gap:100px; }
     .lp-step{ gap:31px; }
     .lp-circle--step{ width:min(261px,70vw); height:min(261px,70vw); font-size:40px; }
