@@ -122,7 +122,7 @@ img{ display:block; max-width:100%; }
 }
 .lp-how > *{ position:relative; z-index:1; }
 
-.lp-steps{ max-width:1142px; margin:38px auto 0; padding:0 var(--lp-gutter); display:flex; flex-direction:column; gap:35px; }
+.lp-steps{ max-width:1142px; margin:43px auto 0; padding:0 var(--lp-gutter); display:flex; flex-direction:column; gap:35px; }
 .lp-step{
     display:flex; align-items:center; justify-content:space-between; gap:40px;
     min-height:375px;
@@ -130,7 +130,7 @@ img{ display:block; max-width:100%; }
 .lp-step--rev{ flex-direction:row-reverse; }
 .lp-step__art{ flex:0 0 auto; }
 .lp-circle--step{ width:375px; height:375px; font-size:40px; }
-.lp-step__body{ width:667px; max-width:667px; flex:0 0 auto; }
+.lp-step__body{ width:667px; max-width:667px; flex:0 0 auto; transform:translateY(-6px); }
 .lp-step__num{
     font-family:var(--lp-display); font-weight:700; font-size:25px; line-height:33px;
     color:var(--lp-ink); margin:0 0 14px;
@@ -198,7 +198,7 @@ img{ display:block; max-width:100%; }
     .lp-hero__copy{ width:100%; max-width:520px; }
     .lp-hero__art{ align-self:center; margin-top:24px; }
     .lp-step, .lp-step--rev{ flex-direction:column; text-align:left; min-height:0; }
-    .lp-step__body{ width:100%; max-width:520px; }
+    .lp-step__body{ width:100%; max-width:520px; transform:none; }
     .lp-step__art{ align-self:center; }
     .lp-circle--step{ width:280px; height:280px; font-size:32px; }
     .lp-cats{ justify-content:center; }

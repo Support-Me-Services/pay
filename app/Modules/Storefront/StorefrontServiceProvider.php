@@ -29,6 +29,7 @@ class StorefrontServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \App\Modules\Storefront\Console\Commands\ImportParishes::class,
+                \App\Modules\Storefront\Console\Commands\EnrichParishes::class,
             ]);
         }
 

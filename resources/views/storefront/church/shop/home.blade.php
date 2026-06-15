@@ -76,7 +76,7 @@
                 <div class="lp-step__body">
                     <p class="lp-step__num">KROK 4</p>
                     <p><b>Otrzymujesz podziękowanie</b><br>Po zakończonej wpłacie trafiasz na specjalnie przygotowaną stronę podziękowania.</p>
-                    <p>Może tam na Ciebie czekać:<br>• wiadomość od organizacji<br>• podziękowanie od zespołu lub opiekuna projektu<br>• zdjęcie z realizowanej inicjatywy<br>• informacja o wykorzystaniu środków<br>• inspirujący cytat lub krótka historia związana z projektem</p>
+                    <p><br>Może tam na Ciebie czekać:<br>• wiadomość od organizacji<br>• podziękowanie od zespołu lub opiekuna projektu<br>• zdjęcie z realizowanej inicjatywy<br>• informacja o wykorzystaniu środków<br>• inspirujący cytat lub krótka historia związana z projektem</p>
                 </div>
             </div>
         </div>
