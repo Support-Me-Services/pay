@@ -37,7 +37,7 @@
                 </div>
             </div>
         </div>
-        <p class="small text-muted mt-2">Płatność obsługuje PayU · pay.redai.pl</p>
+        <p class="small text-muted mt-2">Płatność obsługuje PayU · please-support-me.com</p>
     </div>
 
     <script>

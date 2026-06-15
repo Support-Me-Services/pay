@@ -32,7 +32,7 @@
     <footer class="site-footer">
         <div class="container">
             <strong>nfc<span style="color:var(--brand)">pay</span></strong> — sprzedaż bezobsługowa NFC · demo MVP<br>
-            <span class="small">&copy; {{ date('Y') }} pay.redai.pl</span>
+            <span class="small">&copy; {{ date('Y') }} please-support-me.com</span>
         </div>
     </footer>
 @endif

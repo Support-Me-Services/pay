@@ -23,11 +23,25 @@ class GatewayServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Trasy bramki rejestrowane są dla KAŻDEGO hosta z modułem 'gateway'.
+        // Hosty BRAMKI: pełny zestaw tras — landing/panel (web.php), trasy
+        // płatności klienta (payment.php) oraz API dla sklepów (api.php).
         // Scope per domena izoluje je od storefrontu — jeden proces, wiele hostów.
         // Widoki/baza przełączane są per żądanie przez ResolveTenant.
         foreach ($this->gatewayHosts() as $host) {
             Route::domain($host)->middleware('web')->group(__DIR__.'/routes/web.php');
+            Route::domain($host)->middleware('web')->group(__DIR__.'/routes/payment.php');
+            Route::domain($host)->middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');
+        }
+
+        // Hosty SKLEPU: tylko trasy płatności klienta (payment.php) + API.
+        // BEZ web.php — landing '/' i panel kolidowałyby z trasami sklepu.
+        // Dzięki temu klient wpłacający zostaje na domenie sklepu (np.
+        // please-support-me.com/pay/{uuid}). GatewayContext doklejania widoki bramki;
+        // dane czytane są z nfc_pay przez połączenie 'gateway' (modele przypięte).
+        foreach ($this->storefrontHosts() as $host) {
+            Route::domain($host)
+                ->middleware(['web', \App\Modules\Gateway\Http\Middleware\GatewayContext::class])
+                ->group(__DIR__.'/routes/payment.php');
             Route::domain($host)->middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');
         }
 
@@ -53,6 +67,20 @@ class GatewayServiceProvider extends ServiceProvider
         return array_keys(array_filter(
             config('tenants.map', []),
             fn (array $t) => ($t['module'] ?? null) === 'gateway'
+        ));
+    }
+
+    /**
+     * Hosty z mapy tenantów obsługiwane przez moduł sklepu — tu rejestrujemy
+     * trasy płatności bramki, by klient zostawał na domenie sklepu.
+     *
+     * @return list<string>
+     */
+    private function storefrontHosts(): array
+    {
+        return array_keys(array_filter(
+            config('tenants.map', []),
+            fn (array $t) => ($t['module'] ?? null) === 'storefront'
         ));
     }
 }

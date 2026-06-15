@@ -10,10 +10,10 @@
             <div class="prose">
                 <h3>§1. Sprzedawca</h3>
                 <p>
-                    Sklep prowadzi: <strong>MICHAŁ ŻOŁĄDKOWICZ SULI</strong><br>
-                    ul. Jana Kilińskiego 13/36, 19-300 Ełk, Polska<br>
-                    NIP: 8481749996 · REGON: 280508388<br>
-                    e-mail: <a href="mailto:michal@suli.pl">michal@suli.pl</a> · tel. 691 102 010
+                    Sklep prowadzi: <strong>MARCIN LULA</strong><br>
+                    ul. dr Izabeli Wolfram 11, 05-800 Pruszków, Polska<br>
+                    NIP: 8741624637 · REGON: 341224327<br>
+                    e-mail: <a href="mailto:kontakt@please-support-me.com">kontakt@please-support-me.com</a>
                 </p>
 
                 <h3>§2. Zasady sprzedaży</h3>
@@ -39,7 +39,7 @@
                     metodą płatności w terminie do 14 dni.</p>
 
                 <h3>§6. Reklamacje</h3>
-                <p>Reklamacje można składać mailowo na <a href="mailto:michal@suli.pl">michal@suli.pl</a> lub
+                <p>Reklamacje można składać mailowo na <a href="mailto:kontakt@please-support-me.com">kontakt@please-support-me.com</a> lub
                     telefonicznie. Rozpatrujemy je w terminie 14 dni od otrzymania. Reklamacja powinna zawierać
                     numer zamówienia, opis wady oraz dane kontaktowe.</p>
 

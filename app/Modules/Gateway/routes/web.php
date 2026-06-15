@@ -1,30 +1,18 @@
 <?php
 
 use App\Modules\Gateway\Http\Controllers\LandingController;
-use App\Modules\Gateway\Http\Controllers\MockPaymentController;
-use App\Modules\Gateway\Http\Controllers\PaymentController;
 use App\Modules\Gateway\Http\Controllers\Panel;
-use App\Modules\Gateway\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
+
+// UWAGA: trasy płatności klienta (/pay/*, /mockpay/*, /webhooks/payu) przeniesiono
+// do routes/payment.php — są rejestrowane także na hostach sklepu, by klient
+// pozostawał na domenie sklepu. Ten plik (web.php) trafia TYLKO na hosty bramki,
+// bo landing '/' i panel kolidowałyby z trasami sklepu.
 
 // Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::post('/lead', [LandingController::class, 'storeLead'])->name('lead.store');
 
-// Płatność (klient)
-Route::get('/pay/{uuid}', [PaymentController::class, 'show'])->name('pay.show');
-Route::post('/pay/{uuid}/blik', [PaymentController::class, 'blik'])->name('pay.blik');
-Route::post('/pay/{uuid}/bank', [PaymentController::class, 'bank'])->name('pay.bank');
-Route::get('/pay/{uuid}/status', [PaymentController::class, 'status'])->name('pay.status');
-Route::get('/pay/{uuid}/return', [PaymentController::class, 'return'])->name('pay.return');
-
-// MockProvider — hostowane strony płatności
-Route::get('/mockpay/{uuid}', [MockPaymentController::class, 'show'])->name('mockpay.show');
-Route::post('/mockpay/{uuid}/confirm', [MockPaymentController::class, 'confirm'])->name('mockpay.confirm');
-Route::post('/mockpay/{uuid}/fail', [MockPaymentController::class, 'fail'])->name('mockpay.fail');
-
-// Webhook PayU
-Route::post('/webhooks/payu', [WebhookController::class, 'payu'])->name('webhooks.payu');
 Route::get('/internal/activation-status', [App\Modules\Gateway\Http\Controllers\ActivationStatusController::class, 'show'])->name('activation.status');
 
 // Panel bramki

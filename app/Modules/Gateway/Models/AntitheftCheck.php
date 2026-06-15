@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 // FIKCYJNE — moduł demo, brak realnej detekcji
 class AntitheftCheck extends Model
 {
+    // Dane bramki zawsze z bazy nfc_pay, niezależnie od domyślnej bazy hosta.
+    protected $connection = 'gateway';
+
     public $timestamps = false;
 
     protected $fillable = ['shop_id', 'status', 'foreign_tags_found', 'checked_at'];

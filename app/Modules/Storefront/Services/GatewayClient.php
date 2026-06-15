@@ -7,7 +7,13 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Klient REST API bramki płatności (pay.redai.pl), auth: X-Api-Key.
+ * Klient REST API bramki płatności, auth: X-Api-Key.
+ *
+ * Adres bazowy = host BIEŻĄCEGO żądania (np. https://please-support-me.com),
+ * bo trasy płatności bramki działają teraz także na domenie sklepu. Dzięki temu
+ * zwracany payment_url (route('pay.show')) jest na tej samej domenie i klient
+ * nie jest przekierowywany na subdomenę pay.*. W trybie CLI (kolejki, harmonogram)
+ * brak żądania HTTP — wtedy fallback na config('shop.gateway_url').
  */
 class GatewayClient
 {
@@ -16,7 +22,10 @@ class GatewayClient
 
     public function __construct()
     {
-        $this->baseUrl = config('shop.gateway_url');
+        $request = request();
+        $this->baseUrl = ($request !== null && $request->getHost() !== '')
+            ? $request->getSchemeAndHttpHost()
+            : config('shop.gateway_url');
         $this->apiKey = config('shop.gateway_api_key');
     }
 

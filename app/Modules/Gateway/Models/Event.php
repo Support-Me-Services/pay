@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Event extends Model
 {
+    // Dane bramki zawsze z bazy nfc_pay, niezależnie od domyślnej bazy hosta.
+    protected $connection = 'gateway';
+
     public $timestamps = false;
 
     protected $fillable = ['shop_id', 'tag_id', 'transaction_id', 'type', 'created_at'];

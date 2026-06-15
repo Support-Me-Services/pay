@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Shop extends Model
 {
+    // Dane bramki zawsze z bazy nfc_pay, niezależnie od domyślnej bazy hosta.
+    protected $connection = 'gateway';
+
     public $timestamps = false;
 
     protected $fillable = ['name', 'slug', 'base_url', 'api_key', 'payment_mode'];

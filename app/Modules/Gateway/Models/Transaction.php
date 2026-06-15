@@ -10,6 +10,9 @@ class Transaction extends Model
 {
     use HasUuids;
 
+    // Dane bramki zawsze z bazy nfc_pay, niezależnie od domyślnej bazy hosta.
+    protected $connection = 'gateway';
+
     public $timestamps = false;
 
     protected $fillable = [

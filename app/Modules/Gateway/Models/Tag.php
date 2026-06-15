@@ -8,6 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tag extends Model
 {
+    // Dane bramki zawsze z bazy nfc_pay, niezależnie od domyślnej bazy hosta.
+    protected $connection = 'gateway';
+
     public $timestamps = false;
 
     protected $fillable = ['shop_id', 'tag_uid', 'target_url', 'label', 'active'];

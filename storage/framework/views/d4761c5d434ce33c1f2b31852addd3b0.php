@@ -1,9 +1,7 @@
-@extends('layouts.public')
+<?php $__env->startSection('title', 'Płatność — ' . $transaction->product_name); ?>
+<?php $__env->startSection('bare', true); ?>
 
-@section('title', 'Płatność — ' . $transaction->product_name)
-@section('bare', true)
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div style="min-height:100vh;background:var(--bg-alt);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
         <div class="card card-static" style="width:100%;max-width:440px">
             <div class="card-body">
@@ -12,24 +10,24 @@
                     <span class="badge badge-brand">płatność mobilna</span>
                 </div>
 
-                <h3 class="mb-0">{{ $transaction->product_name }}</h3>
-                <div class="price-xl mb-2">{{ $transaction->amountPln() }} zł</div>
+                <h3 class="mb-0"><?php echo e($transaction->product_name); ?></h3>
+                <div class="price-xl mb-2"><?php echo e($transaction->amountPln()); ?> zł</div>
 
-                {{-- Stan: wybór banku --}}
-                <div id="bankSelect" @if($continueUrl) style="display:none" @endif>
+                
+                <div id="bankSelect" <?php if($continueUrl): ?> style="display:none" <?php endif; ?>>
                     <p class="fw-bold mb-1">Wybierz swój bank</p>
                     <p class="text-muted small mt-0">Otworzy się aplikacja Twojego banku — potwierdzisz odciskiem palca lub Face ID.</p>
                     <div class="form-error mb-1" id="bankError" style="display:none"></div>
                     <div class="bank-grid">
-                        @foreach($banks as $bank)
-                            <button type="button" class="bank-btn" data-method="{{ $bank['value'] }}" title="{{ $bank['name'] }}">
-                                @if($bank['image'])
-                                    <img src="{{ $bank['image'] }}" alt="{{ $bank['name'] }}" loading="lazy">
-                                @else
-                                    <span class="small fw-bold">{{ $bank['name'] }}</span>
-                                @endif
+                        <?php $__currentLoopData = $banks; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $bank): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <button type="button" class="bank-btn" data-method="<?php echo e($bank['value']); ?>" title="<?php echo e($bank['name']); ?>">
+                                <?php if($bank['image']): ?>
+                                    <img src="<?php echo e($bank['image']); ?>" alt="<?php echo e($bank['name']); ?>" loading="lazy">
+                                <?php else: ?>
+                                    <span class="small fw-bold"><?php echo e($bank['name']); ?></span>
+                                <?php endif; ?>
                             </button>
-                        @endforeach
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                     </div>
 
                     <details class="mt-3">
@@ -42,12 +40,12 @@
                                        style="font-size:1.4rem;text-align:center;letter-spacing:.35em">
                                 <div class="form-error" id="codeError" style="display:none"></div>
                             </div>
-                            <button type="button" id="payBtn" class="btn btn-primary btn-block">Zapłać {{ $transaction->amountPln() }} zł</button>
+                            <button type="button" id="payBtn" class="btn btn-primary btn-block">Zapłać <?php echo e($transaction->amountPln()); ?> zł</button>
                         </div>
                     </details>
                 </div>
 
-                {{-- Stan: czekamy na potwierdzenie w aplikacji banku --}}
+                
                 <div id="processing" style="display:none;text-align:center;padding:24px 0">
                     <div class="phone-pulse" style="width:72px;height:72px;margin-bottom:14px">
                         <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.2rem">📱</div>
@@ -57,25 +55,25 @@
                     <div class="spinner mt-1" style="width:34px;height:34px;border-width:4px"></div>
                 </div>
 
-                {{-- Stan: zamówienie już czeka u operatora (powrót na stronę) --}}
-                @if($continueUrl)
+                
+                <?php if($continueUrl): ?>
                     <div id="continueBox" class="text-center" style="padding:12px 0">
                         <p class="fw-bold mb-1">Twoja płatność czeka na dokończenie</p>
-                        <a href="{{ $continueUrl }}" class="btn btn-primary btn-block">Dokończ w aplikacji banku</a>
+                        <a href="<?php echo e($continueUrl); ?>" class="btn btn-primary btn-block">Dokończ w aplikacji banku</a>
                         <p class="text-muted small mt-2">Sprawdzamy status na bieżąco — po opłaceniu wrócisz do sklepu automatycznie.</p>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
-        <p class="small text-muted mt-2">Płatność obsługuje PayU · please-support-me.com</p>
+        <p class="small text-muted mt-2">Płatność obsługuje PayU · pay.redai.pl</p>
     </div>
 
     <script>
-        const csrf = @json(csrf_token());
+        const csrf = <?php echo json_encode(csrf_token(), 15, 512) ?>;
         const urls = {
-            bank: @json(route('pay.bank', $transaction->id)),
-            blik: @json(route('pay.blik', $transaction->id)),
-            status: @json(route('pay.status', $transaction->id)),
+            bank: <?php echo json_encode(route('pay.bank', $transaction->id), 512) ?>,
+            blik: <?php echo json_encode(route('pay.blik', $transaction->id), 512) ?>,
+            status: <?php echo json_encode(route('pay.status', $transaction->id), 512) ?>,
         };
 
         function poll() {
@@ -139,8 +137,10 @@
                 .catch(() => showError('codeError', 'Błąd połączenia. Spróbuj ponownie.'));
         });
 
-        @if($continueUrl)
+        <?php if($continueUrl): ?>
         poll(); // zamówienie czeka — pilnuj statusu
-        @endif
+        <?php endif; ?>
     </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.public', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH /var/www/pay/unified/resources/views/gateway/payment/app2app.blade.php ENDPATH**/ ?>

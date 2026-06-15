@@ -27,8 +27,8 @@
         <div class="container">
             <strong>{{ config('shop.name') }}</strong> — płatności obsługuje
             <strong style="color:var(--brand)">nfcpay</strong> (PayU)<br>
-            <span class="small">MICHAŁ ŻOŁĄDKOWICZ SULI · ul. Jana Kilińskiego 13/36, 19-300 Ełk · NIP 8481749996 · REGON 280508388</span><br>
-            <span class="small"><a href="{{ route('regulamin') }}">Regulamin sklepu</a> · kontakt: michal@suli.pl · tel. 691 102 010 · &copy; {{ date('Y') }}</span>
+            <span class="small">MARCIN LULA · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637 · REGON 341224327</span><br>
+            <span class="small"><a href="{{ route('regulamin') }}">Regulamin sklepu</a> · kontakt: kontakt@please-support-me.com · &copy; {{ date('Y') }}</span>
         </div>
     </footer>
 @endif
