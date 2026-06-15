@@ -178,15 +178,13 @@
     font-weight:600; color:var(--sp-muted); pointer-events:none;
 }
 
-/* sticky CTA na dole */
-.sp-give-sticky{
-    position:sticky; bottom:0; z-index:6;
-    background:rgba(255,255,255,.94); backdrop-filter:blur(8px);
-    border-top:1px solid var(--sp-line); padding:14px var(--sp-gutter);
-    margin-top:32px;
+/* CTA „Wesprzyj" — pod presetami i polem „Inna kwota", pełna szerokość karty */
+.sp-give-cta{ margin-top:22px; padding-top:22px; border-top:1px solid var(--sp-line); }
+.sp-btn--cta{
+    font-size:19px; padding:18px 28px;
+    box-shadow:0 10px 24px rgba(20,115,192,.22);
 }
-.sp-give-sticky__inner{ max-width:760px; margin:0 auto; }
-.sp-give-sticky .sp-secure{ text-align:center; font-size:13px; color:var(--sp-muted); margin-top:10px; }
+.sp-give-cta .sp-secure{ text-align:center; font-size:13px; color:var(--sp-muted); margin-top:12px; }
 
 /* ============================================================
    PRACA / REKRUTACJA (/praca)
@@ -197,6 +195,11 @@
 
 .sp-careers__head{ display:flex; gap:48px; align-items:center; margin-bottom:56px; }
 .sp-careers__head .sp-circle--lg{ width:340px; height:340px; font-size:34px; }
+/* zdjęcie zespołu w okrągłym kadrze (zamiast napisu „grafika") */
+.sp-careers__photo{ overflow:hidden; padding:0; }
+.sp-careers__photo img{
+    width:100%; height:100%; object-fit:cover; border-radius:50%; display:block;
+}
 .sp-careers__head-body h2{
     font-family:var(--sp-display); font-weight:700; font-size:30px; line-height:1.18; color:var(--sp-ink); margin:0 0 14px;
 }
@@ -219,11 +222,19 @@
 .sp-job__desc ul, .sp-job__desc ol{ padding-left:1.2em; }
 .sp-job--empty{ text-align:center; color:var(--sp-muted); font-size:17px; padding:36px 0; }
 
+/* bogatsze karty ofert */
+.sp-job--rich{ padding:28px 28px 26px; }
+.sp-job--rich h2{ margin-bottom:14px; }
+.sp-job__chip--remote{ color:#1f5f44; background:#e8f4ed; border-color:#aed5c1; }
+.sp-job__excerpt{ font-size:16px; line-height:26px; color:var(--sp-muted); margin:0 0 18px; }
+
 /* formularz wbudowany w ofertę (details) */
 .sp-apply{ border-top:1px dashed var(--sp-line); padding-top:16px; margin-top:4px; }
-.sp-apply > summary{ list-style:none; cursor:pointer; display:inline-flex; }
+.sp-apply > summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
 .sp-apply > summary::-webkit-details-marker{ display:none; }
 .sp-apply > summary .sp-btn{ pointer-events:none; }
+.sp-job__alt-link{ font-size:14px; font-weight:600; color:var(--sp-blue-b); pointer-events:auto; }
+.sp-job__alt-link:hover{ text-decoration:underline; }
 .sp-apply[open] > summary{ margin-bottom:16px; }
 .sp-apply__inner{ animation:spFade .2s ease; }
 @keyframes spFade{ from{ opacity:0; transform:translateY(-4px);} to{ opacity:1; transform:none; } }
@@ -234,6 +245,25 @@
 .sp-formpage{ padding:56px 0 96px; }
 .sp-formpage__wrap{ max-width:620px; margin:0 auto; }
 .sp-formpage__foot{ text-align:center; margin-top:18px; }
+
+/* ============================================================
+   DOKUMENTY / REGULAMIN (/regulamin) — sp-doc / sp-legal
+   ============================================================ */
+.sp-doc{ padding:56px 0 96px; }
+.sp-legal__body{ max-width:820px; margin:0 auto; }
+.sp-legal__section{ margin-bottom:30px; }
+.sp-legal__section:last-child{ margin-bottom:0; }
+.sp-legal h2{
+    font-family:var(--sp-display); font-weight:700; font-size:22px; line-height:1.2;
+    color:var(--sp-ink); margin:0 0 12px;
+}
+.sp-legal p{
+    font-family:var(--sp-ui); font-size:17px; line-height:29px; color:var(--sp-ink); margin:0 0 12px;
+}
+.sp-legal p:last-child{ margin-bottom:0; }
+.sp-legal a{ color:var(--sp-blue-b); font-weight:600; }
+.sp-legal a:hover{ text-decoration:underline; }
+.sp-legal strong{ color:var(--sp-ink); }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width:1200px){
@@ -251,10 +281,40 @@
 }
 @media (max-width:560px){
     :root{ --sp-gutter:22px; }
+    .sp-subhero{ min-height:auto; padding:32px var(--sp-gutter); }
     .sp-subhero h1{ font-size:30px; }
+    .sp-subhero .sp-lede{ font-size:16px; line-height:26px; }
+    .sp-give{ padding:36px 0 64px; }
     .sp-give__art img, .sp-give__art .sp-circle--lg{ width:240px; height:240px; }
     .sp-circle--lg{ width:240px; height:240px; font-size:26px; }
+    .sp-careers__head .sp-circle--lg{ width:240px; height:240px; }
     .sp-give__title{ font-size:26px; }
+    .sp-give-card{ padding:22px 18px; }
     .sp-amounts{ grid-template-columns:repeat(2,1fr); }
-    .sp-give-sticky{ padding:12px 22px; }
+    .sp-amount{ font-size:20px; padding:14px 6px; }
+    .sp-careers{ padding:36px 0 64px; }
+    .sp-careers__head{ gap:28px; margin-bottom:40px; }
+    .sp-job, .sp-job--rich{ padding:22px 18px; }
+    .sp-card{ padding:22px 18px; }
+    .sp-doc{ padding:36px 0 64px; }
+}
+
+/* ---- bardzo wąskie telefony (~390px) ---- */
+@media (max-width:400px){
+    :root{ --sp-gutter:16px; }
+    .sp-subhero h1{ font-size:26px; }
+    .sp-give__art img, .sp-give__art .sp-circle--lg{ width:200px; height:200px; }
+    .sp-circle--lg{ width:200px; height:200px; font-size:22px; }
+    .sp-careers__head .sp-circle--lg{ width:200px; height:200px; }
+    .sp-give__title{ font-size:23px; }
+    .sp-give-card__label{ font-size:18px; }
+    .sp-amount{ font-size:18px; padding:12px 4px; }
+    .sp-btn, .sp-btn--cta{ font-size:16px; padding:15px 18px; }
+    .sp-field-row{ flex-direction:column; gap:0; }
+    .sp-field-row .sp-field{ min-width:0; }
+    .sp-job--rich h2, .sp-job h2{ font-size:20px; }
+    .sp-job__excerpt{ font-size:15px; line-height:24px; }
+    .sp-apply > summary{ gap:8px; }
+    .sp-legal h2{ font-size:20px; }
+    .sp-legal p{ font-size:16px; line-height:27px; }
 }

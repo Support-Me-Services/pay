@@ -25,6 +25,13 @@ class StorefrontServiceProvider extends ServiceProvider
         // utworzy tabele sklepu w wybranej bazie.
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
+        // Komendy CLI modułu (parishes:import) — moduł nie leży w app/Console.
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \App\Modules\Storefront\Console\Commands\ImportParishes::class,
+            ]);
+        }
+
         // Alias zgodności: część widoków panelu odwołuje się do
         // \App\Services\ShopStatsService — klasa żyje w module Storefront.
         if (! class_exists(\App\Services\ShopStatsService::class, false)) {

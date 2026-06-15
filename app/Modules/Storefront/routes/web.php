@@ -71,6 +71,20 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::post('/categories/{category}/reorder', [Panel\CategoryController::class, 'reorder'])->name('categories.reorder');
         Route::delete('/categories/{category}', [Panel\CategoryController::class, 'destroy'])->name('categories.destroy');
 
+        // Parafie do obdzwonienia (CRM — lista potencjalnych z OSM)
+        Route::get('/potential-parishes', [Panel\PotentialParishController::class, 'index'])->name('potential-parishes.index');
+        Route::post('/potential-parishes/{potentialParish}/status', [Panel\PotentialParishController::class, 'updateStatus'])->name('potential-parishes.status');
+
+        // Mapa pokrycia (osadzony Leaflet) — licznik parafii per województwo z bazy.
+        Route::get('/coverage', function () {
+            $byVoivodeship = \App\Modules\Storefront\Models\PotentialParish::query()
+                ->selectRaw('voivodeship, COUNT(*) as c')
+                ->groupBy('voivodeship')->orderByDesc('c')->pluck('c', 'voivodeship');
+            $total = \App\Modules\Storefront\Models\PotentialParish::count();
+
+            return view('panel.coverage.map', compact('byVoivodeship', 'total'));
+        })->name('coverage.map');
+
         // Handlowcy (CRM)
         Route::get('/salespeople', [Panel\SalespersonController::class, 'index'])->name('salespeople.index');
         Route::get('/salespeople/create', [Panel\SalespersonController::class, 'create'])->name('salespeople.create');

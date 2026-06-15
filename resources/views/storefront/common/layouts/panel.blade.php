@@ -24,6 +24,8 @@
             <a href="{{ route('panel.products.index') }}" class="{{ request()->routeIs('panel.products.*') || request()->routeIs('panel.parishes.*') ? 'active' : '' }}">Parafie</a>
             <a href="{{ route('panel.categories.index') }}" class="{{ request()->routeIs('panel.categories.*') ? 'active' : '' }}">Kategorie</a>
             <a href="{{ route('panel.salespeople.index') }}" class="{{ request()->routeIs('panel.salespeople.*') ? 'active' : '' }}">Handlowcy</a>
+            <a href="{{ route('panel.potential-parishes.index') }}" class="{{ request()->routeIs('panel.potential-parishes.*') ? 'active' : '' }}">Parafie do obdzwonienia</a>
+            <a href="{{ route('panel.coverage.map') }}" class="{{ request()->routeIs('panel.coverage.*') ? 'active' : '' }}">Mapa pokrycia</a>
             <a href="{{ route('panel.positions.index') }}" class="{{ request()->routeIs('panel.positions.*') ? 'active' : '' }}">Praca</a>
             <a href="{{ route('panel.applications.index') }}" class="{{ request()->routeIs('panel.applications.*') ? 'active' : '' }}">
                 Aplikacje

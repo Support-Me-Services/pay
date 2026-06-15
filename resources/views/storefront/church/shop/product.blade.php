@@ -82,18 +82,17 @@
                                     <span class="sp-suffix">zł</span>
                                 </div>
                             </div>
+
+                            {{-- CTA „Wesprzyj" — pod presetami i polem „Inna kwota", pełna szerokość --}}
+                            <div class="sp-give-cta">
+                                <button type="submit" form="giveForm" class="sp-btn sp-btn--block sp-btn--cta" id="giveBtn">
+                                    Wesprzyj — <span id="ctaAmount">{{ $default }}</span> zł
+                                </button>
+                                <div class="sp-secure">🔒 Bezpieczna płatność BLIK · obsługuje PayU</div>
+                            </div>
                         </div>
                     </form>
                 </div>
-            </div>
-        </div>
-
-        <div class="sp-give-sticky">
-            <div class="sp-give-sticky__inner">
-                <button type="submit" form="giveForm" class="sp-btn sp-btn--block" id="giveBtn">
-                    Wesprzyj — <span id="ctaAmount">{{ $default }}</span> zł
-                </button>
-                <div class="sp-secure">🔒 Bezpieczna płatność BLIK · obsługuje PayU</div>
             </div>
         </div>
     </div>
