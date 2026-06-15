@@ -19,6 +19,9 @@ Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('produc
 // Praca (kariera) — publiczna lista stanowisk
 Route::get('/praca', [CareersController::class, 'index'])->name('careers');
 
+// Pojedyncza oferta pracy na osobnej podstronie.
+Route::get('/praca/oferta/{position}', [CareersController::class, 'show'])->name('careers.show');
+
 // Formularz aplikacji — spontaniczna (bez oferty). MUSI być przed trasą z {position}.
 Route::get('/praca/aplikuj', [CareersController::class, 'applyForm'])->name('careers.apply.general');
 Route::post('/praca/aplikuj', [CareersController::class, 'applyStore'])->name('careers.apply.general.store');

@@ -23,6 +23,22 @@ class CareersController extends Controller
     }
 
     /**
+     * GET /praca/oferta/{position} — pojedyncza oferta pracy na osobnej podstronie.
+     */
+    public function show(JobPosition $position)
+    {
+        abort_unless($position->active, 404);
+
+        $others = JobPosition::where('active', true)
+            ->where('id', '!=', $position->id)
+            ->orderBy('sort')->orderBy('id')
+            ->limit(3)
+            ->get();
+
+        return view('shop.oferta', compact('position', 'others'));
+    }
+
+    /**
      * GET /praca/aplikuj — formularz aplikacji spontanicznej (bez oferty).
      * GET /praca/{position}/aplikuj — formularz aplikacji na konkretną ofertę.
      */

@@ -203,18 +203,33 @@ img{ display:block; max-width:100%; }
     .lp-cats{ justify-content:center; }
     .lp-grid{ grid-template-columns:repeat(2,1fr); }
 }
+/* MOBILE — wg ramki Figmy 1:5 (402px): te same fonty 40/20/25px co desktop,
+   układ pionowy i wyśrodkowany. NIE zmniejszamy typografii. */
 @media (max-width:560px){
-    body.lp{ font-size:18px; }
     :root{ --lp-gutter:22px; }
-    .lp-header{ padding:18px 22px; }
+    .lp-header{ padding:25px 22px 18px; }
     .lp-nav{ display:none; }
     .lp-burger{ display:flex; }
-    .lp-hero__copy h1{ font-size:32px; }
-    .lp-head h2{ font-size:30px; }
-    .lp-circle--hero{ width:260px; height:260px; font-size:28px; }
-    .lp-cats{ flex-direction:column; align-items:center; gap:30px; margin-top:40px; }
+    .lp-hero{ min-height:0; }
+    .lp-hero__inner{ flex-direction:column; align-items:center; padding:64px 22px 56px; gap:36px; }
+    .lp-hero__copy{ width:100%; max-width:360px; text-align:center; }
+    .lp-hero__copy h1{ font-size:40px; }
+    .lp-badges{ justify-content:center; }
+    .lp-hero__art{ margin:0; align-self:center; }
+    .lp-circle--hero{ width:min(342px,86vw); height:min(342px,86vw); font-size:40px; }
+    .lp-head h2{ font-size:40px; }
+    .lp-cats{ flex-direction:column; align-items:center; gap:31px; margin-top:48px; }
     .lp-grid{ grid-template-columns:1fr; }
-    .lp-how{ padding:90px 0 110px; }
+    .lp-how{ padding:84px 0 96px; }
+    .lp-circle--step{ width:min(261px,70vw); height:min(261px,70vw); font-size:40px; }
+    .lp-step__body{ text-align:center; width:100%; max-width:354px; }
+}
+
+/* tekst zamykający — wg Figmy tylko na mobile */
+.lp-closing{ display:none; }
+@media (max-width:560px){
+    .lp-closing{ display:block; max-width:340px; margin:0 auto; padding:46px 22px 4px; text-align:center; font-size:20px; line-height:33px; color:#000; }
+    .lp-closing b{ font-weight:700; }
 }
 
 /* hamburger (tylko mobile) — wg Figmy: logo + ikona menu */

@@ -81,4 +81,9 @@
             </div>
         </div>
     </section>
+
+    {{-- Zamknięcie (w Figmie obecne w wersji mobilnej) --}}
+    <section class="lp-closing">
+        <p>Tworzymy technologię, która wspiera ludzi w pomaganiu i zamienianiu dobrych intencji w realną pomoc.<br><br><b>Dobro przekazane dalej ma największą wartość.</b></p>
+    </section>
 @endsection
