@@ -92,13 +92,15 @@ class CareersController extends Controller
             'cv_original_name' => $cvOriginalName,
         ]);
 
-        // Powrót na listę ofert, do tej konkretnej oferty (formularz jest w niej wbudowany).
-        $anchor = $position && $position->exists ? 'oferta-' . $position->id : 'oferta-spontaniczna';
-        $applyKey = $position && $position->exists ? (string) $position->id : 'general';
+        // Powrót na stronę formularza aplikacji z potwierdzeniem (aplikuj.blade
+        // renderuje session('success')). Aplikacja jest składana na osobnej
+        // podstronie /praca/{position}/aplikuj — tam pokazujemy „Dziękujemy".
+        $redirect = $position && $position->exists
+            ? redirect()->route('careers.apply', $position)
+            : redirect()->route('careers.apply.general');
 
-        return redirect()->route('careers')
-            ->withFragment($anchor)
+        return $redirect
             ->with('success', 'Dziękujemy za zgłoszenie — odezwiemy się.')
-            ->with('apply_done', $applyKey);
+            ->with('apply_done', true);
     }
 }

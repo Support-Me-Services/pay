@@ -5,6 +5,15 @@
 
 @push('head')
 <link rel="stylesheet" href="{{ asset('css/subpages.css') }}?v={{ filemtime(public_path('css/subpages.css')) }}">
+<style>
+    .sp-thanks{ text-align:center; padding:48px 28px; }
+    .sp-thanks__icon{ width:72px; height:72px; margin:0 auto 18px; border-radius:50%;
+        display:flex; align-items:center; justify-content:center; font-size:38px; color:#fff;
+        background:linear-gradient(117deg,#4E7FA7,#1473C0); box-shadow:0 12px 30px rgba(20,115,192,.3); }
+    .sp-thanks h2{ font-family:'Libre Baskerville',serif; color:#24324A; margin:0 0 10px; font-size:28px; }
+    .sp-thanks p{ color:#3a3d47; font-size:18px; margin:0 0 24px; }
+    .sp-btn--inline{ display:inline-flex; width:auto; padding:14px 30px; }
+</style>
 @endpush
 
 @section('content')
@@ -27,14 +36,18 @@
         <div class="sp-container sp-formpage">
             <div class="sp-formpage__wrap">
                 @if(session('success'))
-                    <div class="sp-alert sp-alert--ok">{{ session('success') }}</div>
-                @endif
+                    <div class="sp-card sp-thanks">
+                        <div class="sp-thanks__icon" aria-hidden="true">✓</div>
+                        <h2>Zgłoszenie wysłane!</h2>
+                        <p>{{ session('success') }}</p>
+                        <a href="{{ route('careers') }}" class="sp-btn sp-btn--inline">Wróć do ofert</a>
+                    </div>
+                @else
+                    @if($errors->any())
+                        <div class="sp-alert sp-alert--err">Popraw zaznaczone pola formularza.</div>
+                    @endif
 
-                @if($errors->any())
-                    <div class="sp-alert sp-alert--err">Popraw zaznaczone pola formularza.</div>
-                @endif
-
-                <div class="sp-card">
+                    <div class="sp-card">
                     <form method="POST"
                           action="{{ $position ? route('careers.apply.store', $position) : route('careers.apply.general.store') }}"
                           enctype="multipart/form-data">
@@ -79,7 +92,8 @@
 
                         <button type="submit" class="sp-btn sp-btn--block">Wyślij zgłoszenie</button>
                     </form>
-                </div>
+                    </div>
+                @endif
 
                 <p class="sp-formpage__foot">
                     <a href="{{ route('careers') }}" class="sp-link">← Wróć do ofert</a>
