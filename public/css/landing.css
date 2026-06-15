@@ -225,7 +225,7 @@ img{ display:block; max-width:100%; }
     .lp-grid{ grid-template-columns:1fr; }
     /* mobile: brak nagłówka „Jak to działa?" (nie ma go w ramce mobilnej Figmy) */
     .lp-how .lp-head{ display:none; }
-    .lp-how{ margin:14px 0 0; padding:140px 0 36px; background:var(--lp-wave); }
+    .lp-how{ margin:14px 0 0; padding:113px 0 36px; background:var(--lp-wave); }
     /* mobile: jednolity niebieski panel na pełną szerokość (jak w ramce Figmy),
        z falującą białą krawędzią u góry — zamiast desktopowej fali */
     .lp-how::before{
@@ -236,6 +236,7 @@ img{ display:block; max-width:100%; }
     }
     .lp-steps{ margin-top:0; gap:100px; }
     .lp-step{ gap:31px; }
+    .lp-step:nth-child(3){ margin-bottom:-43px; }   /* krótki KROK 3 → mniejsza przerwa do KROK 4 (jak Figma) */
     .lp-circle--step{ width:min(261px,70vw); height:min(261px,70vw); font-size:40px; }
     .lp-step__body{ text-align:center; width:100%; max-width:354px; }
 }
