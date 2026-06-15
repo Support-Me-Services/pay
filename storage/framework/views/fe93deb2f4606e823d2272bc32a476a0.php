@@ -42,8 +42,8 @@
             <span class="brand">nfcpay</span> (PayU).<br>
             Twoje wsparcie trafia w całości do wybranej parafii.
             <div class="fine">
-                Operator płatności: MICHAŁ ŻOŁĄDKOWICZ SULI · ul. Jana Kilińskiego 13/36, 19-300 Ełk · NIP 8481749996<br>
-                <a href="<?php echo e(route('careers')); ?>">Praca</a> · <a href="<?php echo e(route('contact.show')); ?>">Kontakt</a> · <a href="<?php echo e(route('regulamin')); ?>">Regulamin</a> · kontakt: michal@suli.pl · tel. 691 102 010 · &copy; <?php echo e(date('Y')); ?>
+                Operator płatności: MARCIN LULA · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637<br>
+                <a href="<?php echo e(route('careers')); ?>">Praca</a> · <a href="<?php echo e(route('contact.show')); ?>">Kontakt</a> · <a href="<?php echo e(route('regulamin')); ?>">Regulamin</a> · kontakt: kontakt@please-support-me.com · &copy; <?php echo e(date('Y')); ?>
 
             </div>
         </div>

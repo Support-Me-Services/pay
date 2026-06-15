@@ -56,6 +56,19 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::get('/products/{product}/stats', [Panel\ProductController::class, 'stats'])->name('products.stats');
         Route::post('/upload-editor-image', [Panel\ProductController::class, 'uploadEditorImage'])->name('products.editor-upload');
 
+        // CRM parafii — szybka zmiana statusu i notatki (AJAX). Aliasy panel.parishes.*.
+        Route::post('/parishes/{product}/status', [Panel\ProductController::class, 'status'])->name('parishes.status');
+        Route::post('/parishes/{product}/notes', [Panel\ProductController::class, 'storeNote'])->name('parishes.notes.store');
+        Route::delete('/parishes/{product}/notes/{note}', [Panel\ProductController::class, 'destroyNote'])->name('parishes.notes.destroy');
+
+        // Handlowcy (CRM)
+        Route::get('/salespeople', [Panel\SalespersonController::class, 'index'])->name('salespeople.index');
+        Route::get('/salespeople/create', [Panel\SalespersonController::class, 'create'])->name('salespeople.create');
+        Route::post('/salespeople', [Panel\SalespersonController::class, 'store'])->name('salespeople.store');
+        Route::get('/salespeople/{salesperson}/edit', [Panel\SalespersonController::class, 'edit'])->name('salespeople.edit');
+        Route::put('/salespeople/{salesperson}', [Panel\SalespersonController::class, 'update'])->name('salespeople.update');
+        Route::delete('/salespeople/{salesperson}', [Panel\SalespersonController::class, 'destroy'])->name('salespeople.destroy');
+
         // Stanowiska pracy (sekcja „Praca")
         Route::get('/positions', [Panel\PositionController::class, 'index'])->name('positions.index');
         Route::get('/positions/create', [Panel\PositionController::class, 'create'])->name('positions.create');

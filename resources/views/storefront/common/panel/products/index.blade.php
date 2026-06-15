@@ -1,12 +1,35 @@
 @extends('layouts.panel')
 
-@section('title', 'Produkty')
+@section('title', 'Parafie')
 
 @section('content')
     <div class="panel-title">
-        <h1>Produkty (tagi NFC)</h1>
-        <a href="{{ route('panel.products.create') }}" class="btn btn-primary btn-sm">+ Dodaj produkt</a>
+        <h1>Parafie (tagi NFC)</h1>
+        <a href="{{ route('panel.products.create') }}" class="btn btn-primary btn-sm">+ Dodaj parafię</a>
     </div>
+
+    {{-- Filtr po statusie (zakładki + liczniki) --}}
+    <div class="d-flex gap-1 mb-3" style="flex-wrap:wrap">
+        <a href="{{ route('panel.products.index', array_filter(['q' => $q])) }}"
+           class="btn btn-sm {{ $status ? 'btn-secondary' : 'btn-primary' }}">Wszystkie ({{ $total }})</a>
+        @foreach(\App\Modules\Storefront\Models\Product::STATUSES as $key => $label)
+            <a href="{{ route('panel.products.index', array_filter(['status' => $key, 'q' => $q])) }}"
+               class="btn btn-sm {{ $status === $key ? 'btn-primary' : 'btn-secondary' }}">
+                {{ $label }} ({{ $statusCounts[$key] ?? 0 }})
+            </a>
+        @endforeach
+    </div>
+
+    {{-- Wyszukiwarka po nazwie / mieście / województwie --}}
+    <form method="GET" action="{{ route('panel.products.index') }}" class="d-flex gap-1 mb-3" style="flex-wrap:wrap">
+        @if($status)<input type="hidden" name="status" value="{{ $status }}">@endif
+        <input type="text" name="q" value="{{ $q }}" placeholder="Szukaj: nazwa, miasto, województwo…"
+               style="flex:1;min-width:240px;max-width:420px">
+        <button type="submit" class="btn btn-primary btn-sm">Szukaj</button>
+        @if($q !== '')
+            <a href="{{ route('panel.products.index', array_filter(['status' => $status])) }}" class="btn btn-secondary btn-sm">Wyczyść</a>
+        @endif
+    </form>
 
     <div class="card card-static">
         <div class="card-body">
@@ -14,44 +37,34 @@
                 <table class="table">
                     <thead>
                     <tr>
-                        <th>Tag UID</th><th></th><th>Nazwa</th><th>Cena</th><th>Otwarcia</th><th>Zakupy</th><th>Przychód</th><th>Status</th><th></th>
+                        <th>Nazwa</th><th>Miasto / województwo</th><th>Status</th><th>Handlowiec</th>
+                        <th>Tag NFC</th><th>Wpłaty</th><th></th>
                     </tr>
                     </thead>
                     <tbody>
-                    @forelse($products as $row)
+                    @forelse($parishes as $parish)
                         <tr>
-                            <td><code>{{ $row['product']->tag_uid }}</code></td>
+                            <td class="fw-bold">{{ $parish->name }}</td>
                             <td>
-                                @if($row['product']->main_image)
-                                    <img src="{{ asset('storage/' . $row['product']->main_image) }}" alt=""
-                                         style="width:44px;height:44px;object-fit:cover;border-radius:6px">
+                                {{ $parish->city ?: '—' }}
+                                @if($parish->voivodeship)
+                                    <br><span class="text-muted" style="font-weight:400">{{ $parish->voivodeship }}</span>
                                 @endif
                             </td>
-                            <td class="fw-bold">{{ $row['product']->name }}</td>
-                            <td class="nowrap">{{ $row['product']->pricePln() }} zł</td>
-                            <td>{{ $row['stats']['opens'] }}</td>
-                            <td>{{ $row['stats']['purchases'] }}</td>
-                            <td class="fw-bold">{{ \App\Services\ShopStatsService::formatPln($row['stats']['revenue']) }}</td>
                             <td>
-                                @if($row['product']->active)
-                                    <span class="badge badge-success">aktywny</span>
-                                @else
-                                    <span class="badge badge-muted">nieaktywny</span>
-                                @endif
+                                @php [$bg, $fg] = $parish->statusColors(); @endphp
+                                <span class="badge" style="background:{{ $bg }};color:{{ $fg }};font-weight:600">{{ $parish->statusLabel() }}</span>
                             </td>
+                            <td>{{ $parish->salesperson?->name ?: '—' }}</td>
+                            <td><code>{{ $parish->tag_uid }}</code></td>
+                            <td>{{ $parish->orders_count }}</td>
                             <td class="actions nowrap">
-                                <a href="{{ route('panel.products.edit', $row['product']) }}">Edytuj</a>
-                                <a href="{{ route('panel.products.stats', $row['product']) }}">Statystyki</a>
-                                <form method="POST" action="{{ route('panel.products.toggle', $row['product']) }}" style="display:inline">
-                                    @csrf
-                                    <a href="#" onclick="this.closest('form').submit(); return false;">
-                                        {{ $row['product']->active ? 'Dezaktywuj' : 'Aktywuj' }}
-                                    </a>
-                                </form>
+                                <a href="{{ route('panel.products.edit', $parish) }}">Edytuj</a>
+                                <a href="{{ route('panel.products.stats', $parish) }}">Statystyki</a>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="9" class="text-muted">Brak produktów.</td></tr>
+                        <tr><td colspan="7" class="text-muted">Brak parafii spełniających kryteria.</td></tr>
                     @endforelse
                     </tbody>
                 </table>

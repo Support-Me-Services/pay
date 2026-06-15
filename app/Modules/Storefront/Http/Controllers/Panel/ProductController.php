@@ -3,7 +3,9 @@
 namespace App\Modules\Storefront\Http\Controllers\Panel;
 
 use App\Modules\Storefront\Http\Controllers\Controller;
+use App\Modules\Storefront\Models\ParishNote;
 use App\Modules\Storefront\Models\Product;
+use App\Modules\Storefront\Models\Salesperson;
 use App\Modules\Storefront\Services\ShopStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -11,19 +13,45 @@ use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    public function index(ShopStatsService $stats)
+    /**
+     * Lista parafii z filtrem po statusie i wyszukiwarką (nazwa / miasto / województwo).
+     */
+    public function index(Request $request)
     {
-        $products = Product::with('images')->orderBy('id')->get()->map(fn (Product $product) => [
-            'product' => $product,
-            'stats' => $stats->summary(productId: $product->id),
-        ]);
+        // Filtr statusu (zakładki) — tylko dozwolone klucze.
+        $status = in_array($request->query('status'), array_keys(Product::STATUSES), true)
+            ? $request->query('status') : null;
+        $q = trim((string) $request->query('q', ''));
 
-        return view('panel.products.index', compact('products'));
+        $query = Product::with('salesperson')->withCount('orders')->orderBy('id');
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($q !== '') {
+            $query->where(function ($sub) use ($q) {
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('city', 'like', "%{$q}%")
+                    ->orWhere('voivodeship', 'like', "%{$q}%");
+            });
+        }
+
+        $parishes = $query->get();
+
+        // Liczniki per status (niezależne od aktywnego filtra/wyszukiwania).
+        $statusCounts = Product::query()
+            ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
+        $total = Product::count();
+
+        return view('panel.products.index', compact('parishes', 'status', 'q', 'statusCounts', 'total'));
     }
 
     public function create()
     {
-        return view('panel.products.form', ['product' => new Product()]);
+        return view('panel.products.form', [
+            'product' => new Product(),
+            'salespeople' => Salesperson::orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request)
@@ -43,7 +71,71 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        return view('panel.products.form', compact('product'));
+        $product->load('notes');
+
+        return view('panel.products.form', [
+            'product' => $product,
+            'salespeople' => Salesperson::orderBy('name')->get(),
+        ]);
+    }
+
+    /**
+     * Szybka zmiana statusu parafii (kontakt → test → wdrożenie → aktywna).
+     * Status 'aktywna' publikuje parafię (active=true), pozostałe ją ukrywają.
+     */
+    public function status(Request $request, Product $product)
+    {
+        $data = $request->validate([
+            'status' => ['required', 'string', 'in:' . implode(',', array_keys(Product::STATUSES))],
+        ]);
+
+        $product->update([
+            'status' => $data['status'],
+            'active' => $data['status'] === 'aktywna',
+        ]);
+
+        return back()->with('success', 'Status parafii zmieniony na: ' . $product->statusLabel() . '.');
+    }
+
+    /**
+     * Dodanie notatki CRM (AJAX) — zwraca utworzoną notatkę jako JSON.
+     */
+    public function storeNote(Request $request, Product $product)
+    {
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:5000'],
+            'type' => ['required', 'string', 'in:' . implode(',', array_keys(ParishNote::TYPES))],
+        ], [], ['body' => 'treść', 'type' => 'typ']);
+
+        $note = $product->notes()->create([
+            'body' => $data['body'],
+            'type' => $data['type'],
+            'author' => optional($request->user())->name ?? optional($request->user())->email,
+            // created_at ma DB default useCurrent(), ale ustawiamy jawnie,
+            // by od razu zwrócić datę w odpowiedzi JSON (bez refetcha).
+            'created_at' => now(),
+        ]);
+
+        return response()->json([
+            'id' => $note->id,
+            'body' => $note->body,
+            'type' => $note->type,
+            'type_label' => $note->typeLabel(),
+            'author' => $note->author,
+            'created_at' => $note->created_at?->format('Y-m-d H:i'),
+        ], 201);
+    }
+
+    /**
+     * Usunięcie notatki CRM (AJAX).
+     */
+    public function destroyNote(Product $product, ParishNote $note)
+    {
+        abort_unless($note->product_id === $product->id, 404);
+
+        $note->delete();
+
+        return response()->json(['deleted' => true]);
     }
 
     public function update(Request $request, Product $product)
@@ -99,19 +191,29 @@ class ProductController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'regex:/^\d{1,5}([.,]\d{1,2})?$/'],
             'tag_uid' => ['required', 'string', 'max:255', Rule::unique('products', 'tag_uid')->ignore($product?->id)],
             'pickup_instruction' => ['nullable', 'string', 'max:2000'],
             'description_html' => ['nullable', 'string'],
-            'active' => ['nullable', 'boolean'],
+            // Pola CRM:
+            'phone' => ['nullable', 'string', 'max:255'],
+            'website' => ['nullable', 'string', 'max:255'],
+            'voivodeship' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', 'string', 'in:' . implode(',', array_keys(Product::STATUSES))],
+            'salesperson_id' => ['nullable', 'integer', Rule::exists('salespeople', 'id')],
         ], [], [
             'name' => 'nazwa', 'price' => 'cena', 'tag_uid' => 'UID taga',
             'pickup_instruction' => 'instrukcja odbioru', 'description_html' => 'opis',
+            'phone' => 'telefon', 'website' => 'strona www', 'voivodeship' => 'województwo',
+            'status' => 'status', 'salesperson_id' => 'handlowiec',
         ]);
 
         // Cena wpisywana w złotówkach — w bazie trzymamy grosze.
         $data['price'] = (int) round(((float) str_replace(',', '.', (string) $data['price'])) * 100);
-        $data['active'] = $request->boolean('active');
+        // Status steruje publikacją: aktywna => publiczna, pozostałe => lead (ukryta).
+        $data['active'] = $data['status'] === 'aktywna';
+        $data['salesperson_id'] = $data['salesperson_id'] ?: null;
 
         return $data;
     }

@@ -21,7 +21,8 @@
         ?>
         <nav class="panel-nav">
             <a href="<?php echo e(route('panel.dashboard')); ?>" class="<?php echo e(request()->routeIs('panel.dashboard') ? 'active' : ''); ?>">Dashboard</a>
-            <a href="<?php echo e(route('panel.products.index')); ?>" class="<?php echo e(request()->routeIs('panel.products.*') ? 'active' : ''); ?>">Produkty</a>
+            <a href="<?php echo e(route('panel.products.index')); ?>" class="<?php echo e(request()->routeIs('panel.products.*') || request()->routeIs('panel.parishes.*') ? 'active' : ''); ?>">Parafie</a>
+            <a href="<?php echo e(route('panel.salespeople.index')); ?>" class="<?php echo e(request()->routeIs('panel.salespeople.*') ? 'active' : ''); ?>">Handlowcy</a>
             <a href="<?php echo e(route('panel.positions.index')); ?>" class="<?php echo e(request()->routeIs('panel.positions.*') ? 'active' : ''); ?>">Praca</a>
             <a href="<?php echo e(route('panel.applications.index')); ?>" class="<?php echo e(request()->routeIs('panel.applications.*') ? 'active' : ''); ?>">
                 Aplikacje
