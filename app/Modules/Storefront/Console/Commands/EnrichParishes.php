@@ -13,7 +13,7 @@ class EnrichParishes extends Command
         {--json= : Alternatywnie: ścieżka do enriched JSON (np. /tmp/parishes2/enriched.json)}
         {--dry-run : Tylko policz dopasowania, nie zapisuj}';
 
-    protected $description = 'Wzbogaca potential_parishes o telefon i miasto z OSM (Overpass) — dopasowanie po name + zaokrąglone lat/lon, UPDATE tylko pustych pól (COALESCE). Nie tworzy duplikatów, nie rusza statusu/notatki/handlowca.';
+    protected $description = 'Wzbogaca potential_parishes o telefon i miasto z OSM (Overpass) / Nominatim — dopasowanie po name + zaokrąglone lat/lon, a gdy to nie trafi: geo-fallback (najbliższa parafia <60 m, haversine). UPDATE tylko pustych pól (COALESCE). Nie tworzy duplikatów, nie rusza statusu/notatki/handlowca.';
 
     public function handle(): int
     {
@@ -27,6 +27,7 @@ class EnrichParishes extends Command
         $dry = (bool) $this->option('dry-run');
 
         $matched = 0;
+        $geoMatched = 0;
         $phoneFilled = 0;
         $cityFilled = 0;
         $noMatch = 0;
@@ -58,6 +59,16 @@ class EnrichParishes extends Command
                 ->whereRaw('ROUND(lon, 5) = ?', [round($lon, 5)])
                 ->first();
 
+            // Geo-fallback: nazwy/współrzędne potrafią się minimalnie różnić.
+            // Gdy klucz dokładny nie trafi, bierzemy NAJBLIŻSZĄ parafię w promieniu
+            // <60 m (haversine). Bounding-box prefiltr (~78 m) ogranicza zapytanie.
+            if (! $existing) {
+                $existing = $this->geoFallback($lat, $lon);
+                if ($existing) {
+                    $geoMatched++;
+                }
+            }
+
             if (! $existing) {
                 $noMatch++;
                 continue;
@@ -83,12 +94,12 @@ class EnrichParishes extends Command
             }
 
             if ($processed % 2000 === 0) {
-                $this->info("Przetworzono {$processed}… (dopasowane: {$matched}, phone: {$phoneFilled}, city: {$cityFilled})");
+                $this->info("Przetworzono {$processed}… (dopasowane: {$matched}, geo: {$geoMatched}, phone: {$phoneFilled}, city: {$cityFilled})");
             }
         }
 
         $tag = $dry ? ' [DRY-RUN — nic nie zapisano]' : '';
-        $this->info("Gotowe{$tag}. Wejście: {$processed}, dopasowane do bazy: {$matched}, bez dopasowania: {$noMatch}.");
+        $this->info("Gotowe{$tag}. Wejście: {$processed}, dopasowane do bazy: {$matched} (w tym geo-fallback <60 m: {$geoMatched}), bez dopasowania: {$noMatch}.");
         $this->info("Uzupełniono telefonów: {$phoneFilled}, miast: {$cityFilled}.");
 
         $totalPhone = PotentialParish::whereNotNull('phone')->where('phone', '!=', '')->count();
@@ -96,6 +107,45 @@ class EnrichParishes extends Command
         $this->info("Stan tabeli — z telefonem: {$totalPhone}, z miastem: {$totalCity}, łącznie: " . PotentialParish::count() . '.');
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Geo-fallback: najbliższa parafia w promieniu <60 m (haversine), bez wymogu zgodności nazwy.
+     * Bounding-box prefiltr (~78 m / 0.0007°) ogranicza skan, potem dokładny haversine.
+     */
+    private function geoFallback(float $lat, float $lon): ?PotentialParish
+    {
+        $dLat = 0.0007;                                  // ~78 m N-S
+        $dLon = 0.0007 / max(cos(deg2rad($lat)), 0.01);  // ~78 m E-W na danej szerokości
+
+        $candidates = PotentialParish::whereBetween('lat', [$lat - $dLat, $lat + $dLat])
+            ->whereBetween('lon', [$lon - $dLon, $lon + $dLon])
+            ->get(['id', 'name', 'city', 'phone', 'lat', 'lon']);
+
+        $best = null;
+        $bestDist = 60.0; // metry
+        foreach ($candidates as $c) {
+            $d = $this->haversine($lat, $lon, (float) $c->lat, (float) $c->lon);
+            if ($d < $bestDist) {
+                $bestDist = $d;
+                $best = $c;
+            }
+        }
+
+        return $best;
+    }
+
+    /** Odległość haversine w metrach. */
+    private function haversine(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $r = 6_371_000.0;
+        $p1 = deg2rad($lat1);
+        $p2 = deg2rad($lat2);
+        $dp = deg2rad($lat2 - $lat1);
+        $dl = deg2rad($lon2 - $lon1);
+        $a = sin($dp / 2) ** 2 + cos($p1) * cos($p2) * sin($dl / 2) ** 2;
+
+        return 2 * $r * asin(min(1.0, sqrt($a)));
     }
 
     /** Wczytuje rekordy z JSON (--json) albo CSV (--file). Zwraca tablicę asocjacyjną lub null. */
