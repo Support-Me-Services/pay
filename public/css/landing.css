@@ -249,7 +249,7 @@ img{ display:block; max-width:100%; }
 /* tekst zamykający — wg Figmy tylko na mobile */
 .lp-closing{ display:none; }
 @media (max-width:560px){
-    .lp-closing{ display:block; max-width:340px; margin:0 auto; padding:152px 22px 4px; text-align:center; font-size:20px; line-height:33px; color:#000; }
+    .lp-closing{ display:block; max-width:299px; margin:0 auto; padding:91px 22px 4px; text-align:center; font-size:20px; line-height:33px; color:#000; }
     .lp-closing b{ font-weight:700; }
 }
 
