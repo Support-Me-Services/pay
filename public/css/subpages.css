@@ -1,0 +1,260 @@
+/* ============================================================
+   SupportME — PODSTRONY (subpages.css)
+   Spójne z marką landingu: Libre Baskerville (display) + Inter (UI),
+   granat #24324A, gradient 4E7FA7→1473C0, te same kółka „grafika".
+   Prefiks `sp-` — nie koliduje z `lp-` (landing.css).
+   Dotyczy: /p/{slug} (Taca), /praca, /praca/aplikuj, /kontakt.
+   ============================================================ */
+:root{
+    --sp-ink:     #24324A;
+    --sp-blue-a:  #4E7FA7;
+    --sp-blue-b:  #1473C0;
+    --sp-line:    #E6EAF0;
+    --sp-muted:   #5b6678;
+    --sp-pink-a:  #F8E9EE;
+    --sp-pink-b:  #EFD6DE;
+    --sp-error:   #b3261e;
+    --sp-radius:  14px;
+    --sp-radius-lg: 18px;
+    --sp-gutter:  97px;
+    --sp-display: 'Libre Baskerville', Georgia, 'Times New Roman', serif;
+    --sp-ui:      'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ---------- SUB-HERO (pasek wg Figmy REKRUTACJA) ---------- */
+.sp-subhero{
+    position:relative; z-index:2;
+    min-height:200px;
+    background:linear-gradient(134.5deg, rgba(78,127,167,.22) 13.6%, rgba(20,115,192,.22) 99.4%);
+    display:flex; align-items:center; justify-content:center;
+    padding:42px var(--sp-gutter);
+    text-align:center;
+}
+.sp-subhero__inner{ max-width:780px; }
+.sp-subhero h1{
+    font-family:var(--sp-display); font-weight:700; font-size:40px; line-height:1.06;
+    margin:0; color:var(--sp-ink);
+}
+.sp-subhero .sp-eyebrow{
+    font-family:var(--sp-ui); font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+    font-size:13px; line-height:1; color:var(--sp-blue-b); margin:0 0 14px;
+}
+.sp-subhero .sp-lede{
+    margin:16px auto 0; max-width:620px; font-size:18px; line-height:30px; color:var(--sp-ink);
+}
+.sp-subhero .sp-back{
+    display:inline-block; margin-bottom:14px; font-size:14px; color:var(--sp-ink); opacity:.75;
+}
+.sp-subhero .sp-back:hover{ opacity:1; }
+
+/* ---------- WRAP / SEKCJE ---------- */
+.sp-wrap{ position:relative; z-index:2; }
+.sp-container{ max-width:1142px; margin:0 auto; padding:0 var(--sp-gutter); }
+
+/* placeholder „grafika" — kółko jak na landingu */
+.sp-circle{
+    border-radius:50%;
+    background:radial-gradient(circle at 50% 38%, #EAF1F6, #D8E3EC);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--sp-display); font-weight:400; color:#24324a; text-align:center;
+    flex:0 0 auto;
+}
+.sp-circle--lg{ width:471px; height:471px; font-size:40px; }
+.sp-circle--md{ width:300px; height:300px; font-size:32px; }
+
+/* ---------- PRZYCISKI (spójne z marką) ---------- */
+.sp-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-family:var(--sp-ui); font-weight:600; font-size:18px; line-height:1;
+    padding:16px 28px; border-radius:999px; border:0; cursor:pointer;
+    color:#fff; background:linear-gradient(117deg, var(--sp-blue-a) 13.6%, var(--sp-blue-b) 99.4%);
+    transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    text-decoration:none;
+}
+.sp-btn:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(20,115,192,.28); }
+.sp-btn:disabled{ opacity:.6; cursor:default; transform:none; box-shadow:none; }
+.sp-btn--block{ display:flex; width:100%; }
+.sp-btn--ghost{
+    background:#fff; color:var(--sp-ink); border:1px solid var(--sp-line);
+}
+.sp-btn--ghost:hover{ box-shadow:0 10px 22px rgba(36,50,74,.12); }
+.sp-link{ color:var(--sp-blue-b); font-weight:600; }
+.sp-link:hover{ text-decoration:underline; }
+
+/* ---------- ALERTY ---------- */
+.sp-alert{ border-radius:var(--sp-radius); padding:14px 16px; font-size:16px; line-height:24px; margin-bottom:18px; }
+.sp-alert--ok{ background:#e8f4ed; border:1px solid #aed5c1; color:#1f5f44; }
+.sp-alert--err{ background:#fdecea; border:1px solid #f3c5c1; color:var(--sp-error); }
+
+/* ---------- KARTY / FORMULARZE ---------- */
+.sp-card{
+    background:#fff; border:1px solid var(--sp-line); border-radius:var(--sp-radius-lg);
+    box-shadow:0 8px 30px rgba(36,50,74,.06); padding:28px 26px;
+}
+.sp-field{ margin-bottom:18px; }
+.sp-field label{
+    display:block; font-family:var(--sp-ui); font-size:14px; font-weight:600;
+    color:var(--sp-ink); margin-bottom:7px;
+}
+.sp-field input, .sp-field textarea{
+    width:100%; box-sizing:border-box; font-family:var(--sp-ui); font-size:16px;
+    color:var(--sp-ink); background:#fff; border:1px solid var(--sp-line);
+    border-radius:var(--sp-radius); padding:12px 14px; line-height:1.4;
+}
+.sp-field input[type=file]{ padding:10px 12px; background:#F6F9FB; }
+.sp-field input:focus, .sp-field textarea:focus{
+    outline:none; border-color:var(--sp-blue-b);
+    box-shadow:0 0 0 3px rgba(20,115,192,.14);
+}
+.sp-field textarea{ resize:vertical; min-height:130px; }
+.sp-field .sp-hint{ font-size:13px; color:var(--sp-muted); margin-top:6px; }
+.sp-field-row{ display:flex; gap:14px; flex-wrap:wrap; }
+.sp-field-row .sp-field{ flex:1; min-width:200px; }
+.sp-form-error{ color:var(--sp-error); font-size:13px; margin-top:6px; }
+
+/* zgoda RODO (checkbox) */
+.sp-consent{ display:flex; gap:11px; align-items:flex-start; margin-bottom:18px; }
+.sp-consent input[type=checkbox]{
+    width:20px; height:20px; min-width:20px; margin-top:2px; accent-color:var(--sp-blue-b); cursor:pointer;
+}
+.sp-consent label{ font-size:14px; line-height:21px; color:var(--sp-muted); margin:0; font-weight:400; cursor:pointer; }
+.sp-consent a{ color:var(--sp-blue-b); }
+
+/* ============================================================
+   STRONA PARAFII / PRODUKTU — cyfrowa taca (/p/{slug})
+   ============================================================ */
+.sp-give{ padding:56px 0 96px; }
+.sp-give__grid{ display:flex; gap:48px; align-items:flex-start; }
+.sp-give__art{ flex:0 0 auto; }
+.sp-give__art .sp-circle--lg{ overflow:hidden; }
+.sp-give__art img{ width:471px; height:471px; border-radius:50%; object-fit:cover; display:block; }
+.sp-give__main{ flex:1; min-width:0; }
+.sp-give__city{
+    display:inline-block; font-family:var(--sp-ui); font-weight:600; font-size:13px;
+    color:#fff; background:rgba(36,50,74,.82); padding:6px 12px; border-radius:999px; margin-bottom:14px;
+}
+.sp-give__title{
+    font-family:var(--sp-display); font-weight:700; font-size:34px; line-height:1.12;
+    color:var(--sp-ink); margin:0 0 12px;
+}
+.sp-give__purpose{
+    display:inline-block; font-size:16px; color:var(--sp-blue-b); font-weight:600; margin:0 0 18px;
+}
+.sp-give__lead{ font-size:18px; line-height:30px; color:var(--sp-ink); margin:0 0 26px; }
+.sp-give__lead :is(p,ul,ol){ margin:0 0 .6em; }
+.sp-give__lead ul, .sp-give__lead ol{ padding-left:1.2em; }
+
+.sp-give-card{
+    background:#fff; border:1px solid var(--sp-line); border-radius:var(--sp-radius-lg);
+    box-shadow:0 8px 30px rgba(36,50,74,.06); padding:26px 24px;
+}
+.sp-give-card__label{ font-family:var(--sp-display); font-weight:700; font-size:20px; color:var(--sp-ink); margin:0 0 4px; }
+.sp-give-card__sub{ font-size:15px; color:var(--sp-muted); margin:0 0 18px; }
+
+.sp-amounts{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+.sp-amount{
+    font-family:var(--sp-ui); font-weight:700; font-size:22px; color:var(--sp-ink);
+    background:#F6F9FB; border:1.5px solid var(--sp-line); border-radius:var(--sp-radius);
+    padding:16px 8px; cursor:pointer; transition:border-color .15s ease, background .15s ease, transform .12s ease;
+}
+.sp-amount small{ font-size:13px; font-weight:600; color:var(--sp-muted); margin-left:3px; }
+.sp-amount:hover{ transform:translateY(-2px); }
+.sp-amount.is-active{
+    border-color:var(--sp-blue-b); background:rgba(20,115,192,.08); color:var(--sp-blue-b);
+}
+.sp-amount.is-active small{ color:var(--sp-blue-b); }
+
+.sp-custom{ margin-top:18px; }
+.sp-custom label{ display:block; font-size:14px; font-weight:600; color:var(--sp-ink); margin-bottom:7px; }
+.sp-custom__input{ position:relative; }
+.sp-custom__input input{
+    width:100%; box-sizing:border-box; font-family:var(--sp-ui); font-size:18px; font-weight:600;
+    color:var(--sp-ink); background:#fff; border:1px solid var(--sp-line); border-radius:var(--sp-radius);
+    padding:13px 44px 13px 14px;
+}
+.sp-custom__input input:focus{ outline:none; border-color:var(--sp-blue-b); box-shadow:0 0 0 3px rgba(20,115,192,.14); }
+.sp-custom__input .sp-suffix{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    font-weight:600; color:var(--sp-muted); pointer-events:none;
+}
+
+/* sticky CTA na dole */
+.sp-give-sticky{
+    position:sticky; bottom:0; z-index:6;
+    background:rgba(255,255,255,.94); backdrop-filter:blur(8px);
+    border-top:1px solid var(--sp-line); padding:14px var(--sp-gutter);
+    margin-top:32px;
+}
+.sp-give-sticky__inner{ max-width:760px; margin:0 auto; }
+.sp-give-sticky .sp-secure{ text-align:center; font-size:13px; color:var(--sp-muted); margin-top:10px; }
+
+/* ============================================================
+   PRACA / REKRUTACJA (/praca)
+   ============================================================ */
+.sp-careers{ padding:56px 0 96px; }
+.sp-careers__intro{ max-width:620px; margin:0 0 4px; }
+.sp-careers__intro p{ font-size:18px; line-height:30px; color:var(--sp-ink); margin:0; }
+
+.sp-careers__head{ display:flex; gap:48px; align-items:center; margin-bottom:56px; }
+.sp-careers__head .sp-circle--lg{ width:340px; height:340px; font-size:34px; }
+.sp-careers__head-body h2{
+    font-family:var(--sp-display); font-weight:700; font-size:30px; line-height:1.18; color:var(--sp-ink); margin:0 0 14px;
+}
+.sp-careers__head-body p{ font-size:18px; line-height:30px; color:var(--sp-ink); margin:0; }
+
+.sp-jobs{ max-width:760px; margin:0 auto; display:grid; gap:18px; }
+.sp-job{
+    background:#fff; border:1px solid var(--sp-line); border-radius:var(--sp-radius-lg);
+    box-shadow:0 8px 30px rgba(36,50,74,.06); padding:26px 26px 24px; scroll-margin-top:80px;
+}
+.sp-job h2{ font-family:var(--sp-display); font-weight:700; font-size:22px; color:var(--sp-ink); margin:0 0 12px; }
+.sp-job__chips{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.sp-job__chip{
+    display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
+    color:var(--sp-blue-b); background:rgba(20,115,192,.08); border:1px solid var(--sp-line);
+    border-radius:999px; padding:5px 12px;
+}
+.sp-job__desc{ color:var(--sp-ink); font-size:16px; line-height:26px; margin-bottom:18px; }
+.sp-job__desc :is(p,ul,ol){ margin:0 0 .6em; }
+.sp-job__desc ul, .sp-job__desc ol{ padding-left:1.2em; }
+.sp-job--empty{ text-align:center; color:var(--sp-muted); font-size:17px; padding:36px 0; }
+
+/* formularz wbudowany w ofertę (details) */
+.sp-apply{ border-top:1px dashed var(--sp-line); padding-top:16px; margin-top:4px; }
+.sp-apply > summary{ list-style:none; cursor:pointer; display:inline-flex; }
+.sp-apply > summary::-webkit-details-marker{ display:none; }
+.sp-apply > summary .sp-btn{ pointer-events:none; }
+.sp-apply[open] > summary{ margin-bottom:16px; }
+.sp-apply__inner{ animation:spFade .2s ease; }
+@keyframes spFade{ from{ opacity:0; transform:translateY(-4px);} to{ opacity:1; transform:none; } }
+
+/* ============================================================
+   APLIKUJ / KONTAKT — pojedyncza karta formularza
+   ============================================================ */
+.sp-formpage{ padding:56px 0 96px; }
+.sp-formpage__wrap{ max-width:620px; margin:0 auto; }
+.sp-formpage__foot{ text-align:center; margin-top:18px; }
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:1200px){
+    :root{ --sp-gutter:48px; }
+    .sp-circle--lg{ width:380px; height:380px; font-size:34px; }
+    .sp-give__art img{ width:380px; height:380px; }
+}
+@media (max-width:980px){
+    .sp-give__grid{ flex-direction:column; align-items:center; text-align:center; }
+    .sp-give__main{ width:100%; max-width:560px; }
+    .sp-give__title{ font-size:30px; }
+    .sp-amounts{ text-align:center; }
+    .sp-careers__head{ flex-direction:column; text-align:center; }
+    .sp-careers__intro{ text-align:center; margin-left:auto; margin-right:auto; }
+}
+@media (max-width:560px){
+    :root{ --sp-gutter:22px; }
+    .sp-subhero h1{ font-size:30px; }
+    .sp-give__art img, .sp-give__art .sp-circle--lg{ width:240px; height:240px; }
+    .sp-circle--lg{ width:240px; height:240px; font-size:26px; }
+    .sp-give__title{ font-size:26px; }
+    .sp-amounts{ grid-template-columns:repeat(2,1fr); }
+    .sp-give-sticky{ padding:12px 22px; }
+}
