@@ -18,6 +18,14 @@ Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('produc
 // Praca (kariera) — publiczna lista stanowisk
 Route::get('/praca', [CareersController::class, 'index'])->name('careers');
 
+// Formularz aplikacji — spontaniczna (bez oferty). MUSI być przed trasą z {position}.
+Route::get('/praca/aplikuj', [CareersController::class, 'applyForm'])->name('careers.apply.general');
+Route::post('/praca/aplikuj', [CareersController::class, 'applyStore'])->name('careers.apply.general.store');
+
+// Formularz aplikacji na konkretną ofertę
+Route::get('/praca/{position}/aplikuj', [CareersController::class, 'applyForm'])->name('careers.apply');
+Route::post('/praca/{position}/aplikuj', [CareersController::class, 'applyStore'])->name('careers.apply.store');
+
 // Formularz kontaktowy
 Route::get('/kontakt', [ContactController::class, 'show'])->name('contact.show');
 Route::post('/kontakt', [ContactController::class, 'store'])->name('contact.store');
@@ -61,5 +69,12 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::get('/messages', [Panel\MessageController::class, 'index'])->name('messages.index');
         Route::get('/messages/{message}', [Panel\MessageController::class, 'show'])->name('messages.show');
         Route::delete('/messages/{message}', [Panel\MessageController::class, 'destroy'])->name('messages.destroy');
+
+        // Skrzynka zgłoszeń rekrutacyjnych (aplikacje na oferty pracy)
+        Route::get('/applications', [Panel\ApplicationController::class, 'index'])->name('applications.index');
+        Route::get('/applications/{application}', [Panel\ApplicationController::class, 'show'])->name('applications.show');
+        Route::get('/applications/{application}/cv', [Panel\ApplicationController::class, 'cv'])->name('applications.cv');
+        Route::post('/applications/{application}/status', [Panel\ApplicationController::class, 'updateStatus'])->name('applications.status');
+        Route::delete('/applications/{application}', [Panel\ApplicationController::class, 'destroy'])->name('applications.destroy');
     });
 });

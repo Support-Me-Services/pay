@@ -17,11 +17,18 @@
         <div class="brand"><?php echo e(config('shop.name')); ?><span class="dot">.</span></div>
         <?php
             $unreadMessages = \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count();
+            $unreadApplications = \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count();
         ?>
         <nav class="panel-nav">
             <a href="<?php echo e(route('panel.dashboard')); ?>" class="<?php echo e(request()->routeIs('panel.dashboard') ? 'active' : ''); ?>">Dashboard</a>
             <a href="<?php echo e(route('panel.products.index')); ?>" class="<?php echo e(request()->routeIs('panel.products.*') ? 'active' : ''); ?>">Produkty</a>
             <a href="<?php echo e(route('panel.positions.index')); ?>" class="<?php echo e(request()->routeIs('panel.positions.*') ? 'active' : ''); ?>">Praca</a>
+            <a href="<?php echo e(route('panel.applications.index')); ?>" class="<?php echo e(request()->routeIs('panel.applications.*') ? 'active' : ''); ?>">
+                Aplikacje
+                <?php if($unreadApplications > 0): ?>
+                    <span class="badge badge-brand" style="margin-left:6px"><?php echo e($unreadApplications); ?></span>
+                <?php endif; ?>
+            </a>
             <a href="<?php echo e(route('panel.messages.index')); ?>" class="<?php echo e(request()->routeIs('panel.messages.*') ? 'active' : ''); ?>">
                 Wiadomości
                 <?php if($unreadMessages > 0): ?>

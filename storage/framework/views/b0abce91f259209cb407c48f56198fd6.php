@@ -20,11 +20,16 @@
                         <?php if($position->description_html): ?>
                             <div style="margin-bottom:14px"><?php echo $position->description_html; ?></div>
                         <?php endif; ?>
-                        <a href="<?php echo e(route('contact.show', ['stanowisko' => $position->title])); ?>" class="btn btn-primary">Aplikuj</a>
+                        <a href="<?php echo e(route('careers.apply', $position)); ?>" class="btn btn-primary">Aplikuj</a>
                     </div>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                     <p class="text-muted">Obecnie nie prowadzimy rekrutacji.</p>
                 <?php endif; ?>
+
+                <div style="margin-top:8px">
+                    <p class="text-muted" style="margin:0 0 8px">Nie znalazłeś oferty dla siebie?</p>
+                    <a href="<?php echo e(route('careers.apply.general')); ?>" class="btn btn-secondary">Aplikuj spontanicznie</a>
+                </div>
             </div>
         </div>
     </section>

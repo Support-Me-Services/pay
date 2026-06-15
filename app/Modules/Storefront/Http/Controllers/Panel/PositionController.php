@@ -10,7 +10,8 @@ class PositionController extends Controller
 {
     public function index()
     {
-        $positions = JobPosition::orderBy('sort')->orderBy('id')->get();
+        $positions = JobPosition::withCount('applications')
+            ->orderBy('sort')->orderBy('id')->get();
 
         return view('panel.positions.index', compact('positions'));
     }

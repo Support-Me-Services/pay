@@ -14,7 +14,7 @@
                 <table class="table">
                     <thead>
                     <tr>
-                        <th>Kol.</th><th>Tytuł</th><th>Lokalizacja</th><th>Rodzaj</th><th>Status</th><th></th>
+                        <th>Kol.</th><th>Tytuł</th><th>Lokalizacja</th><th>Rodzaj</th><th>Zgłoszenia</th><th>Status</th><th></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -24,6 +24,13 @@
                             <td class="fw-bold">{{ $position->title }}</td>
                             <td>{{ $position->location ?: '—' }}</td>
                             <td>{{ $position->employment_type ?: '—' }}</td>
+                            <td>
+                                @if($position->applications_count > 0)
+                                    <a href="{{ route('panel.applications.index', ['position' => $position->id]) }}">{{ $position->applications_count }}</a>
+                                @else
+                                    <span class="text-muted">0</span>
+                                @endif
+                            </td>
                             <td>
                                 @if($position->active)
                                     <span class="badge badge-success">aktywne</span>
@@ -48,7 +55,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="text-muted">Brak stanowisk.</td></tr>
+                        <tr><td colspan="7" class="text-muted">Brak stanowisk.</td></tr>
                     @endforelse
                     </tbody>
                 </table>

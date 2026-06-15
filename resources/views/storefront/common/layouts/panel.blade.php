@@ -17,11 +17,18 @@
         <div class="brand">{{ config('shop.name') }}<span class="dot">.</span></div>
         @php
             $unreadMessages = \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count();
+            $unreadApplications = \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count();
         @endphp
         <nav class="panel-nav">
             <a href="{{ route('panel.dashboard') }}" class="{{ request()->routeIs('panel.dashboard') ? 'active' : '' }}">Dashboard</a>
             <a href="{{ route('panel.products.index') }}" class="{{ request()->routeIs('panel.products.*') ? 'active' : '' }}">Produkty</a>
             <a href="{{ route('panel.positions.index') }}" class="{{ request()->routeIs('panel.positions.*') ? 'active' : '' }}">Praca</a>
+            <a href="{{ route('panel.applications.index') }}" class="{{ request()->routeIs('panel.applications.*') ? 'active' : '' }}">
+                Aplikacje
+                @if($unreadApplications > 0)
+                    <span class="badge badge-brand" style="margin-left:6px">{{ $unreadApplications }}</span>
+                @endif
+            </a>
             <a href="{{ route('panel.messages.index') }}" class="{{ request()->routeIs('panel.messages.*') ? 'active' : '' }}">
                 Wiadomości
                 @if($unreadMessages > 0)

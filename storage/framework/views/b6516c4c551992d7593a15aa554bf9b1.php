@@ -46,11 +46,16 @@
                 <?php if($position->description_html): ?>
                     <div class="job-desc"><?php echo $position->description_html; ?></div>
                 <?php endif; ?>
-                <a href="<?php echo e(route('contact.show', ['stanowisko' => $position->title])); ?>" class="btn btn-gold">Aplikuj</a>
+                <a href="<?php echo e(route('careers.apply', $position)); ?>" class="btn btn-gold">Aplikuj</a>
             </article>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <p class="job-empty">Obecnie nie prowadzimy rekrutacji. Zapraszamy ponownie wkrótce.</p>
         <?php endif; ?>
+
+        <div style="text-align:center;padding:12px 0 8px">
+            <p style="color:var(--ink-soft);margin:0 0 12px">Nie znalazłeś oferty dla siebie?</p>
+            <a href="<?php echo e(route('careers.apply.general')); ?>" class="btn btn-navy">Aplikuj spontanicznie</a>
+        </div>
     </div>
 <?php $__env->stopSection(); ?>
 

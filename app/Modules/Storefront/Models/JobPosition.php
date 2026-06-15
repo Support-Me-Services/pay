@@ -3,6 +3,7 @@
 namespace App\Modules\Storefront\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class JobPosition extends Model
 {
@@ -17,4 +18,12 @@ class JobPosition extends Model
         'sort' => 'integer',
         'created_at' => 'datetime',
     ];
+
+    /**
+     * Zgłoszenia rekrutacyjne wpływające na to stanowisko.
+     */
+    public function applications(): HasMany
+    {
+        return $this->hasMany(JobApplication::class, 'job_position_id');
+    }
 }

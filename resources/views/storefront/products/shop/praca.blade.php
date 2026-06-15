@@ -22,11 +22,16 @@
                         @if($position->description_html)
                             <div style="margin-bottom:14px">{!! $position->description_html !!}</div>
                         @endif
-                        <a href="{{ route('contact.show', ['stanowisko' => $position->title]) }}" class="btn btn-primary">Aplikuj</a>
+                        <a href="{{ route('careers.apply', $position) }}" class="btn btn-primary">Aplikuj</a>
                     </div>
                 @empty
                     <p class="text-muted">Obecnie nie prowadzimy rekrutacji.</p>
                 @endforelse
+
+                <div style="margin-top:8px">
+                    <p class="text-muted" style="margin:0 0 8px">Nie znalazłeś oferty dla siebie?</p>
+                    <a href="{{ route('careers.apply.general') }}" class="btn btn-secondary">Aplikuj spontanicznie</a>
+                </div>
             </div>
         </div>
     </section>
