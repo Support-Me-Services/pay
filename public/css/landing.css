@@ -223,7 +223,11 @@ img{ display:block; max-width:100%; }
     .lp-head h2{ font-size:40px; }
     .lp-support{ padding-top:44px; }   /* gap hero→„Kogo wspieramy" jak Figma (było +24px za dużo) */
     .lp-cats{ flex-direction:column; align-items:center; gap:8px; margin-top:72px; }
-    .lp-grid{ grid-template-columns:1fr; }
+    .lp-grid{ grid-template-columns:1fr; padding:0 var(--lp-gutter); }
+    /* strona kategorii: gutter po bokach (section .lp-catpage ma poziomy padding 0 —
+       te elementy dotykały krawędzi ekranu) */
+    .lp-catpage > .lp-back,
+    .lp-catpage > .lp-head{ padding-left:var(--lp-gutter); padding-right:var(--lp-gutter); }
     /* mobile: brak nagłówka „Jak to działa?" (nie ma go w ramce mobilnej Figmy) */
     .lp-how .lp-head{ display:none; }
     .lp-how{ margin:14px 0 0; padding:137px 0 36px; background:var(--lp-wave); }

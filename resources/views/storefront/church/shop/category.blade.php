@@ -174,6 +174,7 @@
                 .lp-search, .lp-search__empty{ padding-left:22px; padding-right:22px; }
                 .lp-search__field--grow{ flex-basis:100%; }
                 .lp-search__field{ flex:1 1 100%; }
+                .lp-search__btn{ flex:1 1 100%; width:100%; justify-content:center; padding-top:14px; padding-bottom:14px; }
             }
         </style>
 
