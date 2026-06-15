@@ -5,8 +5,8 @@
     <section class="lp-hero">
         <div class="lp-hero__inner">
             <div class="lp-hero__copy">
-                <h1>Technologia, która<br>pomaga czynić dobro</h1>
-                <p>Łączymy ludzi, wartości i nowoczesne płatności,<br>aby wspieranie ważnych inicjatyw było prostsze<br>niż kiedykolwiek wcześniej.</p>
+                <h1>Technologia,<br class="br-m">która <br class="br-d">pomaga czynić dobro</h1>
+                <p>Łączymy ludzi, wartości<br class="br-m"> i nowoczesne płatności,<br>aby wspieranie ważnych inicjatyw było prostsze<br class="br-d"> niż kiedykolwiek wcześniej.</p>
                 <div class="lp-badges">
                     <a href="#"><img src="{{ asset('img/landing/appstore.png') }}" alt="Pobierz w App Store"></a>
                     <a href="#"><img src="{{ asset('img/landing/googleplay.png') }}" alt="Pobierz w Google Play"></a>

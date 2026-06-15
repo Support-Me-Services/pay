@@ -84,8 +84,11 @@ Route::prefix('panel')->name('panel.')->group(function () {
                 ->selectRaw('voivodeship, COUNT(*) as c')
                 ->groupBy('voivodeship')->orderByDesc('c')->pluck('c', 'voivodeship');
             $total = \App\Modules\Storefront\Models\PotentialParish::count();
+            // Liczniki per status — pasek statusów nad mapą (te same statusy co w liście CRM).
+            $statusCounts = \App\Modules\Storefront\Models\PotentialParish::query()
+                ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
 
-            return view('panel.coverage.map', compact('byVoivodeship', 'total'));
+            return view('panel.coverage.map', compact('byVoivodeship', 'total', 'statusCounts'));
         })->name('coverage.map');
 
         // Handlowcy (CRM)

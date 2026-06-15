@@ -72,14 +72,17 @@
                                         {{ $value }}<small>zł</small>
                                     </button>
                                 @endforeach
-                            </div>
 
-                            <div class="sp-custom">
-                                <label for="customAmount">Inna kwota</label>
-                                <div class="sp-custom__input">
-                                    <input type="number" id="customAmount" inputmode="numeric" min="2" max="5000" step="1"
-                                           placeholder="np. 30" aria-label="Inna kwota w złotych">
-                                    <span class="sp-suffix">zł</span>
+                                {{-- „Inna kwota" — ostatni kafelek; po kliknięciu zamienia się w pole input --}}
+                                <div class="sp-amount sp-amount--custom" id="customTile" data-custom="1">
+                                    <button type="button" class="sp-amount__label" id="customTrigger" aria-pressed="false">
+                                        Inna kwota
+                                    </button>
+                                    <span class="sp-amount__input" hidden>
+                                        <input type="number" id="customAmount" inputmode="numeric" min="2" max="5000" step="1"
+                                               placeholder="np. 30" aria-label="Inna kwota w złotych">
+                                        <span class="sp-amount__suffix">zł</span>
+                                    </span>
                                 </div>
                             </div>
 
@@ -101,36 +104,73 @@
 @push('scripts')
 <script>
 (function () {
-    const opts   = document.querySelectorAll('.sp-amount');
-    const custom = document.getElementById('customAmount');
-    const field  = document.getElementById('amountField');
-    const cta     = document.getElementById('ctaAmount');
-    const btn     = document.getElementById('giveBtn');
-    const form    = document.getElementById('giveForm');
+    const presetOpts = document.querySelectorAll('.sp-amount[data-amount]');
+    const customTile = document.getElementById('customTile');
+    const trigger    = document.getElementById('customTrigger');
+    const label      = trigger;                                  // część „etykietowa" kafelka
+    const inputWrap  = customTile.querySelector('.sp-amount__input');
+    const custom     = document.getElementById('customAmount');
+    const field      = document.getElementById('amountField');
+    const cta        = document.getElementById('ctaAmount');
+    const btn        = document.getElementById('giveBtn');
+    const form       = document.getElementById('giveForm');
 
     function setAmount(value) {
         field.value = value;
         cta.textContent = value;
     }
 
-    opts.forEach(function (opt) {
+    function clearPresets() {
+        presetOpts.forEach(o => { o.classList.remove('is-active'); o.setAttribute('aria-pressed', 'false'); });
+    }
+
+    // tryb „etykieta" — kafelek pokazuje napis „Inna kwota"
+    function showLabel() {
+        customTile.classList.remove('is-active', 'is-editing');
+        trigger.setAttribute('aria-pressed', 'false');
+        label.hidden = false;
+        inputWrap.hidden = true;
+        custom.value = '';
+    }
+
+    // tryb „input" — kafelek staje się polem do wpisania kwoty
+    function showInput() {
+        clearPresets();
+        customTile.classList.add('is-active', 'is-editing');
+        trigger.setAttribute('aria-pressed', 'true');
+        label.hidden = true;
+        inputWrap.hidden = false;
+        custom.focus();
+        cta.textContent = '—';
+        field.value = '';
+    }
+
+    // Klik presetu: zaznacz preset i wróć z kafelka „Inna kwota" do trybu etykiety
+    presetOpts.forEach(function (opt) {
         opt.addEventListener('click', function () {
-            opts.forEach(o => { o.classList.remove('is-active'); o.setAttribute('aria-pressed', 'false'); });
+            showLabel();
             opt.classList.add('is-active');
             opt.setAttribute('aria-pressed', 'true');
-            custom.value = '';
             setAmount(opt.dataset.amount);
         });
     });
 
+    // Klik „Inna kwota": zamień kafelek na input
+    trigger.addEventListener('click', showInput);
+
+    // Wpisywanie własnej kwoty w kafelku-inpucie
     custom.addEventListener('input', function () {
         const v = parseInt(custom.value, 10);
-        opts.forEach(o => { o.classList.remove('is-active'); o.setAttribute('aria-pressed', 'false'); });
         if (!isNaN(v) && v > 0) {
+            // jeśli pokrywa się z presetem — podświetl preset i wpisz wartość
+            clearPresets();
+            customTile.classList.add('is-active');
+            presetOpts.forEach(o => {
+                if (parseInt(o.dataset.amount, 10) === v) { o.classList.add('is-active'); o.setAttribute('aria-pressed', 'true'); }
+            });
             setAmount(v);
-            // jeśli pokrywa się z presetem — podświetl go
-            opts.forEach(o => { if (parseInt(o.dataset.amount, 10) === v) { o.classList.add('is-active'); o.setAttribute('aria-pressed', 'true'); } });
         } else {
+            field.value = '';
             cta.textContent = '—';
         }
     });
@@ -139,7 +179,7 @@
         const v = parseInt(field.value, 10);
         if (isNaN(v) || v < 2) {
             e.preventDefault();
-            custom.focus();
+            if (inputWrap.hidden) { showInput(); } else { custom.focus(); }
             return;
         }
         btn.disabled = true;

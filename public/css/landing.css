@@ -62,6 +62,7 @@ img{ display:block; max-width:100%; }
     font-family:var(--lp-display); font-weight:700; font-size:40px; line-height:normal;
     margin:0 0 15px; color:var(--lp-ink); letter-spacing:0;
 }
+.lp-hero__copy .br-m{ display:none; }   /* łamanie mobilne — domyślnie ukryte (H1 + podtytuł) */
 .lp-hero__copy p{ margin:0; font-size:20px; line-height:33px; }
 .lp-badges{ display:flex; gap:9px; margin-top:27px; }
 .lp-badges img{ height:45px; width:auto; }
@@ -210,17 +211,23 @@ img{ display:block; max-width:100%; }
     .lp-header{ padding:25px 22px 18px; }
     .lp-nav{ display:none; }
     .lp-burger{ display:flex; }
-    .lp-hero{ min-height:0; }
+    .lp-hero{ min-height:0; background:linear-gradient(93.7deg, rgba(78,127,167,.22) 13.6%, rgba(20,115,192,.22) 99.4%); }
     .lp-hero__inner{ flex-direction:column; align-items:center; padding:64px 22px 56px; gap:36px; }
     .lp-hero__copy{ width:100%; max-width:360px; text-align:center; }
     .lp-hero__copy h1{ font-size:40px; }
+    .lp-hero__copy .br-m{ display:inline; }   /* łamanie mobilne (H1 + podtytuł) */
+    .lp-hero__copy .br-d{ display:none; }      /* łamanie desktopowe wyłączone */
     .lp-badges{ justify-content:center; }
     .lp-hero__art{ margin:0; align-self:center; }
     .lp-circle--hero{ width:min(342px,86vw); height:min(342px,86vw); font-size:40px; }
     .lp-head h2{ font-size:40px; }
-    .lp-cats{ flex-direction:column; align-items:center; gap:31px; margin-top:48px; }
+    .lp-cats{ flex-direction:column; align-items:center; gap:8px; margin-top:48px; }
     .lp-grid{ grid-template-columns:1fr; }
-    .lp-how{ padding:84px 0 96px; }
+    /* mobile: brak nagłówka „Jak to działa?" (nie ma go w ramce mobilnej Figmy) */
+    .lp-how .lp-head{ display:none; }
+    .lp-how{ margin:14px 0 0; padding:140px 0 36px; }
+    .lp-steps{ margin-top:0; gap:100px; }
+    .lp-step{ gap:31px; }
     .lp-circle--step{ width:min(261px,70vw); height:min(261px,70vw); font-size:40px; }
     .lp-step__body{ text-align:center; width:100%; max-width:354px; }
 }
@@ -228,7 +235,7 @@ img{ display:block; max-width:100%; }
 /* tekst zamykający — wg Figmy tylko na mobile */
 .lp-closing{ display:none; }
 @media (max-width:560px){
-    .lp-closing{ display:block; max-width:340px; margin:0 auto; padding:46px 22px 4px; text-align:center; font-size:20px; line-height:33px; color:#000; }
+    .lp-closing{ display:block; max-width:340px; margin:0 auto; padding:196px 22px 4px; text-align:center; font-size:20px; line-height:33px; color:#000; }
     .lp-closing b{ font-weight:700; }
 }
 

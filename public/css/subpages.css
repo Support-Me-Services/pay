@@ -164,18 +164,37 @@
 }
 .sp-amount.is-active small{ color:var(--sp-blue-b); }
 
-.sp-custom{ margin-top:18px; }
-.sp-custom label{ display:block; font-size:14px; font-weight:600; color:var(--sp-ink); margin-bottom:7px; }
-.sp-custom__input{ position:relative; }
-.sp-custom__input input{
-    width:100%; box-sizing:border-box; font-family:var(--sp-ui); font-size:18px; font-weight:600;
-    color:var(--sp-ink); background:#fff; border:1px solid var(--sp-line); border-radius:var(--sp-radius);
-    padding:13px 44px 13px 14px;
+/* „Inna kwota" — ostatni kafelek; w trybie edycji staje się polem input */
+.sp-amount--custom{
+    grid-column:1 / -1;                 /* ostatni, pełna szerokość rzędu presetów */
+    position:relative; padding:0;        /* padding kontrolują wewnętrzne elementy */
+    background:#F6F9FB; border:1.5px solid var(--sp-line); border-radius:var(--sp-radius);
+    transition:border-color .15s ease, background .15s ease, transform .12s ease;
+    overflow:hidden;
 }
-.sp-custom__input input:focus{ outline:none; border-color:var(--sp-blue-b); box-shadow:0 0 0 3px rgba(20,115,192,.14); }
-.sp-custom__input .sp-suffix{
-    position:absolute; right:16px; top:50%; transform:translateY(-50%);
-    font-weight:600; color:var(--sp-muted); pointer-events:none;
+.sp-amount--custom:hover{ transform:translateY(-2px); }
+.sp-amount--custom.is-active{ border-color:var(--sp-blue-b); background:rgba(20,115,192,.08); }
+.sp-amount--custom.is-editing{ transform:none; }
+
+/* przycisk-etykieta wypełniający kafelek */
+.sp-amount__label{
+    display:block; width:100%; box-sizing:border-box;
+    font-family:var(--sp-ui); font-weight:700; font-size:18px; color:var(--sp-ink);
+    background:transparent; border:0; cursor:pointer; padding:16px 8px; line-height:1;
+}
+.sp-amount--custom.is-active .sp-amount__label{ color:var(--sp-blue-b); }
+
+/* pole input wewnątrz kafelka (tło kafelka staje się inputem) */
+.sp-amount__input{ display:flex; align-items:center; position:relative; padding:0; }
+.sp-amount__input input{
+    width:100%; box-sizing:border-box; font-family:var(--sp-ui); font-size:20px; font-weight:700;
+    color:var(--sp-ink); background:transparent; border:0; border-radius:var(--sp-radius);
+    padding:16px 46px 16px 16px; text-align:center;
+}
+.sp-amount__input input:focus{ outline:none; }
+.sp-amount__suffix{
+    position:absolute; right:18px; top:50%; transform:translateY(-50%);
+    font-size:14px; font-weight:600; color:var(--sp-muted); pointer-events:none;
 }
 
 /* CTA „Wesprzyj" — pod presetami i polem „Inna kwota", pełna szerokość karty */
@@ -227,6 +246,11 @@
 .sp-job--rich h2{ margin-bottom:14px; }
 .sp-job__chip--remote{ color:#1f5f44; background:#e8f4ed; border-color:#aed5c1; }
 .sp-job__excerpt{ font-size:16px; line-height:26px; color:var(--sp-muted); margin:0 0 18px; }
+
+/* stopka karty oferty — link do pełnego ogłoszenia */
+.sp-job__foot{ display:flex; }
+.sp-job__foot .sp-btn--cta{ font-size:17px; padding:14px 26px; }
+@media (max-width:560px){ .sp-job__foot .sp-btn--cta{ width:100%; } }
 
 /* formularz wbudowany w ofertę (details) */
 .sp-apply{ border-top:1px dashed var(--sp-line); padding-top:16px; margin-top:4px; }

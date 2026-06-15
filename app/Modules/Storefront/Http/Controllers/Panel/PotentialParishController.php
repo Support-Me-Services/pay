@@ -60,8 +60,9 @@ class PotentialParishController extends Controller
     }
 
     /**
-     * Zmiana statusu leada + notatka + przypisanie handlowca.
+     * Zmiana statusu leada + notatka + telefon + przypisanie handlowca.
      * Ustawia called_at przy pierwszym przejściu do statusu „zadzwoniono”.
+     * Obsługuje auto-zapis AJAX (zwraca JSON) oraz klasyczny POST (redirect).
      */
     public function updateStatus(Request $request, PotentialParish $potentialParish)
     {
@@ -69,13 +70,17 @@ class PotentialParishController extends Controller
             'status'         => ['required', 'string', 'in:' . implode(',', array_keys(PotentialParish::STATUSES))],
             'salesperson_id' => ['nullable', 'integer', 'exists:salespeople,id'],
             'note'           => ['nullable', 'string', 'max:5000'],
+            'phone'          => ['nullable', 'string', 'max:50'],
         ], [], [
-            'status' => 'status', 'salesperson_id' => 'handlowiec', 'note' => 'notatka',
+            'status' => 'status', 'salesperson_id' => 'handlowiec',
+            'note' => 'notatka', 'phone' => 'telefon',
         ]);
 
         $potentialParish->status = $data['status'];
         $potentialParish->salesperson_id = $data['salesperson_id'] ?? null;
         $potentialParish->note = $data['note'] ?? null;
+        $potentialParish->phone = isset($data['phone']) && trim($data['phone']) !== ''
+            ? trim($data['phone']) : null;
 
         // Stempel pierwszego kontaktu — ustawiany raz, gdy lead przechodzi do „zadzwoniono”.
         if ($data['status'] === 'zadzwoniono' && $potentialParish->called_at === null) {
@@ -83,6 +88,21 @@ class PotentialParishController extends Controller
         }
 
         $potentialParish->save();
+
+        // Auto-zapis AJAX — zwracamy JSON bez przeładowania strony.
+        if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
+            $potentialParish->loadMissing('salesperson');
+
+            return response()->json([
+                'ok'            => true,
+                'message'       => 'Zapisano',
+                'status'        => $potentialParish->status,
+                'status_label'  => $potentialParish->statusLabel(),
+                'status_colors' => $potentialParish->statusColors(),
+                'salesperson'   => $potentialParish->salesperson?->name,
+                'called_at'     => $potentialParish->called_at?->format('d.m.Y'),
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Status parafii zaktualizowany.');
     }

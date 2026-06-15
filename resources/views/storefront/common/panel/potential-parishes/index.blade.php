@@ -73,49 +73,50 @@
                 <table class="table">
                     <thead>
                     <tr>
-                        <th>Nazwa</th><th>Miasto</th><th>Woj.</th><th>Status</th><th>Handlowiec</th><th>Akcje</th>
+                        <th>Nazwa</th><th>Miasto</th><th>Woj.</th><th>Status</th><th>Telefon</th><th>Handlowiec</th>
                     </tr>
                     </thead>
                     <tbody>
                     @forelse($parishes as $parish)
-                        <tr>
-                            <td class="fw-bold">
-                                {{ $parish->name }}
-                                @if($parish->denomination)
-                                    <br><span class="text-muted" style="font-weight:400;font-size:.78rem">{{ $parish->denomination }}</span>
-                                @endif
-                            </td>
+                        @php [$bg, $fg] = $parish->statusColors(); @endphp
+                        <tr data-parish-row="{{ $parish->id }}">
+                            <td class="fw-bold">{{ $parish->name }}</td>
                             <td>{{ $parish->city ?: '—' }}</td>
                             <td>{{ $parish->voivodeship ?: '—' }}</td>
                             <td>
-                                @php [$bg, $fg] = $parish->statusColors(); @endphp
-                                <span class="badge" style="background:{{ $bg }};color:{{ $fg }};font-weight:600">{{ $parish->statusLabel() }}</span>
-                                @if($parish->called_at)
-                                    <br><span class="text-muted" style="font-size:.72rem">{{ $parish->called_at->format('d.m.Y') }}</span>
-                                @endif
+                                <span class="badge js-status-badge" data-badge-for="{{ $parish->id }}"
+                                      style="background:{{ $bg }};color:{{ $fg }};font-weight:600">{{ $parish->statusLabel() }}</span>
+                                <br><span class="text-muted js-called-at" data-called-for="{{ $parish->id }}"
+                                          style="font-size:.72rem">{{ $parish->called_at?->format('d.m.Y') }}</span>
                             </td>
-                            <td>{{ $parish->salesperson?->name ?: '—' }}</td>
-                            <td class="actions nowrap">
-                                <a href="#" onclick="document.getElementById('row-{{ $parish->id }}').classList.toggle('hidden'); return false;">Zmień status</a>
+                            <td class="text-muted" data-phone-cell="{{ $parish->id }}" style="font-size:.82rem">
+                                {{ $parish->phone ?: '—' }}
                             </td>
+                            <td class="text-muted js-sp-cell" data-sp-for="{{ $parish->id }}">{{ $parish->salesperson?->name ?: '—' }}</td>
                         </tr>
-                        {{-- Wiersz edycji inline (form): status + handlowiec + notatka --}}
-                        <tr id="row-{{ $parish->id }}" class="hidden">
-                            <td colspan="6" style="background:#fafbfc">
-                                <form method="POST" action="{{ route('panel.potential-parishes.status', $parish) }}"
-                                      class="d-flex gap-1" style="flex-wrap:wrap;align-items:flex-end">
-                                    @csrf
+                        {{-- Formularz auto-zapisu (status + handlowiec + telefon + notatka). Bez przycisku „Zapisz”. --}}
+                        <tr data-parish-edit="{{ $parish->id }}">
+                            <td colspan="6" style="background:#fafbfc;padding-top:6px;padding-bottom:14px">
+                                <div class="js-parish-form d-flex gap-1"
+                                     data-url="{{ route('panel.potential-parishes.status', $parish) }}"
+                                     data-id="{{ $parish->id }}"
+                                     style="flex-wrap:wrap;align-items:flex-end">
                                     <div>
-                                        <label class="text-muted" style="display:block;font-size:.78rem;margin-bottom:2px">Status</label>
-                                        <select name="status" style="min-width:160px">
+                                        <label class="text-muted" style="display:block;font-size:.74rem;margin-bottom:2px">Status</label>
+                                        <select name="status" class="js-f-status" style="min-width:160px">
                                             @foreach(\App\Modules\Storefront\Models\PotentialParish::STATUSES as $key => $label)
                                                 <option value="{{ $key }}" @selected($parish->status === $key)>{{ $label }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="text-muted" style="display:block;font-size:.78rem;margin-bottom:2px">Handlowiec</label>
-                                        <select name="salesperson_id" style="min-width:180px">
+                                        <label class="text-muted" style="display:block;font-size:.74rem;margin-bottom:2px">Telefon</label>
+                                        <input type="text" name="phone" class="js-f-phone" value="{{ $parish->phone }}"
+                                               placeholder="np. 12 345 67 89" style="min-width:150px">
+                                    </div>
+                                    <div>
+                                        <label class="text-muted" style="display:block;font-size:.74rem;margin-bottom:2px">Handlowiec</label>
+                                        <select name="salesperson_id" class="js-f-sp" style="min-width:180px">
                                             <option value="">— brak —</option>
                                             @foreach($salespeople as $sp)
                                                 <option value="{{ $sp->id }}" @selected($parish->salesperson_id === $sp->id)>{{ $sp->name }}</option>
@@ -123,13 +124,11 @@
                                         </select>
                                     </div>
                                     <div style="flex:1;min-width:240px">
-                                        <label class="text-muted" style="display:block;font-size:.78rem;margin-bottom:2px">Notatka</label>
-                                        <input type="text" name="note" value="{{ $parish->note }}" placeholder="Notatka z rozmowy…" style="width:100%">
+                                        <label class="text-muted" style="display:block;font-size:.74rem;margin-bottom:2px">Notatka</label>
+                                        <input type="text" name="note" class="js-f-note" value="{{ $parish->note }}"
+                                               placeholder="Notatka z rozmowy…" style="width:100%">
                                     </div>
-                                    <div>
-                                        <button type="submit" class="btn btn-primary btn-sm">Zapisz</button>
-                                    </div>
-                                </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -138,9 +137,120 @@
                     </tbody>
                 </table>
             </div>
-            <div class="mt-2">{{ $parishes->links() }}</div>
+
+            {{-- Paginacja: własny markup spójny z panelem (Tailwind z links() nie pasuje do theme.css).
+                 Querystring filtrów zachowany przez ->withQueryString() w kontrolerze. --}}
+            @if($parishes->hasPages())
+                <div class="parish-pagination">
+                    @if($parishes->onFirstPage())
+                        <span class="btn btn-secondary btn-sm is-disabled">← Poprzednia</span>
+                    @else
+                        <a href="{{ $parishes->previousPageUrl() }}" class="btn btn-secondary btn-sm" rel="prev">← Poprzednia</a>
+                    @endif
+
+                    <span class="parish-pagination-info text-muted">
+                        Strona {{ $parishes->currentPage() }} z {{ $parishes->lastPage() }}
+                        ({{ number_format($parishes->total(), 0, ',', ' ') }} parafii)
+                    </span>
+
+                    @if($parishes->hasMorePages())
+                        <a href="{{ $parishes->nextPageUrl() }}" class="btn btn-secondary btn-sm" rel="next">Następna →</a>
+                    @else
+                        <span class="btn btn-secondary btn-sm is-disabled">Następna →</span>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 
-    <style>tr.hidden { display: none; }</style>
+    {{-- Toast „Zapisano” (auto-zapis) --}}
+    <div id="parish-toast" class="parish-toast" role="status" aria-live="polite"></div>
+
+    <style>
+        .parish-pagination { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px; }
+        .parish-pagination .is-disabled { opacity:.45; pointer-events:none; cursor:default; }
+        .parish-pagination-info { font-size:.85rem; }
+        .parish-toast {
+            position: fixed; right: 24px; bottom: 24px; z-index: 99999;
+            background: var(--success, #00a36c); color: #fff;
+            padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: .9rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,.18);
+            opacity: 0; transform: translateY(12px); pointer-events: none;
+            transition: opacity .22s ease, transform .22s ease;
+        }
+        .parish-toast.is-error { background: var(--error, #d90000); }
+        .parish-toast.show { opacity: 1; transform: translateY(0); }
+    </style>
+
+    @push('scripts')
+    <script>
+        (function () {
+            const csrf = @json(csrf_token());
+            const toast = document.getElementById('parish-toast');
+            let toastTimer = null;
+
+            function showToast(msg, isError) {
+                if (!toast) return;
+                toast.textContent = msg;
+                toast.classList.toggle('is-error', !!isError);
+                toast.classList.add('show');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => toast.classList.remove('show'), 2000);
+            }
+
+            function save(form) {
+                const id = form.dataset.id;
+                const url = form.dataset.url;
+                const payload = {
+                    status:         form.querySelector('.js-f-status').value,
+                    salesperson_id: form.querySelector('.js-f-sp').value || null,
+                    note:           form.querySelector('.js-f-note').value,
+                    phone:          form.querySelector('.js-f-phone').value,
+                };
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                })
+                    .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j)))
+                    .then(data => {
+                        // Aktualizacja widoku w wierszu bez przeładowania.
+                        const badge = document.querySelector('[data-badge-for="' + id + '"]');
+                        if (badge && data.status_colors) {
+                            badge.textContent = data.status_label;
+                            badge.style.background = data.status_colors[0];
+                            badge.style.color = data.status_colors[1];
+                        }
+                        const called = document.querySelector('[data-called-for="' + id + '"]');
+                        if (called) called.textContent = data.called_at || '';
+                        const phoneCell = document.querySelector('[data-phone-cell="' + id + '"]');
+                        if (phoneCell) phoneCell.textContent = payload.phone.trim() || '—';
+                        const spCell = document.querySelector('[data-sp-for="' + id + '"]');
+                        if (spCell) spCell.textContent = data.salesperson || '—';
+
+                        showToast(data.message || 'Zapisano', false);
+                    })
+                    .catch(() => showToast('Nie udało się zapisać', true));
+            }
+
+            document.querySelectorAll('.js-parish-form').forEach(function (form) {
+                // Selecty → zapis na change; pola tekstowe → zapis na blur.
+                form.querySelectorAll('select').forEach(el =>
+                    el.addEventListener('change', () => save(form)));
+                form.querySelectorAll('input[type="text"]').forEach(el => {
+                    el.addEventListener('blur', () => save(form));
+                    el.addEventListener('keydown', e => {
+                        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+                    });
+                });
+            });
+        })();
+    </script>
+    @endpush
 @endsection

@@ -12,7 +12,8 @@
     .of-back:hover{ opacity:1; }
     .of-hero h1{ font-family:var(--lp-display); font-weight:700; font-size:clamp(28px,5vw,40px); line-height:normal; color:var(--lp-ink); margin:0 0 16px; }
     .of-tags{ display:flex; flex-wrap:wrap; gap:10px; }
-    .of-tag{ display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid var(--lp-wave); color:var(--lp-ink); font-size:14px; font-weight:600; padding:7px 14px; border-radius:999px; }
+    .of-tag{ display:inline-flex; align-items:center; background:#fff; border:1px solid var(--lp-wave); color:var(--lp-ink); font-size:14px; font-weight:600; padding:7px 14px; border-radius:999px; }
+    .of-tag--remote{ background:#e8f4ed; border-color:#aed5c1; color:#1f5f44; }
     .of-body{ max-width:820px; margin:0 auto; padding:48px 24px 24px; }
     .of-desc{ font-family:var(--lp-ui); font-size:18px; line-height:1.7; color:var(--lp-ink); }
     .of-desc h2,.of-desc h3{ font-family:var(--lp-display); color:var(--lp-ink); margin:1.4em 0 .5em; }
@@ -43,9 +44,9 @@
             <a class="of-back" href="{{ route('careers') }}">← Wszystkie oferty</a>
             <h1>{{ $position->title }}</h1>
             <div class="of-tags">
-                @if($isRemote)<span class="of-tag">🌐 Praca zdalna</span>@endif
-                @if($emp)<span class="of-tag">🕒 {{ $emp }}</span>@endif
-                @if($loc)<span class="of-tag">📍 {{ $loc }}</span>@endif
+                @if($emp)<span class="of-tag">{{ $emp }}</span>@endif
+                @if($loc)<span class="of-tag">{{ $loc }}</span>@endif
+                @if($isRemote)<span class="of-tag of-tag--remote">Praca zdalna</span>@endif
             </div>
         </div>
     </section>

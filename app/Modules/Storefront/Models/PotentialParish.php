@@ -20,7 +20,7 @@ class PotentialParish extends Model
     ];
 
     protected $fillable = [
-        'name', 'city', 'voivodeship', 'denomination', 'lat', 'lon',
+        'name', 'city', 'voivodeship', 'denomination', 'phone', 'lat', 'lon',
         'status', 'salesperson_id', 'note', 'called_at',
     ];
 
