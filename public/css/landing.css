@@ -234,7 +234,7 @@ img{ display:block; max-width:100%; }
     /* mobile: jednolity niebieski panel na pełną szerokość (jak w ramce Figmy),
        z falującą białą krawędzią u góry — zamiast desktopowej fali */
     .lp-how::before{
-        background:#fff; top:auto; bottom:auto; height:48px; max-width:none; width:100%;
+        background:#fff; top:0; bottom:auto; height:48px; max-width:none; width:100%;
         left:0; transform:none;
         -webkit-mask:url('/img/landing/wave-cap.svg') top center/100% 48px no-repeat;
         mask:url('/img/landing/wave-cap.svg') top center/100% 48px no-repeat;
