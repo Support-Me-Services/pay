@@ -26,6 +26,10 @@
             <a href="{{ route('careers') }}">Rekrutacja</a>
             <a href="{{ route('regulamin') }}">Inwestorzy i akcjonariusze</a>
         </nav>
+        <button class="lp-burger" type="button" aria-label="Menu" aria-expanded="false"
+                onclick="var h=this.closest('.lp-header');var o=h.classList.toggle('lp-open');this.setAttribute('aria-expanded',o)">
+            <span></span><span></span><span></span>
+        </button>
     </header>
 
     @yield('content')

@@ -207,13 +207,27 @@ img{ display:block; max-width:100%; }
     body.lp{ font-size:18px; }
     :root{ --lp-gutter:22px; }
     .lp-header{ padding:18px 22px; }
-    .lp-nav{ gap:18px; }
-    .lp-nav a:not(.lp-nav__shop){ display:none; }
+    .lp-nav{ display:none; }
+    .lp-burger{ display:flex; }
     .lp-hero__copy h1{ font-size:32px; }
     .lp-head h2{ font-size:30px; }
     .lp-circle--hero{ width:260px; height:260px; font-size:28px; }
+    .lp-cats{ flex-direction:column; align-items:center; gap:30px; margin-top:40px; }
     .lp-grid{ grid-template-columns:1fr; }
     .lp-how{ padding:90px 0 110px; }
+}
+
+/* hamburger (tylko mobile) — wg Figmy: logo + ikona menu */
+.lp-burger{ display:none; flex-direction:column; gap:4px; width:24px; height:17px; justify-content:center; background:none; border:0; cursor:pointer; padding:0; }
+.lp-burger span{ display:block; height:2px; width:100%; background:var(--lp-ink); border-radius:2px; }
+@media (max-width:560px){
+    .lp-header.lp-open .lp-nav{
+        display:flex; flex-direction:column; gap:14px;
+        position:absolute; top:100%; right:22px; margin-top:8px;
+        background:#fff; border:1px solid #E6EAF0; border-radius:12px;
+        padding:14px 18px; box-shadow:0 14px 34px rgba(36,50,74,.16); z-index:20;
+    }
+    .lp-header.lp-open .lp-nav a:not(.lp-nav__shop){ display:block; }
 }
 
 /* === category icons (panel) === */
