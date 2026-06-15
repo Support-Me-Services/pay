@@ -22,6 +22,7 @@
         <nav class="panel-nav">
             <a href="{{ route('panel.dashboard') }}" class="{{ request()->routeIs('panel.dashboard') ? 'active' : '' }}">Dashboard</a>
             <a href="{{ route('panel.products.index') }}" class="{{ request()->routeIs('panel.products.*') || request()->routeIs('panel.parishes.*') ? 'active' : '' }}">Parafie</a>
+            <a href="{{ route('panel.categories.index') }}" class="{{ request()->routeIs('panel.categories.*') ? 'active' : '' }}">Kategorie</a>
             <a href="{{ route('panel.salespeople.index') }}" class="{{ request()->routeIs('panel.salespeople.*') ? 'active' : '' }}">Handlowcy</a>
             <a href="{{ route('panel.positions.index') }}" class="{{ request()->routeIs('panel.positions.*') ? 'active' : '' }}">Praca</a>
             <a href="{{ route('panel.applications.index') }}" class="{{ request()->routeIs('panel.applications.*') ? 'active' : '' }}">

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 // Sklep
 Route::get('/', [StorefrontController::class, 'index'])->name('home');
+Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
 Route::get('/p/{slug}', [StorefrontController::class, 'show'])->name('product.show');
@@ -60,6 +61,15 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::post('/parishes/{product}/status', [Panel\ProductController::class, 'status'])->name('parishes.status');
         Route::post('/parishes/{product}/notes', [Panel\ProductController::class, 'storeNote'])->name('parishes.notes.store');
         Route::delete('/parishes/{product}/notes/{note}', [Panel\ProductController::class, 'destroyNote'])->name('parishes.notes.destroy');
+
+        // Kategorie wsparcia (sekcja „Kogo wspieramy?") — drzewo edytowalne
+        Route::get('/categories', [Panel\CategoryController::class, 'index'])->name('categories.index');
+        Route::get('/categories/create', [Panel\CategoryController::class, 'create'])->name('categories.create');
+        Route::post('/categories', [Panel\CategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/{category}/edit', [Panel\CategoryController::class, 'edit'])->name('categories.edit');
+        Route::put('/categories/{category}', [Panel\CategoryController::class, 'update'])->name('categories.update');
+        Route::post('/categories/{category}/reorder', [Panel\CategoryController::class, 'reorder'])->name('categories.reorder');
+        Route::delete('/categories/{category}', [Panel\CategoryController::class, 'destroy'])->name('categories.destroy');
 
         // Handlowcy (CRM)
         Route::get('/salespeople', [Panel\SalespersonController::class, 'index'])->name('salespeople.index');

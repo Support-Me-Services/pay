@@ -3,6 +3,7 @@
 namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Jobs\SendGatewayEvent;
+use App\Modules\Storefront\Models\Category;
 use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Product;
@@ -12,13 +13,50 @@ use Illuminate\Http\Request;
 class StorefrontController extends Controller
 {
     /**
-     * GET / — lista aktywnych produktów.
+     * GET / — strona główna (landing SupportME wg Figmy).
+     *
+     * Kategorie wsparcia (sekcja „Kogo wspieramy?") czytane z bazy — drzewo
+     * edytowalne z panelu. Render zachowuje kontrakt widoku: slug, label_html,
+     * intro oraz opcjonalnie icon (ścieżka względem storage lub null).
      */
     public function index()
     {
-        $products = Product::where('active', true)->orderBy('id')->get();
+        $categories = Category::query()
+            ->active()->topLevel()->ordered()
+            ->get()
+            ->map(fn (Category $cat) => [
+                'slug' => $cat->slug,
+                'label_html' => $cat->label_html ?: e($cat->label_text),
+                'intro' => $cat->intro,
+                'icon' => $cat->icon,
+            ])
+            ->all();
 
-        return view('shop.index', compact('products'));
+        return view('shop.home', ['categories' => $categories]);
+    }
+
+    /**
+     * GET /kategoria/{slug} — strona kategorii. Dla source=='parishes' listuje
+     * realne parafie z bazy; pozostałe kategorie mają pusty stan.
+     */
+    public function category(string $slug)
+    {
+        $model = Category::query()->active()->where('slug', $slug)->first();
+
+        abort_if($model === null, 404);
+
+        $products = $model->source === 'parishes'
+            ? Product::where('active', true)->orderBy('id')->get()
+            : collect();
+
+        $category = [
+            'label_text' => $model->label_text,
+            'intro' => $model->intro,
+            'slug' => $model->slug,
+            'source' => $model->source,
+        ];
+
+        return view('shop.category', compact('category', 'products'));
     }
 
     /**

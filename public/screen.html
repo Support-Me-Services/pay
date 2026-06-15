@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Porównanie Figma ↔ Live — SupportME</title>
+<style>
+  :root{ --bg:#0e1726; --panel:#16223a; --ink:#e8eef7; --muted:#9fb0c8; --accent:#3a9bff; --line:#26344f; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif; }
+  header{ padding:22px 28px; border-bottom:1px solid var(--line); position:sticky; top:0; background:rgba(14,23,38,.92); backdrop-filter:blur(8px); z-index:20; }
+  h1{ margin:0 0 4px; font-size:20px; }
+  .sub{ color:var(--muted); font-size:13px; }
+  .wrap{ max-width:1500px; margin:0 auto; padding:24px 28px 80px; }
+  .tabs{ display:flex; gap:8px; margin:18px 0 4px; flex-wrap:wrap; }
+  .tab{ background:var(--panel); border:1px solid var(--line); color:var(--ink); padding:9px 16px; border-radius:999px; cursor:pointer; font-size:14px; }
+  .tab.active{ background:var(--accent); border-color:var(--accent); color:#021223; font-weight:600; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+  .toolbar{ display:flex; align-items:center; gap:18px; margin:18px 0; flex-wrap:wrap; }
+  .seg{ display:flex; background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button{ background:transparent; border:0; color:var(--ink); padding:8px 14px; cursor:pointer; font-size:13px; }
+  .seg button.active{ background:var(--accent); color:#021223; font-weight:600; }
+  .meta{ color:var(--muted); font-size:12.5px; }
+  label.slider{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:13px; }
+  input[type=range]{ width:200px; }
+
+  /* side by side */
+  .side{ display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+  .col{ background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .col h3{ margin:0; padding:11px 16px; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--line); display:flex; justify-content:space-between; }
+  .col h3 .tag{ color:var(--accent); }
+  .col img{ display:block; width:100%; height:auto; }
+
+  /* overlay */
+  .overlay{ position:relative; background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; max-width:var(--ow,1336px); margin:0 auto; }
+  .overlay img{ display:block; width:100%; height:auto; }
+  .overlay .top{ position:absolute; inset:0; }
+  .overlay .top img{ width:100%; }
+  .hint{ color:var(--muted); font-size:12.5px; margin-top:10px; line-height:1.5; }
+  .legend{ display:flex; gap:16px; margin-left:auto; color:var(--muted); font-size:12.5px; }
+  .legend b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Porównanie 1:1 — Figma ↔ please-support-me.com</h1>
+  <div class="sub">Strona główna SupportME. Lewa / spód = projekt Figma · Prawa / wierzch = wersja live. Wygenerowano z Figma MCP + Playwright.</div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-view="desktop">🖥️ Desktop (1336&nbsp;px)</button>
+    <button class="tab" data-view="mobile">📱 Mobile (402&nbsp;px)</button>
+  </div>
+
+  <!-- DESKTOP -->
+  <section class="view active" id="desktop">
+    <div class="toolbar">
+      <div class="seg" data-mode-for="desktop">
+        <button class="active" data-mode="side">Obok siebie</button>
+        <button data-mode="overlay">Nakładka</button>
+      </div>
+      <label class="slider" data-only="overlay" hidden>Krycie live
+        <input type="range" min="0" max="100" value="55" data-opacity="desktop">
+        <span data-opval="desktop">55%</span>
+      </label>
+      <div class="legend"><span>Figma: <b>1336×3815</b></span><span>Live: <b>1336×3408</b></span></div>
+    </div>
+
+    <div class="side" data-side="desktop">
+      <div class="col"><h3>Figma <span class="tag">projekt</span></h3><img src="/img/compare/figma-desktop.png" alt="Figma desktop"></div>
+      <div class="col"><h3>Live <span class="tag">please-support-me.com</span></h3><img src="/img/compare/live-desktop.png" alt="Live desktop"></div>
+    </div>
+
+    <div class="overlay" data-overlay="desktop" style="--ow:1336px; display:none;">
+      <img src="/img/compare/figma-desktop.png" alt="Figma desktop base">
+      <div class="top"><img src="/img/compare/live-desktop.png" alt="Live desktop top" style="opacity:.55"></div>
+    </div>
+    <div class="hint">Wskazówka: w trybie „Nakładka" suwak zmienia krycie warstwy live nałożonej na Figmę (wyrównane do lewej‑góry, ta sama szerokość). Różnice w wysokości wynikają z rytmu pionowego — dociągany do 1:1.</div>
+  </section>
+
+  <!-- MOBILE -->
+  <section class="view" id="mobile">
+    <div class="toolbar">
+      <div class="seg" data-mode-for="mobile">
+        <button class="active" data-mode="side">Obok siebie</button>
+        <button data-mode="overlay">Nakładka</button>
+      </div>
+      <label class="slider" data-only="overlay" hidden>Krycie live
+        <input type="range" min="0" max="100" value="55" data-opacity="mobile">
+        <span data-opval="mobile">55%</span>
+      </label>
+      <div class="legend"><span>Figma: <b>402×5754</b></span><span>Live: <b>402×4646</b></span></div>
+    </div>
+
+    <div class="side" data-side="mobile">
+      <div class="col"><h3>Figma <span class="tag">projekt</span></h3><img src="/img/compare/figma-mobile.png" alt="Figma mobile"></div>
+      <div class="col"><h3>Live <span class="tag">please-support-me.com</span></h3><img src="/img/compare/live-mobile.png" alt="Live mobile"></div>
+    </div>
+
+    <div class="overlay" data-overlay="mobile" style="--ow:402px; display:none;">
+      <img src="/img/compare/figma-mobile.png" alt="Figma mobile base">
+      <div class="top"><img src="/img/compare/live-mobile.png" alt="Live mobile top" style="opacity:.55"></div>
+    </div>
+    <div class="hint">Mobile Figma wyeksportowane proporcjonalnie (skala MCP). Układ live: jedna kolumna, kroki ułożone pionowo.</div>
+  </section>
+</div>
+
+<script>
+  // tab switching
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById(t.dataset.view).classList.add('active');
+  });
+  // mode (side/overlay) per view
+  document.querySelectorAll('.seg[data-mode-for]').forEach(seg=>{
+    const view=seg.dataset.modeFor;
+    seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+      seg.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      const mode=b.dataset.mode;
+      document.querySelector('[data-side="'+view+'"]').style.display = mode==='side'?'grid':'none';
+      document.querySelector('[data-overlay="'+view+'"]').style.display = mode==='overlay'?'block':'none';
+      const lbl=document.querySelector('#'+view+' label[data-only="overlay"]');
+      if(lbl) lbl.hidden = mode!=='overlay';
+    });
+  });
+  // opacity sliders
+  document.querySelectorAll('input[data-opacity]').forEach(r=>{
+    const view=r.dataset.opacity;
+    r.oninput=()=>{
+      const v=r.value;
+      document.querySelector('[data-overlay="'+view+'"] .top img').style.opacity = v/100;
+      document.querySelector('[data-opval="'+view+'"]').textContent = v+'%';
+    };
+  });
+</script>
+</body>
+</html>
