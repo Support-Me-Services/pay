@@ -191,11 +191,16 @@
             function saveFromPopup(box) {
                 const id = box.dataset.id;
                 const url = statusUrlTpl.replace('__ID__', id);
+                // Normalizacja: telefon pusty → null (spójnie z zapisem po stronie serwera),
+                // salesperson_id jako number (porównanie === w popupHtml wymaga typu liczbowego).
+                const phoneVal = box.querySelector('.js-f-phone').value.trim();
+                const spVal = box.querySelector('.js-f-sp').value;
+                const noteVal = box.querySelector('.js-f-note').value;
                 const payload = {
                     status:         box.querySelector('.js-f-status').value,
-                    salesperson_id: box.querySelector('.js-f-sp').value || null,
-                    note:           box.querySelector('.js-f-note').value,
-                    phone:          box.querySelector('.js-f-phone').value,
+                    salesperson_id: spVal || null,
+                    note:           noteVal,
+                    phone:          phoneVal,
                 };
                 fetch(url, {
                     method: 'POST',
@@ -209,11 +214,26 @@
                 })
                     .then(r => r.ok ? r.json() : r.json().then(j => Promise.reject(j)))
                     .then(data => {
-                        // Odśwież kolor markera wg nowego statusu.
                         const marker = box._marker;
-                        if (marker && data.status_colors) {
-                            marker.setIcon(makeIcon(data.status_colors[0]));
-                            marker._parish.status = payload.status;
+                        if (marker) {
+                            // KLUCZOWE: zaktualizuj obiekt danych markera w pamięci, żeby
+                            // ponowne otwarcie popupu (rebuild z p) pokazało nowe wartości,
+                            // a nie starą kopię z czasu wczytania mapy.
+                            const p = marker._parish;
+                            if (p) {
+                                p.status = payload.status;
+                                p.phone = phoneVal !== '' ? phoneVal : null;
+                                p.note = noteVal !== '' ? noteVal : null;
+                                p.salesperson_id = spVal !== '' ? parseInt(spVal, 10) : null;
+                            }
+                            // Odśwież kolor markera wg nowego statusu.
+                            if (data.status_colors) {
+                                marker.setIcon(makeIcon(data.status_colors[0]));
+                            }
+                            // NIE przebudowujemy otwartego popupu (użytkownik w nim pracuje —
+                            // reset zburzyłby fokus/listenery). bindPopup(() => popupHtml(p))
+                            // przebuduje treść z aktualnego p przy NASTĘPNYM otwarciu markera,
+                            // więc ponowne kliknięcie pokaże już zapisane wartości.
                         }
                         showToast(data.message || 'Zapisano', false);
                     })

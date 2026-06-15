@@ -10,10 +10,10 @@
 
     {{-- Liczniki: łączny + per status (klikalne jako filtr) --}}
     <div class="d-flex gap-1 mb-3" style="flex-wrap:wrap">
-        <a href="{{ route('panel.potential-parishes.index', array_filter(['voivodeship' => $voivodeship, 'city' => $city, 'name' => $name, 'salesperson_id' => $salespersonId])) }}"
+        <a href="{{ route('panel.potential-parishes.index', array_filter(['voivodeship' => $voivodeship, 'city' => $city, 'name' => $name, 'salesperson_id' => $salespersonId]) + ['has_phone' => $hasPhone]) }}"
            class="btn btn-sm {{ $status ? 'btn-secondary' : 'btn-primary' }}">Wszystkie ({{ number_format($total, 0, ',', ' ') }})</a>
         @foreach(\App\Modules\Storefront\Models\PotentialParish::STATUSES as $key => $label)
-            <a href="{{ route('panel.potential-parishes.index', array_filter(['status' => $key, 'voivodeship' => $voivodeship, 'city' => $city, 'name' => $name, 'salesperson_id' => $salespersonId])) }}"
+            <a href="{{ route('panel.potential-parishes.index', array_filter(['status' => $key, 'voivodeship' => $voivodeship, 'city' => $city, 'name' => $name, 'salesperson_id' => $salespersonId]) + ['has_phone' => $hasPhone]) }}"
                class="btn btn-sm {{ $status === $key ? 'btn-primary' : 'btn-secondary' }}">
                 {{ $label }} ({{ number_format($statusCounts[$key] ?? 0, 0, ',', ' ') }})
             </a>
@@ -57,6 +57,14 @@
                     @foreach($salespeople as $sp)
                         <option value="{{ $sp->id }}" @selected($salespersonId === $sp->id)>{{ $sp->name }}</option>
                     @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="text-muted parish-flabel">Numer telefonu</label>
+                <select name="has_phone" style="min-width:150px">
+                    <option value="with" @selected($hasPhone === 'with')>Z telefonem</option>
+                    <option value="without" @selected($hasPhone === 'without')>Bez telefonu</option>
+                    <option value="all" @selected($hasPhone === 'all')>Wszystkie</option>
                 </select>
             </div>
             <div>

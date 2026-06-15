@@ -24,7 +24,22 @@ class PotentialParishController extends Controller
         $name = trim((string) $request->query('name', ''));
         $city = trim((string) $request->query('city', ''));
 
+        // Filtr „ma numer telefonu": with = tylko z telefonem (DOMYŚLNIE), without = bez, all = wszystkie.
+        // Brak parametru w URL → domyślnie 'with' (pokazujemy tylko parafie z numerem).
+        $hasPhone = $request->query('has_phone', 'with');
+        if (! in_array($hasPhone, ['with', 'without', 'all'], true)) {
+            $hasPhone = 'with';
+        }
+
         $query = PotentialParish::with('salesperson');
+
+        if ($hasPhone === 'with') {
+            $query->whereNotNull('phone')->where('phone', '!=', '');
+        } elseif ($hasPhone === 'without') {
+            $query->where(function ($q) {
+                $q->whereNull('phone')->orWhere('phone', '=', '');
+            });
+        }
 
         if ($voivodeship) {
             $query->where('voivodeship', $voivodeship);
@@ -55,7 +70,7 @@ class PotentialParishController extends Controller
 
         return view('panel.potential-parishes.index', compact(
             'parishes', 'total', 'statusCounts', 'salespeople',
-            'voivodeship', 'status', 'salespersonId', 'name', 'city'
+            'voivodeship', 'status', 'salespersonId', 'name', 'city', 'hasPhone'
         ));
     }
 
