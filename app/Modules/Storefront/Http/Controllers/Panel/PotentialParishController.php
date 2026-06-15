@@ -60,6 +60,64 @@ class PotentialParishController extends Controller
     }
 
     /**
+     * Dane do interaktywnej mapy pokrycia (Leaflet + markercluster).
+     * Zwraca lekki JSON wszystkich parafii ze współrzędnymi — ładowany AJAX-em
+     * po starcie mapy (NIE wklejamy 20k punktów inline do HTML).
+     * Obsługuje TE SAME filtry co lista (name, city, voivodeship, status, salesperson_id),
+     * dzięki czemu markery można filtrować re-fetchem endpointu.
+     */
+    public function coverageData(Request $request)
+    {
+        $voivodeship = in_array($request->query('voivodeship'), Salesperson::VOIVODESHIPS, true)
+            ? $request->query('voivodeship') : null;
+        $status = in_array($request->query('status'), array_keys(PotentialParish::STATUSES), true)
+            ? $request->query('status') : null;
+        $salespersonId = $request->filled('salesperson_id') ? (int) $request->query('salesperson_id') : null;
+        $name = trim((string) $request->query('name', ''));
+
+        $query = PotentialParish::query()
+            ->whereNotNull('lat')->whereNotNull('lon');
+
+        if ($voivodeship) {
+            $query->where('voivodeship', $voivodeship);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($salespersonId) {
+            $query->where('salesperson_id', $salespersonId);
+        }
+        if ($name !== '') {
+            $query->where('name', 'like', "%{$name}%");
+        }
+
+        // Tylko kolumny potrzebne do markera/popupu/filtrowania (oszczędność transferu).
+        $rows = $query->select([
+            'id', 'name', 'city', 'voivodeship', 'lat', 'lon',
+            'phone', 'status', 'salesperson_id', 'note',
+        ])->get();
+
+        $points = $rows->map(fn (PotentialParish $p) => [
+            'id'             => $p->id,
+            'name'           => $p->name,
+            'city'           => $p->city,
+            'voivodeship'    => $p->voivodeship,
+            'lat'            => (float) $p->lat,
+            'lon'            => (float) $p->lon,
+            'phone'          => $p->phone,
+            'status'         => $p->status,
+            'salesperson_id' => $p->salesperson_id,
+            'note'           => $p->note,
+            'color'          => $p->statusColors()[0],
+        ])->values();
+
+        return response()->json([
+            'count'  => $points->count(),
+            'points' => $points,
+        ]);
+    }
+
+    /**
      * Zmiana statusu leada + notatka + telefon + przypisanie handlowca.
      * Ustawia called_at przy pierwszym przejściu do statusu „zadzwoniono”.
      * Obsługuje auto-zapis AJAX (zwraca JSON) oraz klasyczny POST (redirect).

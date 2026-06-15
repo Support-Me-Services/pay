@@ -67,7 +67,9 @@
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     font-family:var(--sp-ui); font-weight:600; font-size:18px; line-height:1;
     padding:16px 28px; border-radius:999px; border:0; cursor:pointer;
-    color:#fff; background:linear-gradient(117deg, var(--sp-blue-a) 13.6%, var(--sp-blue-b) 99.4%);
+    /* !important pokonuje `.lp a{ color:inherit }` z landing.css (wyższa specyficzność),
+       przez którą przyciski-anchory dziedziczyły ciemny kolor i były nieczytelne. */
+    color:#fff !important; background:linear-gradient(117deg, var(--sp-blue-a) 13.6%, var(--sp-blue-b) 99.4%);
     transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
     text-decoration:none;
 }
@@ -75,7 +77,8 @@
 .sp-btn:disabled{ opacity:.6; cursor:default; transform:none; box-shadow:none; }
 .sp-btn--block{ display:flex; width:100%; }
 .sp-btn--ghost{
-    background:#fff; color:var(--sp-ink); border:1px solid var(--sp-line);
+    /* ghost ma ciemny tekst na białym tle — nadpisujemy biel z .sp-btn !important */
+    background:#fff; color:var(--sp-ink) !important; border:1px solid var(--sp-line);
 }
 .sp-btn--ghost:hover{ box-shadow:0 10px 22px rgba(36,50,74,.12); }
 .sp-link{ color:var(--sp-blue-b); font-weight:600; }

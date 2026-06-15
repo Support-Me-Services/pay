@@ -87,9 +87,14 @@ Route::prefix('panel')->name('panel.')->group(function () {
             // Liczniki per status — pasek statusów nad mapą (te same statusy co w liście CRM).
             $statusCounts = \App\Modules\Storefront\Models\PotentialParish::query()
                 ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
+            // Handlowcy do selecta w filtrach mapy i w popupie edycji markera.
+            $salespeople = \App\Modules\Storefront\Models\Salesperson::orderBy('name')->get();
 
-            return view('panel.coverage.map', compact('byVoivodeship', 'total', 'statusCounts'));
+            return view('panel.coverage.map', compact('byVoivodeship', 'total', 'statusCounts', 'salespeople'));
         })->name('coverage.map');
+
+        // Dane markerów do interaktywnej mapy (JSON, ładowane AJAX-em po starcie mapy).
+        Route::get('/coverage/data', [Panel\PotentialParishController::class, 'coverageData'])->name('coverage.data');
 
         // Handlowcy (CRM)
         Route::get('/salespeople', [Panel\SalespersonController::class, 'index'])->name('salespeople.index');
