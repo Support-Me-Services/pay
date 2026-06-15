@@ -76,6 +76,13 @@ img{ display:block; max-width:100%; }
 }
 .lp-circle--hero{ width:385px; height:385px; font-size:40px; }
 
+/* placeholdery grafik w kółkach (tymczasowe, ikony Tabler w kolorze marki) */
+.lp-circle--ghero{ background:#fff url('/img/landing/ph/ghero.svg') center/46% no-repeat; }
+.lp-circle--g1{ background:#fff url('/img/landing/ph/g1.svg') center/42% no-repeat; }
+.lp-circle--g2{ background:#fff url('/img/landing/ph/g2.svg') center/42% no-repeat; }
+.lp-circle--g3{ background:#fff url('/img/landing/ph/g3.svg') center/42% no-repeat; }
+.lp-circle--g4{ background:#fff url('/img/landing/ph/g4.svg') center/42% no-repeat; }
+
 /* ---------- KOGO WSPIERAMY ---------- */
 .lp-section{ position:relative; z-index:2; }
 .lp-support{ padding-top:68px; }

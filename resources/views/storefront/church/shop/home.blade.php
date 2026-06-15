@@ -13,7 +13,7 @@
                 </div>
             </div>
             <div class="lp-hero__art">
-                <div class="lp-circle lp-circle--hero">grafika</div>
+                <div class="lp-circle lp-circle--hero lp-circle--ghero" aria-hidden="true"></div>
             </div>
         </div>
     </section>
@@ -44,7 +44,7 @@
         <div class="lp-steps">
             {{-- KROK 1 — grafika z lewej --}}
             <div class="lp-step">
-                <div class="lp-step__art"><div class="lp-circle lp-circle--step">grafika</div></div>
+                <div class="lp-step__art"><div class="lp-circle lp-circle--step lp-circle--g1" aria-hidden="true"></div></div>
                 <div class="lp-step__body">
                     <p class="lp-step__num">KROK 1</p>
                     <p><b>Zbliż telefon do znacznika NFC</b><br>W miejscu zbiórki, podczas wydarzenia, w organizacji lub przestrzeni publicznej zbliżasz telefon do oznaczonego punktu NFC.</p>
@@ -53,7 +53,7 @@
 
             {{-- KROK 2 — grafika z prawej --}}
             <div class="lp-step lp-step--rev">
-                <div class="lp-step__art"><div class="lp-circle lp-circle--step">grafika</div></div>
+                <div class="lp-step__art"><div class="lp-circle lp-circle--step lp-circle--g2" aria-hidden="true"></div></div>
                 <div class="lp-step__body">
                     <p class="lp-step__num">KROK 2</p>
                     <p><b>Wybierz wsparcie</b><br>Automatycznie otwiera się bezpieczna strona płatności.</p>
@@ -63,7 +63,7 @@
 
             {{-- KROK 3 — grafika z lewej --}}
             <div class="lp-step">
-                <div class="lp-step__art"><div class="lp-circle lp-circle--step">grafika</div></div>
+                <div class="lp-step__art"><div class="lp-circle lp-circle--step lp-circle--g3" aria-hidden="true"></div></div>
                 <div class="lp-step__body">
                     <p class="lp-step__num">KROK 3</p>
                     <p><b>Dokonaj płatności</b></p>
@@ -72,7 +72,7 @@
 
             {{-- KROK 4 — grafika z prawej --}}
             <div class="lp-step lp-step--rev">
-                <div class="lp-step__art"><div class="lp-circle lp-circle--step">grafika</div></div>
+                <div class="lp-step__art"><div class="lp-circle lp-circle--step lp-circle--g4" aria-hidden="true"></div></div>
                 <div class="lp-step__body">
                     <p class="lp-step__num">KROK 4</p>
                     <p><b>Otrzymujesz podziękowanie</b><br>Po zakończonej wpłacie trafiasz na specjalnie przygotowaną stronę podziękowania.</p>
