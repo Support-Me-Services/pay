@@ -4,7 +4,7 @@
 @section('meta-description', 'Wyślij swoje zgłoszenie rekrutacyjne wraz z CV.')
 
 @push('head')
-<link rel="stylesheet" href="{{ asset('css/subpages.css') }}?v={{ filemtime(public_path('css/subpages.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/subpages.css') }}?v={{ substr(md5_file(public_path('css/subpages.css')), 0, 10) }}">
 <style>
     .sp-thanks{ text-align:center; padding:48px 28px; }
     .sp-thanks__icon{ width:72px; height:72px; margin:0 auto 18px; border-radius:50%;

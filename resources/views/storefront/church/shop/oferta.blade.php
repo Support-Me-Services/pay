@@ -4,7 +4,7 @@
 @section('meta-description', \Illuminate\Support\Str::limit(trim(strip_tags($position->description_html ?? '')), 150) ?: 'Dołącz do zespołu SupportME — technologia, która pomaga czynić dobro.')
 
 @push('head')
-<link rel="stylesheet" href="{{ asset('css/subpages.css') }}?v={{ filemtime(public_path('css/subpages.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/subpages.css') }}?v={{ substr(md5_file(public_path('css/subpages.css')), 0, 10) }}">
 <style>
     .of-hero{ background:linear-gradient(112deg, rgba(78,127,167,.22) 13.6%, rgba(20,115,192,.22) 99.4%); padding:42px 0 46px; }
     .of-hero__inner{ max-width:820px; margin:0 auto; padding:0 24px; }

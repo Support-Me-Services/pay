@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ filemtime(public_path('css/theme.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/theme.css') }}?v={{ substr(md5_file(public_path('css/theme.css')), 0, 10) }}">
 </head>
 <body>
     <div class="auth-wrap">
