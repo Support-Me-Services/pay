@@ -9,7 +9,7 @@
 
 @php
     // Sugerowane kwoty (zł). Domyślnie zaznaczona = cena bazowa parafii (zwykle 20 zł).
-    $presets = [10, 20, 50, 100, 200, 500];
+    $presets = [10, 20, 50, 100, 200];
     $default = (int) round($product->price / 100);
     if (! in_array($default, $presets, true)) {
         $default = 20;

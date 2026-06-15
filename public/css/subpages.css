@@ -169,8 +169,7 @@
 
 /* „Inna kwota" — ostatni kafelek; w trybie edycji staje się polem input */
 .sp-amount--custom{
-    grid-column:1 / -1;                 /* ostatni, pełna szerokość rzędu presetów */
-    position:relative; padding:0;        /* padding kontrolują wewnętrzne elementy */
+    position:relative; padding:0;        /* zwykły kafelek w miejscu „500"; padding wewnątrz */
     background:#F6F9FB; border:1.5px solid var(--sp-line); border-radius:var(--sp-radius);
     transition:border-color .15s ease, background .15s ease, transform .12s ease;
     overflow:hidden;
@@ -186,9 +185,11 @@
     background:transparent; border:0; cursor:pointer; padding:16px 8px; line-height:1;
 }
 .sp-amount--custom.is-active .sp-amount__label{ color:var(--sp-blue-b); }
+.sp-amount__label[hidden]{ display:none; }   /* atrybut hidden musi działać mimo display:block */
 
 /* pole input wewnątrz kafelka (tło kafelka staje się inputem) */
 .sp-amount__input{ display:flex; align-items:center; position:relative; padding:0; }
+.sp-amount__input[hidden]{ display:none; }   /* atrybut hidden musi działać mimo display:flex */
 .sp-amount__input input{
     width:100%; box-sizing:border-box; font-family:var(--sp-ui); font-size:20px; font-weight:700;
     color:var(--sp-ink); background:transparent; border:0; border-radius:var(--sp-radius);
