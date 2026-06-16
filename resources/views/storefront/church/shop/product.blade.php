@@ -145,9 +145,10 @@
         field.value = '';
     }
 
-    // Klik presetu: zaznacz preset i wróć z kafelka „Inna kwota" do trybu etykiety
+    // Klik presetu: odznacz poprzedni, zaznacz nowy i wróć z kafelka „Inna kwota" do trybu etykiety
     presetOpts.forEach(function (opt) {
         opt.addEventListener('click', function () {
+            clearPresets();            // usuń border/aktywność z poprzednio wybranej kwoty
             showLabel();
             opt.classList.add('is-active');
             opt.setAttribute('aria-pressed', 'true');
