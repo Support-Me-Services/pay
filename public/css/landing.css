@@ -46,6 +46,7 @@ img{ display:block; max-width:100%; }
 .lp-cart-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; margin-left:5px; border-radius:999px; background:var(--lp-blue-b); color:#fff; font-size:12px; font-weight:700; line-height:1; }
 .lp-nav a{ font-size:14px; line-height:33px; color:var(--lp-ink); white-space:nowrap; }
 .lp-nav a:hover{ color:var(--lp-blue-b); }
+.lp-nav a[aria-current="page"]{ font-weight:700; }
 
 /* ---------- HERO ---------- */
 .lp-hero{

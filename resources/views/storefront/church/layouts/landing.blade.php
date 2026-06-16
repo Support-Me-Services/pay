@@ -23,10 +23,10 @@
         </a>
         @php $lpCartCount = (int) collect(session('merch_cart', []))->sum(); @endphp
         <nav class="lp-nav">
-            <a href="{{ route('main') }}">Strona główna</a>
-            <a class="lp-nav__shop" href="{{ route('home') }}">Sklep</a>
-            <a href="{{ route('careers') }}">Rekrutacja</a>
-            <a href="{{ route('regulamin') }}">Inwestorzy i akcjonariusze</a>
+            <a href="{{ route('main') }}" @if(request()->routeIs('main')) aria-current="page" @endif>Strona główna</a>
+            <a class="lp-nav__shop" href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif>Sklep</a>
+            <a href="{{ route('careers') }}" @if(request()->routeIs('careers')) aria-current="page" @endif>Rekrutacja</a>
+            <a href="{{ route('investors') }}" @if(request()->routeIs('investors')) aria-current="page" @endif>Inwestorzy i akcjonariusze</a>
             <a href="{{ route('cart') }}" class="lp-nav__cart" aria-label="Koszyk">Koszyk{!! $lpCartCount > 0 ? '<span class="lp-cart-badge">'.$lpCartCount.'</span>' : '' !!}</a>
         </nav>
         <button class="lp-burger" type="button" aria-label="Menu" aria-expanded="false"
@@ -42,7 +42,7 @@
             <img class="lp-footer__logo" src="{{ asset('img/landing/logo-footer.svg') }}" alt="SupportME">
             <div class="lp-footer__links">
                 <a href="{{ route('careers') }}">Rekrutacja</a>
-                <a href="{{ route('regulamin') }}">Inwestorzy i akcjonariusze</a>
+                <a href="{{ route('investors') }}">Inwestorzy i akcjonariusze</a>
                 <a href="{{ route('regulamin') }}">Polityka prywatności i regulamin</a>
             </div>
             <a class="lp-footer__social" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">

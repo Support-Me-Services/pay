@@ -1,0 +1,70 @@
+/* ============================================================
+   Inwestorzy i akcjonariusze — wg Figmy „Inwestorzy" (48:977 / 48:1021)
+   Layout marki SupportME (header/stopka z layouts.landing).
+   Tokeny: granat #24324A · niebieski 1473C0 · pastelowy róż #e7a0b4/.28
+   Fonty: Libre Baskerville (nagłówki) + Inter (treść).
+   ============================================================ */
+:root{
+    --inv-ink:#24324a; --inv-pink:rgba(231,160,180,.28);
+    --inv-band:#f6f9fb; --inv-gutter:88px;
+    --inv-display:'Libre Baskerville',Georgia,serif; --inv-ui:'Inter',system-ui,sans-serif;
+}
+
+/* ---------- HERO (pastelowy gradient, jak shop-hero) ---------- */
+.inv-hero{
+    min-height:200px; display:flex; align-items:center; justify-content:center;
+    padding:0 22px;
+    background:linear-gradient(134.55deg, rgba(78,127,167,.22) 13.6%, rgba(20,115,192,.22) 99.4%);
+}
+.inv-hero h1{
+    font-family:var(--inv-display); font-weight:700; font-size:40px; line-height:50px;
+    color:var(--inv-ink); margin:0; text-align:center;
+}
+
+/* ---------- INTRO (biały) ---------- */
+.inv-intro{ max-width:854px; margin:0 auto; padding:70px var(--inv-gutter) 70px; text-align:center; }
+.inv-intro h2{
+    font-family:var(--inv-display); font-weight:700; font-size:40px; line-height:50px;
+    color:var(--inv-ink); margin:0 0 15px;
+}
+.inv-intro p{
+    font-family:var(--inv-ui); font-weight:400; font-size:20px; line-height:30px;
+    color:var(--inv-ink); margin:0;
+}
+.inv-intro p + p{ margin-top:30px; }
+.inv-intro strong{ font-weight:700; }
+
+/* ---------- AKCJONARIUSZE (tło #f6f9fb) ---------- */
+.inv-share{ background:var(--inv-band); padding:65px var(--inv-gutter) 76px; }
+.inv-share__h{
+    font-family:var(--inv-display); font-weight:700; font-size:40px; line-height:50px;
+    color:var(--inv-ink); margin:0 0 46px; text-align:center;
+}
+.inv-cards{ display:flex; justify-content:center; flex-wrap:wrap; gap:33px; }
+.inv-card{ width:332px; text-align:center; }
+.inv-card__avatar{
+    width:168px; height:168px; border-radius:50%; background:var(--inv-pink);
+    margin:0 auto 15px;
+}
+.inv-card__avatar img{ width:100%; height:100%; object-fit:cover; border-radius:50%; display:block; }
+.inv-card__name{
+    font-family:var(--inv-display); font-weight:700; font-size:20px; line-height:21px;
+    color:#000; margin:0 0 15px;
+}
+.inv-card__meta{
+    font-family:var(--inv-ui); font-weight:400; font-size:20px; line-height:30px;
+    color:var(--inv-ink); margin:0;
+}
+
+/* ---------- RESPONSYWNE ---------- */
+@media (max-width:1100px){ :root{ --inv-gutter:48px; } }
+@media (max-width:560px){
+    :root{ --inv-gutter:22px; }
+    .inv-intro{ padding:48px 12px 48px; }
+    .inv-share{ padding:48px 12px 56px; }
+    .inv-cards{ flex-direction:column; align-items:center; gap:40px; }
+    .inv-share__h{ margin-bottom:36px; }
+}
+@media (max-width:400px){
+    .inv-hero h1, .inv-intro h2, .inv-share__h{ font-size:32px; line-height:40px; }
+}
