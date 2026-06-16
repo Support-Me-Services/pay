@@ -14,4 +14,8 @@ return [
     'gateway_url' => rtrim(env('GATEWAY_URL', 'https://pay.redai.pl'), '/'),
     'gateway_api_key' => env('GATEWAY_API_KEY', ''),
 
+    // Adres e-mail, na który trafiają zgłoszenia rekrutacyjne (z CV w załączniku).
+    // Konfigurowalny przez .env: CAREERS_EMAIL=...
+    'careers_email' => env('CAREERS_EMAIL', 'office@please-support-me.com'),
+
 ];

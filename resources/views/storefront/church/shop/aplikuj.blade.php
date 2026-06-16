@@ -79,16 +79,17 @@
                         </div>
 
                         <div class="sp-field">
-                            <label for="cv">Dodaj CV {{ $position ? '*' : '' }}</label>
-                            <input type="file" id="cv" name="cv" accept=".pdf,.doc,.docx" {{ $position ? 'required' : '' }}>
+                            <label for="cv">Dodaj CV *</label>
+                            <input type="file" id="cv" name="cv" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
                             <div class="sp-hint">Format PDF, DOC lub DOCX. Maksymalny rozmiar: 5 MB.</div>
                             @error('cv')<div class="sp-form-error">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="sp-consent">
-                            <input type="checkbox" id="rodo" required>
-                            <label for="rodo">Wyrażam zgodę na przetwarzanie moich danych osobowych w celu prowadzenia rekrutacji (RODO).</label>
+                            <input type="checkbox" id="rodo" name="rodo" value="1" required @checked(old('rodo'))>
+                            <label for="rodo">Wyrażam zgodę na przetwarzanie moich danych osobowych w celu prowadzenia rekrutacji (RODO). *</label>
                         </div>
+                        @error('rodo')<div class="sp-form-error" style="margin-top:-6px">{{ $message }}</div>@enderror
 
                         <button type="submit" class="sp-btn sp-btn--block">Wyślij zgłoszenie</button>
                     </form>
