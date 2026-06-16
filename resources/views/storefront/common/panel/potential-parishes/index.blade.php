@@ -91,8 +91,23 @@
                              bez przycisku „Zapisz”. Cały wiersz jest jednym formularzem logicznym. --}}
                         <tr class="js-parish-row" data-id="{{ $parish->id }}"
                             data-url="{{ route('panel.potential-parishes.status', $parish) }}">
-                            <td class="fw-bold">{{ $parish->name }}</td>
-                            <td>{{ $parish->city ?: '—' }}</td>
+                            @php
+                                // Link do Google Maps: nazwa + miasto (fallback: województwo) → Mapy same lokalizują.
+                                $gmQuery = trim($parish->name . ' ' . ($parish->city ?: $parish->voivodeship));
+                                $gmUrl = 'https://www.google.com/maps/search/?api=1&query=' . urlencode($gmQuery);
+                            @endphp
+                            <td class="fw-bold">
+                                <a href="{{ $gmUrl }}" target="_blank" rel="noopener"
+                                   title="Znajdź w Google Maps" style="color:inherit;text-decoration:none">
+                                    {{ $parish->name }}
+                                    <span style="opacity:.55;font-weight:400" aria-hidden="true">↗</span>
+                                </a>
+                            </td>
+                            <td>
+                                @if($parish->city)
+                                    <a href="{{ $gmUrl }}" target="_blank" rel="noopener" style="color:inherit">{{ $parish->city }}</a>
+                                @else — @endif
+                            </td>
                             <td>{{ $parish->voivodeship ?: '—' }}</td>
                             <td>
                                 <select name="status" class="js-f-status"
