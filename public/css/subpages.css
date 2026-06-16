@@ -289,9 +289,14 @@
     font-family:var(--sp-ui); font-size:17px; line-height:29px; color:var(--sp-ink); margin:0 0 12px;
 }
 .sp-legal p:last-child{ margin-bottom:0; }
-.sp-legal a{ color:var(--sp-blue-b); font-weight:600; }
+.sp-legal a{ color:var(--sp-blue-b); font-weight:600; word-break:break-word; }
 .sp-legal a:hover{ text-decoration:underline; }
 .sp-legal strong{ color:var(--sp-ink); }
+.sp-legal ol{ margin:0 0 14px; padding-left:26px; }
+.sp-legal ol li{ font-family:var(--sp-ui); font-size:17px; line-height:29px; color:var(--sp-ink); margin-bottom:9px; padding-left:4px; }
+.sp-legal ol li::marker{ color:var(--sp-blue-b); font-weight:700; }
+.sp-legal ol li:last-child{ margin-bottom:0; }
+.sp-legal ol:last-child{ margin-bottom:0; }
 
 /* ---------- RESPONSIVE ---------- */
 @media (max-width:1200px){
