@@ -101,10 +101,13 @@ class CareersController extends Controller
         ]);
 
         // Wyślij zgłoszenie z CV w załączniku na skonfigurowany adres rekrutacji.
-        // Błąd wysyłki NIE może zablokować zgłoszenia — jest już zapisane w bazie
-        // i widoczne w panelu (Zgłoszenia). Logujemy ewentualny błąd.
-        try {
-            Mail::to(config('shop.careers_email'))->send(new JobApplicationReceived(
+        // Wysyłamy tylko gdy skonfigurowany jest PRAWDZIWY mailer (nie 'log'/'array') —
+        // dzięki temu w trybie „tylko panel" nie zaśmiecamy logów załącznikami CV.
+        // Po ustawieniu MAIL_MAILER=smtp (+ dane SMTP) maile zaczną wychodzić automatycznie.
+        // Błąd wysyłki NIE blokuje zgłoszenia — jest już zapisane w bazie i panelu.
+        if (! in_array(config('mail.default'), ['log', 'array', null], true)) {
+            try {
+                Mail::to(config('shop.careers_email'))->send(new JobApplicationReceived(
                 data: [
                     'name' => $data['name'],
                     'email' => $data['email'],
@@ -115,11 +118,12 @@ class CareersController extends Controller
                 cvAbsolutePath: Storage::disk('local')->path($cvPath),
                 cvOriginalName: $cvOriginalName,
             ));
-        } catch (\Throwable $e) {
-            Log::error('Rekrutacja: nie udało się wysłać maila ze zgłoszeniem', [
-                'error' => $e->getMessage(),
-                'to' => config('shop.careers_email'),
-            ]);
+            } catch (\Throwable $e) {
+                Log::error('Rekrutacja: nie udało się wysłać maila ze zgłoszeniem', [
+                    'error' => $e->getMessage(),
+                    'to' => config('shop.careers_email'),
+                ]);
+            }
         }
 
         // Powrót na stronę formularza aplikacji z potwierdzeniem (aplikuj.blade
