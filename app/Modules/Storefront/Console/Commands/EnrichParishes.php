@@ -13,7 +13,7 @@ class EnrichParishes extends Command
         {--json= : Alternatywnie: ścieżka do enriched JSON (np. /tmp/parishes2/enriched.json)}
         {--dry-run : Tylko policz dopasowania, nie zapisuj}';
 
-    protected $description = 'Wzbogaca potential_parishes o telefon i miasto z OSM (Overpass) / Nominatim — dopasowanie po name + zaokrąglone lat/lon, a gdy to nie trafi: geo-fallback (najbliższa parafia <60 m, haversine). UPDATE tylko pustych pól (COALESCE). Nie tworzy duplikatów, nie rusza statusu/notatki/handlowca.';
+    protected $description = 'Wzbogaca potential_parishes o telefon, miasto i adres z OSM (Overpass) / Nominatim / źródeł teleadresowych (deon.pl, schematyzmy, Wikipedia) — dopasowanie po name + zaokrąglone lat/lon, a gdy to nie trafi: geo-fallback (najbliższa parafia <60 m, haversine). UPDATE tylko pustych pól (COALESCE). Nie tworzy duplikatów, nie rusza statusu/notatki/handlowca.';
 
     public function handle(): int
     {
@@ -30,6 +30,7 @@ class EnrichParishes extends Command
         $geoMatched = 0;
         $phoneFilled = 0;
         $cityFilled = 0;
+        $addressFilled = 0;
         $noMatch = 0;
         $processed = 0;
 
@@ -39,14 +40,15 @@ class EnrichParishes extends Command
             $lonRaw = $r['lon'] ?? null;
             $phone = $this->nullableStr($r['phone'] ?? null);
             $city = $this->nullableStr($r['city'] ?? null);
+            $address = $this->nullableStr($r['address'] ?? null);
 
             $processed++;
 
-            // Bez nazwy/współrzędnych nie dopasujemy. Bez phone i bez city — nic do zrobienia.
+            // Bez nazwy/współrzędnych nie dopasujemy. Bez phone, city i address — nic do zrobienia.
             if ($name === '' || ! is_numeric($latRaw) || ! is_numeric($lonRaw)) {
                 continue;
             }
-            if ($phone === null && $city === null) {
+            if ($phone === null && $city === null && $address === null) {
                 continue;
             }
 
@@ -87,6 +89,11 @@ class EnrichParishes extends Command
                 $update['city'] = $city;
                 $cityFilled++;
             }
+            // address: COALESCE — nie nadpisuj istniejącego niepustego adresu.
+            if ($address !== null && ($existing->address === null || trim((string) $existing->address) === '')) {
+                $update['address'] = $address;
+                $addressFilled++;
+            }
 
             if ($update && ! $dry) {
                 // Bezpośredni UPDATE — NIE dotykamy status/salesperson_id/note/called_at.
@@ -94,17 +101,18 @@ class EnrichParishes extends Command
             }
 
             if ($processed % 2000 === 0) {
-                $this->info("Przetworzono {$processed}… (dopasowane: {$matched}, geo: {$geoMatched}, phone: {$phoneFilled}, city: {$cityFilled})");
+                $this->info("Przetworzono {$processed}… (dopasowane: {$matched}, geo: {$geoMatched}, phone: {$phoneFilled}, city: {$cityFilled}, address: {$addressFilled})");
             }
         }
 
         $tag = $dry ? ' [DRY-RUN — nic nie zapisano]' : '';
         $this->info("Gotowe{$tag}. Wejście: {$processed}, dopasowane do bazy: {$matched} (w tym geo-fallback <60 m: {$geoMatched}), bez dopasowania: {$noMatch}.");
-        $this->info("Uzupełniono telefonów: {$phoneFilled}, miast: {$cityFilled}.");
+        $this->info("Uzupełniono telefonów: {$phoneFilled}, miast: {$cityFilled}, adresów: {$addressFilled}.");
 
         $totalPhone = PotentialParish::whereNotNull('phone')->where('phone', '!=', '')->count();
         $totalCity = PotentialParish::whereNotNull('city')->where('city', '!=', '')->count();
-        $this->info("Stan tabeli — z telefonem: {$totalPhone}, z miastem: {$totalCity}, łącznie: " . PotentialParish::count() . '.');
+        $totalAddress = PotentialParish::whereNotNull('address')->where('address', '!=', '')->count();
+        $this->info("Stan tabeli — z telefonem: {$totalPhone}, z miastem: {$totalCity}, z adresem: {$totalAddress}, łącznie: " . PotentialParish::count() . '.');
 
         return self::SUCCESS;
     }
@@ -120,7 +128,7 @@ class EnrichParishes extends Command
 
         $candidates = PotentialParish::whereBetween('lat', [$lat - $dLat, $lat + $dLat])
             ->whereBetween('lon', [$lon - $dLon, $lon + $dLon])
-            ->get(['id', 'name', 'city', 'phone', 'lat', 'lon']);
+            ->get(['id', 'name', 'city', 'address', 'phone', 'lat', 'lon']);
 
         $best = null;
         $bestDist = 60.0; // metry
@@ -206,6 +214,7 @@ class EnrichParishes extends Command
             $rows[] = [
                 'name'        => $row[$cols['name']] ?? null,
                 'city'        => isset($cols['city']) ? ($row[$cols['city']] ?? null) : null,
+                'address'     => isset($cols['address']) ? ($row[$cols['address']] ?? null) : null,
                 'voivodeship' => isset($cols['voivodeship']) ? ($row[$cols['voivodeship']] ?? null) : null,
                 'phone'       => isset($cols['phone']) ? ($row[$cols['phone']] ?? null) : null,
                 'lat'         => $row[$cols['lat']] ?? null,
