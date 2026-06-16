@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="lp-section lp-catpage lp-container">
-        <a class="lp-back" href="{{ route('home') }}#kogo-wspieramy">← Wszystkie kategorie</a>
+        <a class="lp-back" href="{{ route('main') }}#kogo-wspieramy">← Wszystkie kategorie</a>
         <div class="lp-head">
             <h2>{{ $category['label_text'] }}</h2>
             <p>{{ $category['intro'] }}</p>

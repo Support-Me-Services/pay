@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Storefront\Http\Controllers\CareersController;
+use App\Modules\Storefront\Http\Controllers\CompanyStoreController;
 use App\Modules\Storefront\Http\Controllers\ContactController;
 use App\Modules\Storefront\Http\Controllers\GatewayWebhookController;
 use App\Modules\Storefront\Http\Controllers\OrderReturnController;
@@ -8,8 +9,18 @@ use App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\StorefrontController;
 use Illuminate\Support\Facades\Route;
 
-// Sklep
-Route::get('/', [StorefrontController::class, 'index'])->name('home');
+// Strona główna serwisu = Sklep firmowy (gadżety charytatywne).
+Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
+// Landing „Technologia, która pomaga czynić dobro" — przeniesiony pod /main.
+Route::get('/main', [StorefrontController::class, 'index'])->name('main');
+
+// Sklep firmowy — koszyk
+Route::post('/koszyk/dodaj/{slug}', [CompanyStoreController::class, 'add'])->name('cart.add');
+Route::get('/koszyk', [CompanyStoreController::class, 'cartView'])->name('cart');
+Route::post('/koszyk/aktualizuj/{slug}', [CompanyStoreController::class, 'update'])->name('cart.update');
+Route::post('/koszyk/zaplac', [CompanyStoreController::class, 'checkout'])->name('cart.checkout');
+
+// Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');

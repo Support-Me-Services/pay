@@ -25,7 +25,7 @@
         </div>
 
         <div class="actions">
-            <a href="{{ route('home') }}" class="btn btn-gold">Wesprzyj kolejną parafię</a>
+            <a href="{{ route('category', 'miejsca-kultu') }}" class="btn btn-gold">Wesprzyj kolejną parafię</a>
         </div>
 
         <div class="order-no">Potwierdzenie nr {{ $order->id }}</div>

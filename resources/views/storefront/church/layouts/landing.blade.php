@@ -21,10 +21,13 @@
         <a href="{{ route('home') }}" aria-label="SupportME">
             <img class="lp-logo" src="{{ asset('img/landing/logo.svg') }}" alt="SupportME">
         </a>
+        @php $lpCartCount = (int) collect(session('merch_cart', []))->sum(); @endphp
         <nav class="lp-nav">
-            <a class="lp-nav__shop" href="{{ route('home') }}#kogo-wspieramy">Sklep</a>
+            <a href="{{ route('main') }}">Strona główna</a>
+            <a class="lp-nav__shop" href="{{ route('home') }}">Sklep</a>
             <a href="{{ route('careers') }}">Rekrutacja</a>
             <a href="{{ route('regulamin') }}">Inwestorzy i akcjonariusze</a>
+            <a href="{{ route('cart') }}" class="lp-nav__cart" aria-label="Koszyk">Koszyk{!! $lpCartCount > 0 ? '<span class="lp-cart-badge">'.$lpCartCount.'</span>' : '' !!}</a>
         </nav>
         <button class="lp-burger" type="button" aria-label="Menu" aria-expanded="false"
                 onclick="var h=this.closest('.lp-header');var o=h.classList.toggle('lp-open');this.setAttribute('aria-expanded',o)">

@@ -41,7 +41,9 @@ img{ display:block; max-width:100%; }
     position:relative; z-index:5;
 }
 .lp-logo{ height:42px; width:auto; }
-.lp-nav{ display:flex; align-items:center; gap:38px; margin-right:-5px; }   /* prawy brzeg 1244 wg Figmy */
+.lp-nav{ display:flex; align-items:center; gap:30px; margin-right:-5px; }
+.lp-nav__cart{ position:relative; font-weight:600; white-space:nowrap; }
+.lp-cart-badge{ display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; margin-left:5px; border-radius:999px; background:var(--lp-blue-b); color:#fff; font-size:12px; font-weight:700; line-height:1; }
 .lp-nav a{ font-size:14px; line-height:33px; color:var(--lp-ink); white-space:nowrap; }
 .lp-nav a:hover{ color:var(--lp-blue-b); }
 

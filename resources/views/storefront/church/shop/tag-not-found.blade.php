@@ -9,7 +9,7 @@
         <h1 style="color:var(--navy)">Ta tabliczka nie jest<br>przypisana do parafii</h1>
         <p class="muted">Zapytaj obsługę kościoła albo wybierz parafię z listy.</p>
         <div class="actions">
-            <a href="{{ route('home') }}" class="btn btn-gold">Zobacz parafie</a>
+            <a href="{{ route('category', 'miejsca-kultu') }}" class="btn btn-gold">Zobacz parafie</a>
         </div>
     </div>
 @endsection

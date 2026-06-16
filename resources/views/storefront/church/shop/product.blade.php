@@ -20,7 +20,7 @@
     {{-- SUB-HERO (pasek wg Figmy) --}}
     <section class="sp-subhero">
         <div class="sp-subhero__inner">
-            <a href="{{ route('home') }}" class="sp-back">← wszystkie parafie</a>
+            <a href="{{ route('category', 'miejsca-kultu') }}" class="sp-back">← wszystkie parafie</a>
             <h1>{{ $product->name }}</h1>
             @if($product->purpose)
                 <p class="sp-lede">✦ {{ $product->purpose }}</p>

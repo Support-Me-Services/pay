@@ -16,7 +16,7 @@
 
         <div class="actions">
             <a href="{{ route('product.show', $order->product->slug) }}" class="btn btn-gold">Spróbuj ponownie</a>
-            <a href="{{ route('home') }}" class="btn btn-ghost" style="border-color:#e0d4b0;color:#f1e8d2">Inna parafia</a>
+            <a href="{{ route('category', 'miejsca-kultu') }}" class="btn btn-ghost" style="border-color:#e0d4b0;color:#f1e8d2">Inna parafia</a>
         </div>
 
         <div class="order-no">Potwierdzenie nr {{ $order->id }}</div>

@@ -23,7 +23,7 @@
 @else
     <header class="site-header">
         <div class="bar">
-            <a href="{{ route('home') }}" class="wordmark">
+            <a href="{{ route('main') }}" class="wordmark">
                 <span class="plate" aria-hidden="true"></span>{{ config('shop.name') }}
             </a>
             <nav class="header-nav">
