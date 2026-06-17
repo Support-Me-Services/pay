@@ -10,14 +10,16 @@
     <title>@yield('title', 'SupportME — technologia, która pomaga czynić dobro')</title>
     <meta name="description" content="@yield('meta-description', 'Łączymy ludzi, wartości i nowoczesne płatności, aby wspieranie ważnych inicjatyw było prostsze niż kiedykolwiek wcześniej.')">
 
-    {{-- Open Graph / Twitter — podgląd linku (WhatsApp, FB, Messenger, X): serce z loga --}}
+    {{-- Open Graph / Twitter — podgląd linku (WhatsApp, FB, Messenger, X): samo serduszko z loga.
+         ?v=hash wymusza odświeżenie cache crawlera po zmianie obrazka. --}}
+    @php $ogImage = asset('img/og-supportme.png').'?v='.substr(md5_file(public_path('img/og-supportme.png')), 0, 8); @endphp
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="SupportME">
     <meta property="og:title" content="@yield('title', 'SupportME — technologia, która pomaga czynić dobro')">
     <meta property="og:description" content="@yield('meta-description', 'Łączymy ludzi, wartości i nowoczesne płatności, aby wspieranie ważnych inicjatyw było prostsze niż kiedykolwiek wcześniej.')">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="{{ asset('img/og-supportme.png') }}">
-    <meta property="og:image:secure_url" content="{{ asset('img/og-supportme.png') }}">
+    <meta property="og:image" content="{{ $ogImage }}">
+    <meta property="og:image:secure_url" content="{{ $ogImage }}">
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -25,7 +27,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('title', 'SupportME — technologia, która pomaga czynić dobro')">
     <meta name="twitter:description" content="@yield('meta-description', 'Łączymy ludzi, wartości i nowoczesne płatności, aby wspieranie ważnych inicjatyw było prostsze niż kiedykolwiek wcześniej.')">
-    <meta name="twitter:image" content="{{ asset('img/og-supportme.png') }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
