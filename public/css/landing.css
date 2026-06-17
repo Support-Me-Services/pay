@@ -47,6 +47,8 @@ img{ display:block; max-width:100%; }
 .lp-nav a{ font-size:14px; line-height:33px; color:var(--lp-ink); white-space:nowrap; }
 .lp-nav a:hover{ color:var(--lp-blue-b); }
 .lp-nav a[aria-current="page"]{ font-weight:700; }
+.lp-nav__support{ border:0; cursor:pointer; font-family:var(--lp-ui); font-size:14px; font-weight:700; color:#fff; background:linear-gradient(117deg,var(--lp-blue-a),var(--lp-blue-b)); padding:9px 22px; border-radius:999px; line-height:1; white-space:nowrap; }
+.lp-nav__support:hover{ filter:brightness(1.08); }
 
 /* ---------- HERO ---------- */
 .lp-hero{
@@ -273,3 +275,37 @@ img{ display:block; max-width:100%; }
 /* === category icons (panel) === */
 .lp-cat__disc{ overflow:hidden; }
 .lp-cat__disc-img{ width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+
+/* === Modal „WESPRZYJ" (szybkie wsparcie) — wg Figmy SKLEP 65:1616 === */
+.wesprzyj[hidden]{ display:none; }
+.wesprzyj{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+.wesprzyj__scrim{ position:absolute; inset:0; background:rgba(0,0,0,.45); }
+.wesprzyj__dialog{
+    position:relative; z-index:1; width:643px; max-width:100%; min-height:549px;
+    background:#fff; border-radius:16px; padding:118px 38px 70px;
+    display:flex; flex-direction:column; align-items:center; gap:24px;
+    box-shadow:0 30px 80px rgba(20,29,51,.35);
+}
+.wesprzyj__close{
+    position:absolute; top:24px; right:22px; width:51px; height:51px;
+    border:0; background:none; cursor:pointer; font-size:36px; line-height:1; color:#b3b3b3;
+}
+.wesprzyj__close:hover{ color:var(--lp-ink); }
+.wesprzyj__pill{
+    display:flex; align-items:center; justify-content:center;
+    min-width:299px; height:181px; padding:0 40px; background:#f5f5f5; border-radius:60px;
+    font-family:var(--lp-ui); font-weight:900; font-size:64px; line-height:1; color:#000;
+}
+.wesprzyj__heart{ width:93px; height:84px; }
+.wesprzyj__form{ width:100%; display:flex; }
+.wesprzyj__btn{
+    width:100%; height:48px; border:0; cursor:pointer; border-radius:8px;
+    background:var(--lp-ink); color:#f5f5f5;
+    font-family:var(--lp-ui); font-weight:500; font-size:16px; letter-spacing:.4px;
+}
+.wesprzyj__btn:hover{ filter:brightness(1.18); }
+@media (max-width:560px){
+    .wesprzyj__dialog{ padding:44px 22px 40px; gap:20px; }
+    .wesprzyj__pill{ min-width:0; width:100%; height:148px; font-size:54px; }
+    .lp-nav__support{ align-self:flex-start; }
+}

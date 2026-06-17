@@ -20,6 +20,9 @@ Route::get('/koszyk', [CompanyStoreController::class, 'cartView'])->name('cart')
 Route::post('/koszyk/aktualizuj/{slug}', [CompanyStoreController::class, 'update'])->name('cart.update');
 Route::post('/koszyk/zaplac', [CompanyStoreController::class, 'checkout'])->name('cart.checkout');
 
+// Szybkie wsparcie (modal „WESPRZYJ") — wpłata 10 zł przez bramkę
+Route::post('/wesprzyj', [CompanyStoreController::class, 'donate'])->name('support.pay');
+
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');

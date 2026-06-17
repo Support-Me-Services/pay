@@ -87,6 +87,37 @@ class CompanyStoreController extends Controller
         return back()->with('success', 'Dodano do koszyka: ' . $this->products()[$slug]['name']);
     }
 
+    /** POST /wesprzyj — szybkie wsparcie (10 zł) przez bramkę (modal „WESPRZYJ"). */
+    public function donate(GatewayClient $gateway)
+    {
+        $amount = 1000; // 10 zł
+
+        $order = Order::create([
+            'product_id' => null,
+            'amount' => $amount,
+            'status' => 'pending',
+        ]);
+
+        try {
+            $result = $gateway->createTransaction([
+                'product_external_id' => 'support-' . $order->id,
+                'product_name' => 'Wsparcie SupportMe',
+                'amount' => $amount,
+                'currency' => 'PLN',
+                'return_url' => route('order.return', $order->id),
+                'notify_url' => route('webhooks.gateway'),
+                'tag_uid' => null,
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->back()
+                ->with('error', 'Płatność jest chwilowo niedostępna. Spróbuj ponownie za moment.');
+        }
+
+        $order->update(['transaction_id' => $result['uuid']]);
+
+        return redirect()->away($result['payment_url']);
+    }
+
     /** GET /koszyk — podgląd koszyka. */
     public function cartView()
     {

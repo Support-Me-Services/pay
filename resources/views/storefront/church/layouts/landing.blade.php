@@ -28,6 +28,7 @@
             <a href="{{ route('careers') }}" @if(request()->routeIs('careers')) aria-current="page" @endif>Rekrutacja</a>
             <a href="{{ route('investors') }}" @if(request()->routeIs('investors')) aria-current="page" @endif>Inwestorzy i akcjonariusze</a>
             <a href="{{ route('cart') }}" class="lp-nav__cart" aria-label="Koszyk">Koszyk{!! $lpCartCount > 0 ? '<span class="lp-cart-badge">'.$lpCartCount.'</span>' : '' !!}</a>
+            <button type="button" class="lp-nav__support" data-wesprzyj-open>Wesprzyj</button>
         </nav>
         <button class="lp-burger" type="button" aria-label="Menu" aria-expanded="false"
                 onclick="var h=this.closest('.lp-header');var o=h.classList.toggle('lp-open');this.setAttribute('aria-expanded',o)">
@@ -55,6 +56,31 @@
         </div>
     </footer>
 </div>
+
+{{-- Modal „WESPRZYJ" (szybkie wsparcie 10 zł) — wg Figmy SKLEP (65:1616) --}}
+<div class="wesprzyj" id="wesprzyj" hidden>
+    <div class="wesprzyj__scrim" data-wesprzyj-close></div>
+    <div class="wesprzyj__dialog" role="dialog" aria-modal="true" aria-label="Wesprzyj SupportMe">
+        <button type="button" class="wesprzyj__close" data-wesprzyj-close aria-label="Zamknij">&times;</button>
+        <div class="wesprzyj__pill">10zł</div>
+        <img class="wesprzyj__heart" src="{{ asset('img/sklep/heart-wesprzyj.svg') }}" alt="" aria-hidden="true">
+        <form method="POST" action="{{ route('support.pay') }}" class="wesprzyj__form">
+            @csrf
+            <button type="submit" class="wesprzyj__btn">WESPRZYJ</button>
+        </form>
+    </div>
+</div>
+<script>
+(function () {
+    var modal = document.getElementById('wesprzyj');
+    if (!modal) return;
+    function open() { modal.hidden = false; document.body.style.overflow = 'hidden'; }
+    function close() { modal.hidden = true; document.body.style.overflow = ''; }
+    document.querySelectorAll('[data-wesprzyj-open]').forEach(function (b) { b.addEventListener('click', open); });
+    modal.querySelectorAll('[data-wesprzyj-close]').forEach(function (b) { b.addEventListener('click', close); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) close(); });
+})();
+</script>
 @stack('scripts')
 </body>
 </html>
