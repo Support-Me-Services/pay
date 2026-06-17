@@ -6,6 +6,22 @@
     <meta name="theme-color" content="#141d33">
     <title>@yield('title', config('shop.name'))</title>
     <meta name="description" content="@yield('meta-description', 'Cyfrowa taca — wesprzyj swój kościół jednym dotknięciem telefonu. Szybko, bezpiecznie, bez gotówki.')">
+
+    {{-- Open Graph / Twitter — podgląd linku (WhatsApp itp.): serce z loga --}}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="SupportME">
+    <meta property="og:title" content="@yield('title', config('shop.name'))">
+    <meta property="og:description" content="@yield('meta-description', 'Cyfrowa taca — wesprzyj swój kościół jednym dotknięciem telefonu. Szybko, bezpiecznie, bez gotówki.')">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="{{ asset('img/og-supportme.png') }}">
+    <meta property="og:image:secure_url" content="{{ asset('img/og-supportme.png') }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="SupportME">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ asset('img/og-supportme.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500;1,9..144,600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
