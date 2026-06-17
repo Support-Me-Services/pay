@@ -7,6 +7,7 @@ use App\Modules\Storefront\Models\Category;
 use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Product;
+use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
 
@@ -67,14 +68,24 @@ class StorefrontController extends Controller
     {
         $product = Product::where('tag_uid', $tagUid)->where('active', true)->first();
 
-        if (! $product) {
-            return response()->view('shop.tag-not-found', [], 404);
+        if ($product) {
+            Event::create(['product_id' => $product->id, 'type' => 'tag_open']);
+            SendGatewayEvent::dispatchAfterResponse('tag_open', $tagUid);
+
+            return redirect()->route('product.show', $product->slug, 302);
         }
 
-        Event::create(['product_id' => $product->id, 'type' => 'tag_open']);
-        SendGatewayEvent::dispatchAfterResponse('tag_open', $tagUid);
+        // Tag może też wskazywać produkt sklepu donacyjnego (NFC) — wtedy
+        // kierujemy na stronę sklepu z auto-otwarciem modala tego produktu.
+        $item = ShopItem::where('tag_uid', $tagUid)->where('active', true)->first();
 
-        return redirect()->route('product.show', $product->slug, 302);
+        if ($item) {
+            SendGatewayEvent::dispatchAfterResponse('tag_open', $tagUid);
+
+            return redirect()->route('home', ['produkt' => $item->slug], 302);
+        }
+
+        return response()->view('shop.tag-not-found', [], 404);
     }
 
     /**

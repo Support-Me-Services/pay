@@ -14,14 +14,8 @@ Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
 // Landing „Technologia, która pomaga czynić dobro" — przeniesiony pod /main.
 Route::get('/main', [StorefrontController::class, 'index'])->name('main');
 
-// Sklep firmowy — koszyk
-Route::post('/koszyk/dodaj/{slug}', [CompanyStoreController::class, 'add'])->name('cart.add');
-Route::get('/koszyk', [CompanyStoreController::class, 'cartView'])->name('cart');
-Route::post('/koszyk/aktualizuj/{slug}', [CompanyStoreController::class, 'update'])->name('cart.update');
-Route::post('/koszyk/zaplac', [CompanyStoreController::class, 'checkout'])->name('cart.checkout');
-
-// Szybkie wsparcie (modal „WESPRZYJ") — wpłata 10 zł przez bramkę
-Route::post('/wesprzyj', [CompanyStoreController::class, 'donate'])->name('support.pay');
+// Sklep donacyjny (NFC) — zakup produktu na wybraną kwotę (≥ min. produktu)
+Route::post('/sklep/kup/{slug}', [CompanyStoreController::class, 'purchase'])->name('shop.buy');
 
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
@@ -119,6 +113,15 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::get('/salespeople/{salesperson}/edit', [Panel\SalespersonController::class, 'edit'])->name('salespeople.edit');
         Route::put('/salespeople/{salesperson}', [Panel\SalespersonController::class, 'update'])->name('salespeople.update');
         Route::delete('/salespeople/{salesperson}', [Panel\SalespersonController::class, 'destroy'])->name('salespeople.destroy');
+
+        // Produkty sklepu donacyjnego (NFC) — min. kwota, tag NFC, domyślny
+        Route::get('/shop-items', [Panel\ShopItemController::class, 'index'])->name('shop-items.index');
+        Route::get('/shop-items/create', [Panel\ShopItemController::class, 'create'])->name('shop-items.create');
+        Route::post('/shop-items', [Panel\ShopItemController::class, 'store'])->name('shop-items.store');
+        Route::get('/shop-items/{shopItem}/edit', [Panel\ShopItemController::class, 'edit'])->name('shop-items.edit');
+        Route::put('/shop-items/{shopItem}', [Panel\ShopItemController::class, 'update'])->name('shop-items.update');
+        Route::post('/shop-items/{shopItem}/toggle', [Panel\ShopItemController::class, 'toggle'])->name('shop-items.toggle');
+        Route::delete('/shop-items/{shopItem}', [Panel\ShopItemController::class, 'destroy'])->name('shop-items.destroy');
 
         // Stanowiska pracy (sekcja „Praca")
         Route::get('/positions', [Panel\PositionController::class, 'index'])->name('positions.index');
