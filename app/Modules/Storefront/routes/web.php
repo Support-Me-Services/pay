@@ -25,6 +25,9 @@ Route::view('/inwestorzy', 'shop.inwestorzy')->name('investors');
 
 // Dokumentacja projektu — przegląd wszystkich modułów i funkcji
 Route::view('/docs', 'shop.docs')->name('docs');
+
+// Samouczek — jak modyfikować podstrony z Claude (dostęp, Figma, prompty)
+Route::view('/samouczek', 'shop.samouczek')->name('samouczek');
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
 Route::get('/p/{slug}', [StorefrontController::class, 'show'])->name('product.show');
 Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('product.buy');
