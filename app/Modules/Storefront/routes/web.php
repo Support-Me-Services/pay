@@ -22,6 +22,9 @@ Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
 // Inwestorzy i akcjonariusze (statyczna strona marketingowa wg Figmy „Inwestorzy")
 Route::view('/inwestorzy', 'shop.inwestorzy')->name('investors');
+
+// Dokumentacja projektu — przegląd wszystkich modułów i funkcji
+Route::view('/docs', 'shop.docs')->name('docs');
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
 Route::get('/p/{slug}', [StorefrontController::class, 'show'])->name('product.show');
 Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('product.buy');

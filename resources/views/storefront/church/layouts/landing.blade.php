@@ -63,6 +63,7 @@
                 <a href="{{ route('careers') }}">Rekrutacja</a>
                 <a href="{{ route('investors') }}">Inwestorzy i akcjonariusze</a>
                 <a href="{{ route('regulamin') }}">Polityka prywatności i regulamin</a>
+                <a href="{{ route('docs') }}">Dokumentacja</a>
             </div>
             <a class="lp-footer__social" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
                 <img src="{{ asset('img/landing/linkedin.svg') }}" alt="LinkedIn">
