@@ -38,7 +38,7 @@
 <body class="lp">
 <div class="lp-page">
     <header class="lp-header">
-        <a href="{{ route('home') }}" aria-label="SupportME">
+        <a href="{{ route('main') }}" aria-label="SupportME">
             <img class="lp-logo" src="{{ asset('img/landing/logo.svg') }}" alt="SupportME">
         </a>
         <nav class="lp-nav">

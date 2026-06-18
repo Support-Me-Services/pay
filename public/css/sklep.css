@@ -1,63 +1,77 @@
 /* ============================================================
-   Sklep donacyjny (produkty NFC) — wg Figmy SKLEP (65:1358) + ticket.
-   Karty produktów = klikalne kafelki otwierające modal KUP.
-   Tokeny: granat #24324A · niebieski 1473C0 · Libre Baskerville + Inter.
+   Ekran wsparcia (pełnoekranowy) — / (sklep donacyjny).
+   Pełny ekran telefonu, edytowalna kwota wyśrodkowana, „zł" delikatnie
+   na dole po prawej, karuzela produktów na mocny swipe. Bez sugerowanych kwot.
+   Brand: granat #24324A · niebieski 1473C0.
    ============================================================ */
-:root{
-    --sh-ink:#24324a; --sh-blue-a:#4E7FA7; --sh-blue-b:#1473C0;
-    --sh-line:#e6eaf0; --sh-gutter:88px;
-    --sh-display:'Libre Baskerville',Georgia,serif; --sh-ui:'Inter',system-ui,sans-serif;
+.paywin{
+    position:fixed; inset:0; z-index:1200; height:100dvh; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+    padding:max(20px,env(safe-area-inset-top)) 22px max(24px,env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,#ffffff 0%, #e9f1fb 100%);
+    font-family:'Inter',system-ui,sans-serif;
+    touch-action:pan-y; -webkit-user-select:none; user-select:none;
 }
+.paywin[hidden]{ display:none; }
 
-/* ---------- HERO ---------- */
-.shop-hero{
-    min-height:200px; display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(134.55deg, rgba(78,127,167,.22) 13.6%, rgba(20,115,192,.22) 99.4%);
+/* zamknięcie (→ strona główna) */
+.paywin__close{
+    position:absolute; top:14px; right:14px; z-index:3;
+    width:46px; height:46px; border-radius:50%; border:0; cursor:pointer;
+    background:rgba(36,50,74,.07); color:#24324a; font-size:30px; line-height:44px; text-align:center;
 }
-.shop-hero h1{
-    font-family:var(--sh-display); font-weight:700; font-size:40px; line-height:normal;
-    color:var(--sh-ink); margin:0; text-align:center;
-}
+.paywin__close:hover{ background:rgba(36,50,74,.14); }
 
-/* ---------- WRAP / INTRO ---------- */
-.shop-wrap{ max-width:1160px; margin:0 auto; padding:42px var(--sh-gutter) 64px; }
-.shop-intro{
-    font-family:var(--sh-ui); font-size:20px; line-height:33px; color:var(--sh-ink);
-    margin:0 0 46px;
-}
+/* scena produktu (przesuwa się przy swipe) */
+.paywin__stage{ width:100%; display:flex; align-items:center; justify-content:center; will-change:transform,opacity; }
+.paywin__card{ display:flex; flex-direction:column; align-items:center; gap:16px; pointer-events:none; }
+.paywin__card.is-in{ animation:paywin-in .28s ease; }
+@keyframes paywin-in{ from{ opacity:0; transform:translateY(10px) scale(.98); } to{ opacity:1; transform:none; } }
+.paywin__visual{ width:min(58vw,240px); height:min(58vw,240px); display:flex; align-items:center; justify-content:center; }
+.paywin__visual img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:24px; }
+.paywin__visual.is-svg img{ width:64%; height:auto; border-radius:0; }
+.paywin__name{ font-size:14px; letter-spacing:.18em; text-transform:uppercase; color:#5b6b82; font-weight:600; }
 
-/* ---------- FLASH ---------- */
-.shop-flash{
-    background:#e8f4ed; border:1px solid #aed5c1; color:#1f5f44; border-radius:12px;
-    padding:12px 18px; margin:0 0 24px; font-family:var(--sh-ui); font-size:15px;
+/* kwota — sama liczba, wyśrodkowana; „zł" delikatnie na dole po prawej */
+.paywin__amount{ position:relative; display:block; width:min(440px,90vw); }
+.paywin__input{
+    width:100%; text-align:center; border:0; background:transparent; outline:none; padding:0;
+    color:#24324a; font-weight:800; font-size:clamp(74px,24vw,140px); line-height:1;
+    -moz-appearance:textfield; caret-color:#1473C0;
 }
-.shop-flash--err{ background:#fdeaea; border-color:#e7b4b4; color:#9a2b2b; }
+.paywin__input::-webkit-outer-spin-button,
+.paywin__input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.paywin__zl{ position:absolute; right:6px; bottom:12px; font-size:19px; font-weight:400; color:#aab6c6; letter-spacing:.02em; }
 
-/* ---------- GRID PRODUKTÓW ---------- */
-.shop-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:27px; }
-.shop-card{
-    display:flex; flex-direction:column; text-align:left; padding:0; cursor:pointer;
-    background:#fff; border:1px solid var(--sh-line); border-radius:16px; overflow:hidden;
-    box-shadow:0 8px 30px rgba(36,50,74,.06); transition:transform .15s ease, box-shadow .15s ease;
-    font:inherit; color:inherit;
+.paywin__err{ margin:2px 0 0; color:#c0392b; font-size:14px; font-weight:600; text-align:center; }
+.paywin__err[hidden]{ display:none; }
+
+/* kropki produktów */
+.paywin__dots{ display:flex; gap:8px; }
+.paywin__dot{ width:8px; height:8px; border-radius:50%; background:#cdd8e6; transition:transform .2s ease, background .2s ease; }
+.paywin__dot.is-on{ background:#1473C0; transform:scale(1.4); }
+
+/* KUP */
+.paywin__form{ width:min(440px,90vw); }
+.paywin__btn{
+    width:100%; height:56px; border:0; border-radius:14px; cursor:pointer;
+    background:#24324a; color:#f5f5f5; font-weight:700; font-size:17px; letter-spacing:.05em;
+    transition:filter .15s ease;
 }
-.shop-card:hover{ transform:translateY(-4px); box-shadow:0 16px 40px rgba(36,50,74,.13); }
-.shop-card:focus-visible{ outline:2px solid var(--sh-blue-b); outline-offset:2px; }
-.shop-card__art{ display:block; aspect-ratio:1/1; background:#f6f9fb; }
-.shop-card__art img{ width:100%; height:100%; object-fit:cover; display:block; }
-/* serduszko (SVG) — wyśrodkowane, nie przycinane */
-.shop-card__art--svg{ display:flex; align-items:center; justify-content:center; padding:24px; }
-.shop-card__art--svg img{ width:auto; height:auto; max-width:60%; max-height:60%; object-fit:contain; }
-.shop-card__body{ display:flex; flex-direction:column; gap:6px; padding:18px 18px 20px; }
-.shop-card__name{ font-family:var(--sh-ui); font-weight:600; font-size:17px; color:var(--sh-ink); }
-.shop-card__price{ font-family:var(--sh-ui); font-weight:700; font-size:16px; color:var(--sh-blue-b); }
+.paywin__btn:hover{ filter:brightness(1.14); }
 
-/* ---------- RESPONSYWNE ---------- */
-@media (max-width:1100px){ :root{ --sh-gutter:48px; } .shop-grid{ grid-template-columns:repeat(2,1fr); } }
-@media (max-width:560px){
-    :root{ --sh-gutter:22px; }
-    .shop-hero{ min-height:150px; }
-    .shop-hero h1{ font-size:32px; }
-    .shop-intro{ font-size:17px; line-height:28px; }
-    .shop-grid{ grid-template-columns:1fr; gap:18px; }
+.paywin__hint{ font-size:12px; color:#9aa7b6; letter-spacing:.02em; }
+
+/* niskie ekrany (klawiatura na telefonie) — kompaktowo, by KUP był widoczny */
+@media (max-height:680px){
+    .paywin{ gap:12px; justify-content:flex-start; padding-top:max(16px,env(safe-area-inset-top)); }
+    .paywin__stage{ margin-top:30px; }
+    .paywin__visual{ width:min(40vw,150px); height:min(40vw,150px); }
+    .paywin__input{ font-size:clamp(58px,18vw,104px); }
+    .paywin__name{ font-size:12px; }
+}
+@media (max-height:540px){
+    .paywin__visual{ width:96px; height:96px; }
+    .paywin__input{ font-size:64px; }
+    .paywin__hint{ display:none; }
 }
