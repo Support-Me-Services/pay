@@ -1,0 +1,475 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="Marcin (generated)" id="1782550535218-1">
+        <createTable tableName="cache">
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="value" type="MEDIUMTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiration" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-2">
+        <createTable tableName="cache_locks">
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="owner" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiration" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-3">
+        <createTable tableName="contact_messages">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)"/>
+            <column name="subject" type="VARCHAR(255)"/>
+            <column name="message" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="0" name="is_read" type="TINYINT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-4">
+        <createTable tableName="events">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column defaultValueComputed="NULL" name="product_id" type="BIGINT UNSIGNED"/>
+            <column name="type" type="ENUM('tag_open', 'page_view', 'buy_click', 'purchase')">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-5">
+        <createTable tableName="failed_jobs">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="uuid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="connection" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="queue" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="exception" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="failed_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-6">
+        <createTable tableName="job_applications">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column defaultValueComputed="NULL" name="job_position_id" type="BIGINT UNSIGNED"/>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="phone" type="VARCHAR(255)"/>
+            <column name="message" type="TEXT"/>
+            <column name="cv_path" type="VARCHAR(255)"/>
+            <column name="cv_original_name" type="VARCHAR(255)"/>
+            <column defaultValueComputed="0" name="is_read" type="TINYINT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="pending" name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-7">
+        <createTable tableName="job_batches">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_jobs" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pending_jobs" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="failed_jobs" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="failed_job_ids" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="options" type="MEDIUMTEXT"/>
+            <column defaultValueComputed="NULL" name="cancelled_at" type="INT"/>
+            <column name="created_at" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="finished_at" type="INT"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-8">
+        <createTable tableName="job_positions">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="title" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="VARCHAR(255)"/>
+            <column name="employment_type" type="VARCHAR(255)"/>
+            <column name="description_html" type="TEXT"/>
+            <column defaultValueComputed="1" name="active" type="TINYINT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="sort" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-9">
+        <createTable tableName="jobs">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="queue" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts" type="TINYINT(3) UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="reserved_at" type="INT UNSIGNED"/>
+            <column name="available_at" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-10">
+        <createTable tableName="migrations">
+            <column autoIncrement="true" name="id" type="INT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="migration" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="batch" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-11">
+        <createTable tableName="orders">
+            <column name="id" type="CHAR(36)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="product_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transaction_id" type="CHAR(36)"/>
+            <column name="amount" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="pending" name="status" type="ENUM('pending', 'paid', 'failed')">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="paid_at" type="timestamp(0)"/>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-12">
+        <createTable tableName="parish_notes">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="product_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="body" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="kontakt" name="type" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="author" type="VARCHAR(255)"/>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-13">
+        <createTable tableName="password_reset_tokens">
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="token" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-14">
+        <createTable tableName="product_images">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="product_id" type="BIGINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="path" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="sort" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-15">
+        <createTable tableName="products">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="city" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(255)"/>
+            <column name="website" type="VARCHAR(255)"/>
+            <column name="voivodeship" type="VARCHAR(255)"/>
+            <column name="purpose" type="VARCHAR(255)"/>
+            <column name="slug" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description_html" type="TEXT"/>
+            <column name="pickup_instruction" type="TEXT"/>
+            <column name="price" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tag_uid" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="main_image" type="VARCHAR(255)"/>
+            <column defaultValueComputed="1" name="active" type="TINYINT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="kontakt" name="status" type="VARCHAR(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="salesperson_id" type="BIGINT UNSIGNED"/>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-16">
+        <createTable tableName="salespeople">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)"/>
+            <column name="phone" type="VARCHAR(255)"/>
+            <column name="voivodeships" type="TEXT"/>
+            <column defaultValueComputed="1" name="active" type="TINYINT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="current_timestamp()" name="created_at" type="timestamp(0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-17">
+        <createTable tableName="sessions">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column defaultValueComputed="NULL" name="user_id" type="BIGINT UNSIGNED"/>
+            <column name="ip_address" type="VARCHAR(45)"/>
+            <column name="user_agent" type="TEXT"/>
+            <column name="payload" type="LONGTEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_activity" type="INT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-18">
+        <createTable tableName="users">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="email_verified_at" type="timestamp(0)"/>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="remember_token" type="VARCHAR(100)"/>
+            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
+            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-19">
+        <createIndex associatedWith="" indexName="cache_expiration_index" tableName="cache">
+            <column name="expiration"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-20">
+        <createIndex associatedWith="" indexName="cache_locks_expiration_index" tableName="cache_locks">
+            <column name="expiration"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-21">
+        <createIndex associatedWith="" indexName="events_product_id_type_created_at_index" tableName="events">
+            <column defaultValueComputed="NULL" name="product_id"/>
+            <column name="type"/>
+            <column defaultValueComputed="current_timestamp()" name="created_at"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-22">
+        <createIndex associatedWith="" indexName="failed_jobs_uuid_unique" tableName="failed_jobs" unique="true">
+            <column name="uuid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-23">
+        <createIndex associatedWith="" indexName="job_applications_job_position_id_foreign" tableName="job_applications">
+            <column defaultValueComputed="NULL" name="job_position_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-24">
+        <createIndex associatedWith="" indexName="job_applications_status_index" tableName="job_applications">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-25">
+        <createIndex associatedWith="" indexName="jobs_queue_index" tableName="jobs">
+            <column name="queue"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-26">
+        <createIndex associatedWith="" indexName="orders_product_id_foreign" tableName="orders">
+            <column name="product_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-27">
+        <createIndex associatedWith="" indexName="orders_transaction_id_index" tableName="orders">
+            <column name="transaction_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-28">
+        <createIndex associatedWith="" indexName="parish_notes_product_id_index" tableName="parish_notes">
+            <column name="product_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-29">
+        <createIndex associatedWith="" indexName="product_images_product_id_foreign" tableName="product_images">
+            <column name="product_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-30">
+        <createIndex associatedWith="" indexName="products_salesperson_id_foreign" tableName="products">
+            <column defaultValueComputed="NULL" name="salesperson_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-31">
+        <createIndex associatedWith="" indexName="products_slug_unique" tableName="products" unique="true">
+            <column name="slug"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-32">
+        <createIndex associatedWith="" indexName="products_status_index" tableName="products">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-33">
+        <createIndex associatedWith="" indexName="products_tag_uid_unique" tableName="products" unique="true">
+            <column name="tag_uid"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-34">
+        <createIndex associatedWith="" indexName="sessions_last_activity_index" tableName="sessions">
+            <column name="last_activity"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-35">
+        <createIndex associatedWith="" indexName="sessions_user_id_index" tableName="sessions">
+            <column defaultValueComputed="NULL" name="user_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-36">
+        <createIndex associatedWith="" indexName="users_email_unique" tableName="users" unique="true">
+            <column name="email"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-37">
+        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="events" constraintName="events_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-38">
+        <addForeignKeyConstraint baseColumnNames="job_position_id" baseTableName="job_applications" constraintName="job_applications_job_position_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="job_positions" validate="true"/>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-39">
+        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="orders" constraintName="orders_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-40">
+        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="parish_notes" constraintName="parish_notes_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-41">
+        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="product_images" constraintName="product_images_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
+    </changeSet>
+    <changeSet author="Marcin (generated)" id="1782550535218-42">
+        <addForeignKeyConstraint baseColumnNames="salesperson_id" baseTableName="products" constraintName="products_salesperson_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="salespeople" validate="true"/>
+    </changeSet>
+</databaseChangeLog>

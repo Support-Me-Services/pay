@@ -70,7 +70,7 @@ return [
         // wybranej per host przez ResolveTenant (na hoście sklepu domyślny
         // 'mysql' wskazuje nfc_shop1/nfc_shop2).
         'gateway' => [
-            'driver' => 'mysql',
+            'driver' => env('DB_GATEWAY_DRIVER', 'mysql'),
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
@@ -84,6 +84,10 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // Klucze używane przez sterownik pgsql (ignorowane przez mysql),
+            // by to samo połączenie 'gateway' działało po przełączeniu na Postgres.
+            'search_path' => 'public',
+            'sslmode' => env('DB_SSLMODE', 'prefer'),
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],

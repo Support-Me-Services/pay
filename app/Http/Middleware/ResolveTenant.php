@@ -55,9 +55,10 @@ class ResolveTenant
 
         // 2) Przełączenie bazy danych — MUSI nastąpić przed jakimkolwiek
         //    odczytem DB/sesji (dlatego middleware jest pierwszy w grupie).
-        if (config('database.connections.mysql.database') !== $tenant['db']) {
-            config(['database.connections.mysql.database' => $tenant['db']]);
-            app('db')->purge('mysql');
+        $conn = config('database.default');               // 'mysql' albo 'pgsql'
+        if (config("database.connections.{$conn}.database") !== $tenant['db']) {
+            config(["database.connections.{$conn}.database" => $tenant['db']]);
+            app('db')->purge($conn);
         }
 
         // 3) Singleton tenanta — dostępny przez app('tenant') w całym żądaniu.
