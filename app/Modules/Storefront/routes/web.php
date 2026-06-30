@@ -47,11 +47,11 @@ Route::get('/praca/oferta/{position}', [CareersController::class, 'show'])->name
 
 // Formularz aplikacji — spontaniczna (bez oferty). MUSI być przed trasą z {position}.
 Route::get('/praca/aplikuj', [CareersController::class, 'applyForm'])->name('careers.apply.general');
-Route::post('/praca/aplikuj', [CareersController::class, 'applyStore'])->name('careers.apply.general.store');
+Route::post('/praca/aplikuj', [CareersController::class, 'applyStore'])->middleware('throttle:careers-apply')->name('careers.apply.general.store');
 
 // Formularz aplikacji na konkretną ofertę
 Route::get('/praca/{position}/aplikuj', [CareersController::class, 'applyForm'])->name('careers.apply');
-Route::post('/praca/{position}/aplikuj', [CareersController::class, 'applyStore'])->name('careers.apply.store');
+Route::post('/praca/{position}/aplikuj', [CareersController::class, 'applyStore'])->middleware('throttle:careers-apply')->name('careers.apply.store');
 
 // Formularz kontaktowy
 Route::get('/kontakt', [ContactController::class, 'show'])->name('contact.show');

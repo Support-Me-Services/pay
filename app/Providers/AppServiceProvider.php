@@ -3,6 +3,9 @@
 namespace App\Providers;
 
 use App\Routing\TenantUrlGenerator;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -46,6 +49,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        // Ochrona przed masowym wysyłaniem zgłoszeń rekrutacyjnych — każde
+        // żądanie zapisuje plik CV, wpis w bazie i wysyła mail z załącznikiem.
+        // Limit per IP: krótkofalowy (burst) + dzienny.
+        RateLimiter::for('careers-apply', function (Request $request) {
+            return [
+                Limit::perMinute(2)->by($request->ip()),
+                Limit::perDay(10)->by($request->ip()),
+            ];
+        });
     }
 }

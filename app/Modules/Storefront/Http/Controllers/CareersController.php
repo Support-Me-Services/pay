@@ -56,6 +56,16 @@ class CareersController extends Controller
      */
     public function applyStore(Request $request, ?JobPosition $position = null)
     {
+        // Honeypot antyspamowy — boty wypełniają ukryte pole "website".
+        // Udajemy sukces (bez zapisu pliku/wpisu/maila), by nie zdradzać mechanizmu.
+        if ($request->filled('website')) {
+            return ($position && $position->exists
+                ? redirect()->route('careers.apply', $position)
+                : redirect()->route('careers.apply.general'))
+                ->with('success', 'Dziękujemy za zgłoszenie — odezwiemy się.')
+                ->with('apply_done', true);
+        }
+
         // Walidacja serwerowa (nie polegamy tylko na atrybutach HTML):
         //  - CV WYMAGANE, wyłącznie PDF/DOC/DOCX (rozszerzenie + MIME), max 5 MB,
         //  - zgoda RODO musi być zaznaczona (accepted),

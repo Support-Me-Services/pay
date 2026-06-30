@@ -53,6 +53,12 @@
                           enctype="multipart/form-data">
                         @csrf
 
+                        {{-- Honeypot antyspamowy: ukryte pole; człowiek go nie wypełni, bot często tak. --}}
+                        <div aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">
+                            <label for="website">Nie wypełniaj tego pola</label>
+                            <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+                        </div>
+
                         <div class="sp-field-row">
                             <div class="sp-field">
                                 <label for="name">Imię i nazwisko *</label>
