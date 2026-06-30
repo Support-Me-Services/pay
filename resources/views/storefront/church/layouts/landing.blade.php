@@ -87,8 +87,8 @@
                 NIP: 8741624637
             </div>
             <div class="lp-footer__qr">
-                <a class="lp-footer__qr-card" href="{{ asset('img/qr-main.svg') }}" aria-label="Powiększ kod QR" onclick="event.preventDefault();document.getElementById('qrZoom').classList.add('is-open')">
-                    <img src="{{ asset('img/qr-main.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com" width="108" height="108">
+                <a class="lp-footer__qr-card" href="{{ asset('img/qr-home.svg') }}" aria-label="Powiększ kod QR" onclick="event.preventDefault();document.getElementById('qrZoom').classList.add('is-open')">
+                    <img src="{{ asset('img/qr-home.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com" width="108" height="108">
                 </a>
                 <div class="lp-footer__qr-caption">
                     <strong>Zeskanuj — wejdź na stronę</strong>
@@ -99,7 +99,7 @@
     </footer>
 </div>
     <div class="qr-zoom" id="qrZoom" role="dialog" aria-modal="true" aria-label="Powiększony kod QR" onclick="this.classList.remove('is-open')">
-        <img src="{{ asset('img/qr-main.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com">
+        <img src="{{ asset('img/qr-home.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com">
     </div>
     <script>document.addEventListener('keydown',function(e){if(e.key==='Escape'){var z=document.getElementById('qrZoom');if(z){z.classList.remove('is-open');}}});</script>
 @stack('scripts')
