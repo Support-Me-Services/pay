@@ -84,7 +84,10 @@
             </a>
             <div class="lp-footer__legal">
                 Support Me Services Marcin Lula<br>
-                NIP: 8741624637
+                NIP: 8741624637<br>
+                REGON: 341224327<br>
+                e-mail: <a href="mailto:marcin.lula@please-support-me.com">marcin.lula@please-support-me.com</a><br>
+                tel.: <a href="tel:+48694841749">694 841 749</a>
             </div>
             <div class="lp-footer__qr">
                 <a class="lp-footer__qr-card" href="{{ asset('img/qr-home.svg') }}" aria-label="Powiększ kod QR" onclick="event.preventDefault();document.getElementById('qrZoom').classList.add('is-open')">
