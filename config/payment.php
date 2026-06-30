@@ -5,6 +5,12 @@ return [
     // payu | mock — przełączane w .env (PAYMENT_PROVIDER)
     'provider' => env('PAYMENT_PROVIDER', 'mock'),
 
+    // Poki PayU nie zatwierdzi sklepu: pomija platnosc i kieruje od razu na ekran podziekowania.
+    'bypass' => (bool) env('PAYMENT_BYPASS', false),
+
+    // PayU podpiete, ale powrot pomija weryfikacje statusu i idzie od razu na podziekowanie.
+    'return_bypass' => (bool) env('PAYMENT_RETURN_BYPASS', false),
+
     'payu' => [
         // sandbox | production
         'env' => env('PAYU_ENV', 'sandbox'),

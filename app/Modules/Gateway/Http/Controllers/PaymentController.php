@@ -183,6 +183,50 @@ class PaymentController extends Controller
     }
 
     /**
+     * POST /pay/{uuid}/online — klasyczna platnosc online (przelew/karta):
+     * tworzy standardowe zamowienie PayU bez wymuszonej metody i przekierowuje
+     * klienta na hostowana strone PayU z wyborem banku/karty.
+     */
+    public function online(Request $request, string $uuid)
+    {
+        $transaction = Transaction::findOrFail($uuid);
+
+        if ($transaction->isFinal()) {
+            return redirect()->route('pay.return', $transaction->id);
+        }
+
+        // Zamowienie juz istnieje (powrot bez dokonczenia) - kontynuuj.
+        if ($transaction->status === 'pending' && $transaction->provider_redirect_url) {
+            return redirect()->away($transaction->provider_redirect_url);
+        }
+
+        try {
+            $dto = $this->provider->createTransaction($transaction, $request->ip(), [
+                'classic' => true,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Platnosc online: utworzenie nieudane', [
+                'transaction' => $transaction->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->view('payment.error', ['transaction' => $transaction], 502);
+        }
+
+        if ($transaction->status === 'created') {
+            $this->transactions->logEvent($transaction, 'payment_started');
+        }
+
+        $transaction->update([
+            'status' => 'pending',
+            'provider_order_id' => $dto->providerOrderId,
+            'provider_redirect_url' => $dto->redirectUrl,
+        ]);
+
+        return redirect()->away($dto->redirectUrl);
+    }
+
+    /**
      * GET /pay/{uuid}/status — polling statusu z hostowanej strony BLIK.
      */
     public function status(string $uuid)

@@ -75,3 +75,33 @@
     .paywin__input{ font-size:64px; }
     .paywin__hint{ display:none; }
 }
+
+/* ---- Sekcja wsparcia + karuzela fundacji ---- */
+.paywin__support{ display:flex; flex-direction:column; align-items:center; gap:10px; width:min(440px,90vw); }
+.paywin__support-label{ margin:0; font-size:13px; color:#5b6b82; font-weight:600; letter-spacing:.02em; text-align:center; }
+.fnd{ display:flex; align-items:center; gap:6px; width:100%; }
+.fnd__viewport{ overflow:hidden; flex:1 1 auto; }
+.fnd__track{ display:flex; transition:transform .3s ease; will-change:transform; }
+.fnd__item{ flex:0 0 150px; height:56px; display:flex; align-items:center; justify-content:center;
+    opacity:.4; transform:scale(.78); filter:grayscale(1); transition:opacity .3s ease, transform .3s ease, filter .3s ease; cursor:pointer; }
+.fnd__item.is-active{ opacity:1; transform:scale(1); filter:none; cursor:default; }
+.fnd__logo{ display:flex; align-items:center; justify-content:center; height:100%; padding:0 8px; }
+.fnd__logo img{ max-height:42px; max-width:140px; object-fit:contain; display:block; }
+.fnd__name{ font-weight:800; color:#24324a; font-size:14px; line-height:1.15; text-align:center; }
+.fnd__nav{ flex:0 0 auto; width:30px; height:30px; border-radius:50%; border:1px solid #d4deea; background:#fff;
+    color:#1473C0; font-size:18px; line-height:1; cursor:pointer; }
+.fnd__nav:hover{ background:#eef4fb; }
+/* przycisk Wesprzyj — ikona + tekst */
+.paywin__btn{ display:flex; align-items:center; justify-content:center; gap:9px; }
+@media (max-height:680px){ .paywin__support{ gap:6px; } .fnd__item{ height:46px; } .fnd__logo img{ max-height:34px; } }
+
+/* logo fundacji na bialej karcie + wieksze (czytelnosc) */
+.fnd__item{ height:80px; }
+.fnd__logo{ background:#fff; border:1px solid #e6eaf0; border-radius:12px; padding:8px 10px; height:66px; width:134px; box-sizing:border-box; }
+.fnd__logo img{ max-height:50px; max-width:112px; }
+.fnd__name{ font-size:13px; }
+
+/* link polityki prywatnosci pod przyciskiem Wesprzyj */
+.paywin__policy{ margin:0; font-size:12px; line-height:1.5; color:#7a8aa0; text-align:center; max-width:min(440px,90vw); }
+.paywin__policy a{ color:#1473C0; text-decoration:underline; }
+.paywin__policy a:hover{ color:#0f5aa0; }

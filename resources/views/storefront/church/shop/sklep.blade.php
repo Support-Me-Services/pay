@@ -17,6 +17,21 @@
     $serverErr = session('error') ?? ($errors->first('amount_pln') ?: null);
 @endphp
 
+@php
+    // Fundacje wspierane (karuzela). Edytuj listę / wrzuć logo do public/img/fundacje/<slug>.(svg|png|webp).
+    $foundations = [
+        ['slug' => 'legalsight',     'name' => 'LegalSight Polska'],
+        ['slug' => 'twoja-fundacja', 'name' => 'Twoja Fundacja'],
+    ];
+    foreach ($foundations as $k => $f) {
+        $logo = null;
+        foreach (['svg','png','webp','jpg'] as $e) {
+            if (is_file(public_path("img/fundacje/{$f['slug']}.$e"))) { $logo = "img/fundacje/{$f['slug']}.$e"; break; }
+        }
+        $foundations[$k]['logo'] = $logo;
+    }
+@endphp
+
 <div class="paywin" id="paywin" data-main="{{ route('main') }}" data-start="{{ $startIdx }}">
     <button class="paywin__close" type="button" data-close aria-label="Zamknij">&times;</button>
 
@@ -37,13 +52,35 @@
 
     <p class="paywin__err" id="payErr" role="alert" @if(! $serverErr) hidden @endif>{{ $serverErr }}</p>
 
+    <div class="paywin__support">
+        <p class="paywin__support-label">Dochód przeznaczamy na wsparcie:</p>
+        <div class="fnd" id="fnd">
+            <button class="fnd__nav fnd__nav--prev" type="button" aria-label="Poprzednia fundacja">&lsaquo;</button>
+            <div class="fnd__viewport">
+                <div class="fnd__track" id="fndTrack">
+                    @foreach($foundations as $i => $f)
+                        <div class="fnd__item{{ $i === 0 ? ' is-active' : '' }}" data-slug="{{ $f['slug'] }}" title="{{ $f['name'] }}">
+                            <div class="fnd__logo">
+                                @if($f['logo'])<img src="{{ asset($f['logo']) }}" alt="{{ $f['name'] }}">@else<span class="fnd__name">{{ $f['name'] }}</span>@endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            <button class="fnd__nav fnd__nav--next" type="button" aria-label="Nastepna fundacja">&rsaquo;</button>
+        </div>
+    </div>
+
     <div class="paywin__dots" id="payDots" aria-hidden="true"></div>
 
     <form method="POST" id="payForm" action="{{ route('shop.buy', optional($start)->slug) }}" class="paywin__form">
         @csrf
         <input type="hidden" name="amount_pln" id="payHidden" value="{{ optional($start)->minAmountPln() }}">
-        <button type="submit" class="paywin__btn">KUP</button>
+        <input type="hidden" name="fundacja" id="fndInput" value="{{ $foundations[0]['slug'] }}">
+        <button type="submit" class="paywin__btn">Wesprzyj<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A"/><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" stroke-width="1.5" stroke-linecap="round"/><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" stroke-width="1.5" stroke-linecap="round"/></svg></button>
     </form>
+
+    <p class="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer" download>Politykę prywatności i regulamin (PDF)</a></p>
 
     <div class="paywin__hint">‹ przesuń, aby zmienić produkt ›</div>
 </div>
@@ -175,6 +212,42 @@
     focusInput();
     setTimeout(focusInput, 200);
     window.addEventListener('load', focusInput);
+})();
+</script>
+
+<script>
+(function () {
+    var fnd = document.getElementById('fnd');
+    if (!fnd) return;
+    var track = document.getElementById('fndTrack');
+    var vp = fnd.querySelector('.fnd__viewport');
+    var input = document.getElementById('fndInput');
+    var items = [].slice.call(track.children);
+    var IW = 150, active = 0;
+
+    function layout() {
+        var w = vp.clientWidth;
+        track.style.transform = 'translateX(' + (w / 2 - (active * IW + IW / 2)) + 'px)';
+        items.forEach(function (it, i) { it.classList.toggle('is-active', i === active); });
+        if (input && items[active]) input.value = items[active].getAttribute('data-slug') || '';
+    }
+    function setActive(i) { active = Math.max(0, Math.min(items.length - 1, i)); layout(); }
+
+    items.forEach(function (it, i) { it.addEventListener('click', function () { setActive(i); }); });
+    var prev = fnd.querySelector('.fnd__nav--prev'), next = fnd.querySelector('.fnd__nav--next');
+    if (prev) prev.addEventListener('click', function () { setActive(active - 1); });
+    if (next) next.addEventListener('click', function () { setActive(active + 1); });
+
+    // swipe lokalny — nie propaguj do swipe produktow
+    var sx = null;
+    vp.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; e.stopPropagation(); }, { passive: true });
+    vp.addEventListener('touchmove', function (e) { e.stopPropagation(); }, { passive: true });
+    vp.addEventListener('touchend', function (e) { if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) setActive(active + (dx < 0 ? 1 : -1)); sx = null; }, { passive: true });
+    vp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+
+    window.addEventListener('resize', layout);
+    setTimeout(layout, 60);
+    layout();
 })();
 </script>
 @endsection

@@ -18,6 +18,11 @@ class OrderReturnController extends Controller
      */
     public function show(string $orderId)
     {
+        // PayU podpiete, ale pomijamy weryfikacje statusu - od razu podziekowanie.
+        if (config('payment.return_bypass')) {
+            return redirect()->route('main', ['dzieki' => 1]);
+        }
+
         $order = Order::with('product.images')->findOrFail($orderId);
 
         $this->syncStatusFromGateway($order);
@@ -27,7 +32,8 @@ class OrderReturnController extends Controller
 
             // Sklep parafialny (Taca) nie ma odbioru towaru — pomijamy logikę pickup.
             if (config('platform.shop_kind') === 'church') {
-                return view('shop.return-success', compact('order', 'product'));
+                // Podziekowanie pokazujemy jako modal na stronie glownej (/main).
+                return redirect()->route('main', ['dzieki' => 1]);
             }
 
             // Animacja linki dla produktów zabezpieczonych linką;

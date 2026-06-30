@@ -6,7 +6,7 @@
 @section('content')
     <div class="auth-wrap">
         <div class="auth-card">
-            <h2 class="text-center">nfc<span class="text-brand">pay</span></h2>
+            <h2 class="text-center">Support<span class="text-brand">ME</span></h2>
             <p class="text-muted text-center mb-3">Panel bramki płatności</p>
 
             <form method="POST" action="{{ route('panel.login.post') }}">

@@ -47,9 +47,9 @@ img{ display:block; max-width:100%; }
 .lp-nav a{ font-size:14px; line-height:33px; color:var(--lp-ink); white-space:nowrap; }
 .lp-nav a:hover{ color:var(--lp-blue-b); }
 .lp-nav a[aria-current="page"]{ font-weight:700; }
-.lp-nav__support{ display:inline-block; border:0; cursor:pointer; font-family:var(--lp-ui); font-size:14px; font-weight:700; color:#fff; background:linear-gradient(117deg,var(--lp-blue-a),var(--lp-blue-b)); padding:9px 22px; border-radius:999px; line-height:1; white-space:nowrap; }
-.lp-nav__support:hover{ color:#fff; }
-.lp-nav__support:hover{ filter:brightness(1.08); }
+.lp-nav a.lp-nav__support{ display:inline-block; border:0; cursor:pointer; font-family:var(--lp-ui); font-size:14px; font-weight:700; color:#fff; background:linear-gradient(117deg,var(--lp-blue-a),var(--lp-blue-b)); padding:9px 22px; border-radius:999px; line-height:1; white-space:nowrap; }
+.lp-nav a.lp-nav__support:hover{ color:#fff; }
+.lp-nav a.lp-nav__support:hover{ filter:brightness(1.08); }
 
 /* ---------- HERO ---------- */
 .lp-hero{

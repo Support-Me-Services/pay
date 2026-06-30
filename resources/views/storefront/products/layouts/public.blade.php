@@ -26,7 +26,7 @@
     <footer class="site-footer">
         <div class="container">
             <strong>{{ config('shop.name') }}</strong> — płatności obsługuje
-            <strong style="color:var(--brand)">nfcpay</strong> (PayU)<br>
+            <strong style="color:var(--brand)">PayU</strong><br>
             <span class="small">MARCIN LULA · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637 · REGON 341224327</span><br>
             <span class="small"><a href="{{ route('regulamin') }}">Regulamin sklepu</a> · kontakt: kontakt@please-support-me.com · &copy; {{ date('Y') }}</span>
         </div>

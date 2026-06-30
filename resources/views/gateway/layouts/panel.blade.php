@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Panel bramki') — NFC Pay</title>
+    <title>@yield('title', 'Panel bramki') — SupportME</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
 <body>
 <div class="panel-wrap">
     <aside class="panel-sidebar">
-        <div class="brand">nfc<span class="dot">pay</span> panel</div>
+        <div class="brand">Support<span class="dot">ME</span> panel</div>
         <nav class="panel-nav">
             <a href="{{ route('panel.dashboard') }}" class="{{ request()->routeIs('panel.dashboard') ? 'active' : '' }}">Dashboard</a>
             <a href="{{ route('panel.shops.index') }}" class="{{ request()->routeIs('panel.shops.*') || request()->routeIs('panel.tags.*') ? 'active' : '' }}">Sklepy</a>

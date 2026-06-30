@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/pay/{uuid}', [PaymentController::class, 'show'])->name('pay.show');
 Route::post('/pay/{uuid}/blik', [PaymentController::class, 'blik'])->name('pay.blik');
 Route::post('/pay/{uuid}/bank', [PaymentController::class, 'bank'])->name('pay.bank');
+Route::post('/pay/{uuid}/online', [PaymentController::class, 'online'])->name('pay.online');
 Route::get('/pay/{uuid}/status', [PaymentController::class, 'status'])->name('pay.status');
 Route::get('/pay/{uuid}/return', [PaymentController::class, 'return'])->name('pay.return');
 

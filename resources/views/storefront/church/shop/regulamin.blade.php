@@ -24,7 +24,7 @@
             <article class="sp-legal__body">
                 <section class="sp-legal__section">
                     <h2>§ 1. Postanowienia ogólne</h2>
-                    <ol><li>Niniejszy regulamin określa zasady korzystania ze sklepu internetowego www.please-suport-me.com w tym zasady zawierania umów sprzedaży, dostawy towarów, prawa do odstąpienia od umowy oraz trybu postępowania reklamacyjnego.</li><li>Sklep internetowy prowadzony jest przez Marcina Lulę prowadzącego działalność gospodarczą pn. MLI Marcin Lula z siedzibą pod adresem w Pruszkowie przy ul. dr Izabeli Wolfram nr 11, 05-800 Pruszków, NIP: 8741624637 REGON: 341224327(„Sprzedawca”).</li><li>Kontakt ze Sprzedawcą jest możliwy za pośrednictwem poczty e-mail: <a href="mailto:office@please-support-me.com">office@please-support-me.com</a> w godzinach 8:00-20:00</li></ol>
+                    <ol><li>Niniejszy regulamin określa zasady korzystania ze sklepu internetowego www.please-suport-me.com w tym zasady zawierania umów sprzedaży, dostawy towarów, prawa do odstąpienia od umowy oraz trybu postępowania reklamacyjnego.</li><li>Sklep internetowy prowadzony jest przez Marcina Lulę prowadzącego działalność gospodarczą pn. Support Me Services Marcin Lula z siedzibą pod adresem w Pruszkowie przy ul. dr Izabeli Wolfram nr 11, 05-800 Pruszków, NIP: 8741624637 REGON: 341224327(„Sprzedawca”).</li><li>Kontakt ze Sprzedawcą jest możliwy za pośrednictwem poczty e-mail: <a href="mailto:office@please-support-me.com">office@please-support-me.com</a> w godzinach 8:00-20:00</li></ol>
                 </section>
                 <section class="sp-legal__section">
                     <h2>§ 2. Definicje</h2>
@@ -79,7 +79,7 @@
                 </section>
                 <section class="sp-legal__section">
                     <h2>ZAŁĄCZNIK NR 1 – WZÓR FORMULARZA ODSTĄPIENIA OD UMOWY</h2>
-                    <p>MLI Marcin Lula</p>
+                    <p>Support Me Services Marcin Lula</p>
                     <p>ul. dr Izabeli Wolfram nr 11</p>
                     <p>05-800 Pruszków</p>
                     <p>Niniejszym informuję, że zgodnie z art. 27 ustawy z dnia 30 maja 2014 r. o prawach konsumenta odstępuję od umowy sprzedaży następujących towarów:</p>

@@ -33,7 +33,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v={{ substr(md5_file(public_path('css/landing.css')), 0, 10) }}">
+    {{-- Stopka: blok QR prowadzący na stronę główną (page-scoped, nie rusza globalnego CSS) --}}
+    <style>
+        .lp-footer__qr{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:4px; }
+        .lp-footer__qr-card{ background:#fff; padding:8px; border-radius:12px; line-height:0; box-shadow:0 4px 14px rgba(0,0,0,.18); }
+        .lp-footer__qr-card img{ display:block; width:108px; height:108px; }
+        .lp-footer__qr-caption{ font-size:15px; line-height:1.35; color:#fff; opacity:.95; }
+        .lp-footer__qr-caption strong{ display:block; font-weight:600; }
+    </style>
     @stack('head')
+    <style>
+      .lp-footer__qr-card{cursor:zoom-in}
+      .qr-zoom{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.82);cursor:zoom-out}
+      .qr-zoom.is-open{display:flex}
+      .qr-zoom img{width:min(80vw,80vh,420px);height:auto;background:#fff;padding:18px;border-radius:14px;box-shadow:0 12px 48px rgba(0,0,0,.45)}
+    </style>
 </head>
 <body class="lp">
 <div class="lp-page">
@@ -43,7 +57,6 @@
         </a>
         <nav class="lp-nav">
             <a href="{{ route('main') }}" @if(request()->routeIs('main')) aria-current="page" @endif>Strona główna</a>
-            <a class="lp-nav__shop" href="{{ route('home') }}" @if(request()->routeIs('home')) aria-current="page" @endif>Sklep</a>
             <a href="{{ route('careers') }}" @if(request()->routeIs('careers')) aria-current="page" @endif>Rekrutacja</a>
             <a href="{{ route('investors') }}" @if(request()->routeIs('investors')) aria-current="page" @endif>Inwestorzy i akcjonariusze</a>
             <a class="lp-nav__support" href="{{ route('home', ['produkt' => 'serduszko']) }}">Wesprzyj</a>
@@ -64,17 +77,31 @@
                 <a href="{{ route('investors') }}">Inwestorzy i akcjonariusze</a>
                 <a href="{{ route('regulamin') }}">Polityka prywatności i regulamin</a>
                 <a href="{{ route('docs') }}">Dokumentacja</a>
+                <a href="{{ route('thanks') }}">Dziękujemy</a>
             </div>
             <a class="lp-footer__social" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
                 <img src="{{ asset('img/landing/linkedin.svg') }}" alt="LinkedIn">
             </a>
             <div class="lp-footer__legal">
-                MLI - Marcin Lula Informatyka<br>
+                Support Me Services Marcin Lula<br>
                 NIP: 8741624637
+            </div>
+            <div class="lp-footer__qr">
+                <a class="lp-footer__qr-card" href="{{ asset('img/qr-main.svg') }}" aria-label="Powiększ kod QR" onclick="event.preventDefault();document.getElementById('qrZoom').classList.add('is-open')">
+                    <img src="{{ asset('img/qr-main.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com" width="108" height="108">
+                </a>
+                <div class="lp-footer__qr-caption">
+                    <strong>Zeskanuj — wejdź na stronę</strong>
+                    please-support-me.com
+                </div>
             </div>
         </div>
     </footer>
 </div>
+    <div class="qr-zoom" id="qrZoom" role="dialog" aria-modal="true" aria-label="Powiększony kod QR" onclick="this.classList.remove('is-open')">
+        <img src="{{ asset('img/qr-main.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com">
+    </div>
+    <script>document.addEventListener('keydown',function(e){if(e.key==='Escape'){var z=document.getElementById('qrZoom');if(z){z.classList.remove('is-open');}}});</script>
 @stack('scripts')
 </body>
 </html>

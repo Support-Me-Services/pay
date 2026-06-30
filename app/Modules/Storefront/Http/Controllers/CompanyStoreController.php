@@ -30,6 +30,11 @@ class CompanyStoreController extends Controller
     /** POST /sklep/kup/{slug} — utwórz transakcję na wybraną kwotę (≥ min produktu). */
     public function purchase(Request $request, string $slug, GatewayClient $gateway)
     {
+        // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i od razu kierujemy na podziekowanie.
+        if (config('payment.bypass')) {
+            return redirect()->route('main', ['dzieki' => 1]);
+        }
+
         $item = ShopItem::where('slug', $slug)->where('active', true)->firstOrFail();
         $minPln = (int) max(1, ceil($item->min_amount / 100));
 

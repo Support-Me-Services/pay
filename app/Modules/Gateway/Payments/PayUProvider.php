@@ -64,7 +64,7 @@ class PayUProvider implements PaymentProviderInterface
             $payload['payMethods'] = [
                 'payMethod' => ['type' => 'BLIK_AUTHORIZATION_CODE', 'value' => $blikCode],
             ];
-        } elseif ($transaction->mode === 'app2app') {
+        } elseif ($transaction->mode === 'app2app' && empty($context['classic'])) {
             // Fallback bez kodu: wymuszony BLIK (PBL) — strona BLIK z polem na kod.
             $payload['payMethods'] = [
                 'payMethod' => ['type' => 'PBL', 'value' => 'blik'],

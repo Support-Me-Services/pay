@@ -8,7 +8,7 @@
         <div class="card card-static" style="width:100%;max-width:420px">
             <div class="card-body">
                 <div class="d-flex justify-between align-center mb-2">
-                    <span class="site-logo" style="color:var(--ink)">nfc<span class="dot">pay</span></span>
+                    <span class="site-logo" style="color:var(--ink)">Support<span class="dot">ME</span></span>
                     <span class="badge badge-muted">płatność testowa</span>
                 </div>
 

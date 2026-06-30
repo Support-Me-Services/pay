@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'NFC Pay — sprzedawaj bez kasy i bez obsługi')
+@section('title', 'SupportME — sprzedawaj bez kasy i bez obsługi')
 
 @section('content')
     <section class="hero">
@@ -96,7 +96,7 @@
     <section class="section" id="wdrozenia">
         <div class="container">
             <h2>Przykładowe wdrożenia</h2>
-            <p class="text-muted">Tak NFC Pay zarabia w punktach pilotażowych. Liczby z trzech scenariuszy
+            <p class="text-muted">Tak SupportME zarabia w punktach pilotażowych. Liczby z trzech scenariuszy
                 wdrożeniowych — Twoje policzymy indywidualnie.</p>
             <div class="case-grid mt-3">
                 <div class="case-card">
@@ -220,7 +220,7 @@
                     <a href="#kontakt" class="btn btn-primary btn-block">Umów wycenę</a>
                 </div>
             </div>
-            <p class="small text-muted mt-2">Do prowizji NFC Pay dochodzi standardowa opłata operatora płatności (PayU).
+            <p class="small text-muted mt-2">Do prowizji SupportME dochodzi standardowa opłata operatora płatności (PayU).
                 Podane stawki są przykładowe i zależą od wolumenu transakcji.</p>
         </div>
     </section>

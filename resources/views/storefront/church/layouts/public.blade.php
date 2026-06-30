@@ -55,7 +55,7 @@
     <footer class="site-footer">
         <div class="container">
             <strong>{{ config('shop.name') }}</strong> — wpłaty obsługuje
-            <span class="brand">nfcpay</span> (PayU).<br>
+            <span class="brand">PayU</span>.<br>
             Twoje wsparcie trafia w całości do wybranej parafii.
             <div class="fine">
                 Operator płatności: MARCIN LULA · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637<br>

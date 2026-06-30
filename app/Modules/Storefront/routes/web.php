@@ -20,6 +20,13 @@ Route::post('/sklep/kup/{slug}', [CompanyStoreController::class, 'purchase'])->n
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
+Route::view('/dziekujemy', 'shop.dziekujemy')->name('thanks');
+
+// Podstrony segmentów (treść z Figmy)
+Route::view('/fundacje', 'shop.fundacje')->name('fundacje');
+Route::view('/parafie', 'shop.parafie')->name('parafie');
+Route::view('/szkoly', 'shop.szkoly')->name('szkoly');
+Route::view('/mecenasi/lokalny-rolnik', 'shop.mecenasi-lokalny-rolnik')->name('mecenasi.lokalnyrolnik');
 // Inwestorzy i akcjonariusze (statyczna strona marketingowa wg Figmy „Inwestorzy")
 Route::view('/inwestorzy', 'shop.inwestorzy')->name('investors');
 
