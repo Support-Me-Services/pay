@@ -103,6 +103,5 @@
     </div>
     <script>document.addEventListener('keydown',function(e){if(e.key==='Escape'){var z=document.getElementById('qrZoom');if(z){z.classList.remove('is-open');}}});</script>
 @stack('scripts')
-<!-- e2e-deploy-test-7f3a9c -->
 </body>
 </html>
