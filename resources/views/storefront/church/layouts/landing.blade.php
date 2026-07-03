@@ -75,7 +75,8 @@
             <div class="lp-footer__links">
                 <a href="{{ route('careers') }}">Rekrutacja</a>
                 <a href="{{ route('investors') }}">Inwestorzy i akcjonariusze</a>
-                <a href="{{ route('regulamin') }}">Polityka prywatności i regulamin</a>
+                <a href="{{ route('regulamin') }}">Regulamin</a>
+                <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer">Polityka prywatności</a>
                 <a href="{{ route('docs') }}">Dokumentacja</a>
                 <a href="{{ route('thanks') }}">Dziękujemy</a>
             </div>

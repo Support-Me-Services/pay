@@ -58,8 +58,8 @@
             <span class="brand">PayU</span>.<br>
             Twoje wsparcie trafia w całości do wybranej parafii.
             <div class="fine">
-                Operator płatności: MARCIN LULA · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637<br>
-                <a href="{{ route('careers') }}">Praca</a> · <a href="{{ route('contact.show') }}">Kontakt</a> · <a href="{{ route('regulamin') }}">Regulamin</a> · kontakt: kontakt@please-support-me.com · &copy; {{ date('Y') }}
+                Operator płatności: Support Me Services Marcin Lula · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637<br>
+                <a href="{{ route('careers') }}">Praca</a> · <a href="{{ route('contact.show') }}">Kontakt</a> · <a href="{{ route('regulamin') }}">Regulamin</a> · <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer">Polityka prywatności</a> · kontakt: kontakt@please-support-me.com · &copy; {{ date('Y') }}
             </div>
         </div>
     </footer>

@@ -80,7 +80,7 @@
         <button type="submit" class="paywin__btn">Wesprzyj<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A"/><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" stroke-width="1.5" stroke-linecap="round"/><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" stroke-width="1.5" stroke-linecap="round"/></svg></button>
     </form>
 
-    <p class="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer" download>Politykę prywatności i regulamin (PDF)</a></p>
+    <p class="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer">Politykę prywatności (PDF)</a> i <a href="{{ route('regulamin') }}" target="_blank" rel="noopener noreferrer">Regulamin</a></p>
 
     <div class="paywin__hint">‹ przesuń, aby zmienić produkt ›</div>
 </div>
