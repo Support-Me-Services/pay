@@ -42,7 +42,7 @@ server {
     listen 443 ssl http2;
     server_name pay.please-support-me.com please-support-me.com www.please-support-me.com;
 
-    root /var/www/pay/unified/public;
+    root /var/www/support-me/public;
     index index.php;
 
     # ssl_certificate / ssl_certificate_key — wg posiadanych certyfikatów
@@ -53,7 +53,7 @@ server {
     }
 
     location ~ \.php$ {
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -69,9 +69,10 @@ jeden `.env`.
 ## Deploy w skrócie
 
 ```bash
-cd /var/www/pay/unified
-composer install --no-dev --optimize-autoloader
-php artisan config:clear && php artisan view:clear
+cd /var/www/support-me            # prod to checkout git (repo jest własnością root → sudo)
+sudo git pull --ff-only origin main
+composer install --no-dev --optimize-autoloader   # tylko gdy zmieniły się zależności
+sudo -u www-data php8.2 artisan config:clear && sudo -u www-data php8.2 artisan view:clear && sudo -u www-data php8.2 artisan route:clear
 # config:cache / route:cache są bezpieczne — ResolveTenant nadpisuje config()
 # w runtime, a TENANT przy buforowaniu trafia do domyślnego tenanta CLI.
 # (opcjonalnie) restart php-fpm / kolejek
