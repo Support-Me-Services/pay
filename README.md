@@ -1,4 +1,4 @@
-# pay — bramka płatności NFC Pay (pay.redai.pl)
+# pay — bramka płatności NFC Pay (pay.please-support-me.com)
 
 Landing page „Dołącz do nas", panel bramki, REST API dla sklepów, integracja PayU + symulator (MockProvider).
 
@@ -11,7 +11,7 @@ cp .env.example .env && php artisan key:generate
 php artisan migrate --seed
 ```
 
-Seeder tworzy: użytkownika `m@suli.pl` / `pay3322`, sklepy `shop1` (classic) i `shop2` (app2app) z kluczami API, po 5 tagów (`TAG-S1-001…005`, `TAG-S2-001…005`) oraz dane statystyczne demo za 30 dni.
+Seeder tworzy: użytkownika `m@suli.pl` / `pay3322`, sklep demo `shop1` (classic) z kluczem API, 5 tagów (`TAG-S1-001…005`) oraz dane statystyczne demo za 30 dni.
 
 Klucz API sklepu (do `.env` instancji sklepu): `SELECT slug, api_key FROM shops;`
 
@@ -27,7 +27,7 @@ PAYU_CLIENT_SECRET=          # Klucze API
 PAYU_SECOND_KEY=             # drugi klucz (MD5) — do weryfikacji webhooków
 ```
 
-W panelu PayU ustaw adres notyfikacji: `https://pay.redai.pl/webhooks/payu` i aktywuj BLIK na POS-ie.
+W panelu PayU ustaw adres notyfikacji: `https://pay.please-support-me.com/webhooks/payu` i aktywuj BLIK na POS-ie.
 
 ## Architektura płatności
 

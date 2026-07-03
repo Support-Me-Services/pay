@@ -87,7 +87,6 @@
                 <tbody>
                     <tr><td data-label="Host (domena)"><code>pay.please-support-me.com</code></td><td data-label="Moduł">Gateway</td><td data-label="Tryb">—</td><td data-label="Baza"><code>nfc_pay</code></td><td data-label="Rola">Bramka płatności, panel tagów/sklepów</td></tr>
                     <tr><td data-label="Host (domena)"><code>please-support-me.com</code></td><td data-label="Moduł">Storefront</td><td data-label="Tryb"><code>church</code></td><td data-label="Baza"><code>nfc_shop1</code></td><td data-label="Rola">Cyfrowa Taca, sklep, CRM, rekrutacja (główny serwis)</td></tr>
-                    <tr><td data-label="Host (domena)"><code>shop2.please-support-me.com</code></td><td data-label="Moduł">Storefront</td><td data-label="Tryb"><code>products</code></td><td data-label="Baza"><code>nfc_shop2</code></td><td data-label="Rola">Sklep gadżetów ze stałą ceną (osobny tenant)</td></tr>
                 </tbody>
             </table>
         </div>
@@ -1287,7 +1286,7 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
                 </tbody>
             </table>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Baza nfc_shop1 (Taca / church) — także nfc_shop2 (products)</span>
+        <div class="dc-block"><span class="dc-block__label">Baza nfc_shop1 (Taca / church)</span>
             <table class="dc-table">
                 <thead><tr><th>Tabela</th><th>Kluczowe kolumny</th></tr></thead>
                 <tbody>
@@ -1331,7 +1330,7 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
             </tbody>
         </table>
 
-        <h3 class="dc-sub">Pełne typy kolumn z migracji — sklep (nfc_shop1 / nfc_shop2)</h3>
+        <h3 class="dc-sub">Pełne typy kolumn z migracji — sklep (nfc_shop1)</h3>
         <table class="dc-table">
             <thead><tr><th>Tabela.kolumna</th><th>Typ (migracja)</th><th>Atrybuty</th></tr></thead>
             <tbody>

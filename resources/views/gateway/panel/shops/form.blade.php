@@ -20,7 +20,7 @@
                 </div>
                 <div class="form-group">
                     <label for="base_url">Adres URL sklepu *</label>
-                    <input type="text" id="base_url" name="base_url" value="{{ old('base_url', $shop->base_url) }}" placeholder="https://shop1.redai.pl" required>
+                    <input type="text" id="base_url" name="base_url" value="{{ old('base_url', $shop->base_url) }}" placeholder="https://please-support-me.com" required>
                     @error('base_url')<div class="form-error">{{ $message }}</div>@enderror
                 </div>
                 <div class="form-group">

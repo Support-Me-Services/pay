@@ -45,7 +45,7 @@ class GatewayServiceProvider extends ServiceProvider
             Route::domain($host)->middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');
         }
 
-        // Migracje ładowane bezwarunkowo — `migrate` z TENANT=pay.redai.pl
+        // Migracje ładowane bezwarunkowo — `migrate` z TENANT=pay.please-support-me.com
         // utworzy tabele bramki w wybranej bazie.
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 

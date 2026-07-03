@@ -11,7 +11,7 @@ Artisan::command('inspire', function () {
 
 // W CLI nie ma hosta — rozwiąż tenant z config('tenants.default') (TENANT env),
 // aby ustawić bazę (DB_DATABASE) i platform.role przed migracjami/seedami.
-//   np. TENANT=shop1.redai.pl php artisan db:seed  => baza nfc_shop1, motyw church
+//   np. TENANT=please-support-me.com php artisan db:seed  => baza nfc_shop1, motyw church
 $tenant = ResolveTenant::applyTenant(null);
 
 // Harmonogram bramki — aktywny tylko gdy aktywnym tenantem CLI jest bramka.

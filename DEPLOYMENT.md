@@ -1,27 +1,25 @@
 # Wdrożenie — NFC Pay unified (multi-tenant po hoście)
 
 Jedna instancja Laravela obsługuje wszystkie domeny jednocześnie. Moduł
-(bramka/sklep), motyw (products/church) oraz baza danych wybierane są na
+(bramka/sklep) oraz baza danych wybierane są na
 podstawie hosta żądania — patrz `config/tenants.php` i
 `app/Http/Middleware/ResolveTenant.php`.
 
 ## Mapa hostów (config/tenants.php)
 
-| Host                    | Moduł      | Motyw    | Baza       |
-|-------------------------|------------|----------|------------|
-| pay.redai.pl            | gateway    | —        | nfc_pay    |
-| shop2.redai.pl          | storefront | products | nfc_shop2  |
-| shop1.redai.pl          | storefront | church   | nfc_shop1  |
-| please-support-me.com   | storefront | church   | nfc_shop1  |
+| Host                        | Moduł      | Motyw  | Baza      |
+|-----------------------------|------------|--------|-----------|
+| pay.please-support-me.com   | gateway    | —      | nfc_pay   |
+| please-support-me.com       | storefront | church | nfc_shop1 |
 
-Wszystkie trzy bazy są dostępne przez tego samego użytkownika MySQL `nfc_pay`.
+Obie bazy są dostępne przez tego samego użytkownika MySQL `nfc_pay`.
 
 ## .env (jeden plik, bez wariantów per-rola)
 
 ```bash
 cp .env.example .env
 # ustaw APP_KEY (php artisan key:generate), DB_PASSWORD (patrz /var/www/pay/pay/.env),
-# PAYU_* oraz GATEWAY_URL=https://pay.redai.pl
+# PAYU_* oraz GATEWAY_URL=https://pay.please-support-me.com
 php artisan config:clear
 ```
 
@@ -30,9 +28,8 @@ startowa — `ResolveTenant` nadpisuje ją per żądanie. `TENANT` jest fallback
 wyłącznie dla CLI (artisan, kolejki, harmonogram), np.:
 
 ```bash
-TENANT=shop1.redai.pl php artisan db:seed   # seeduje bazę nfc_shop1
-TENANT=shop2.redai.pl php artisan migrate    # migruje bazę nfc_shop2
-# bez TENANT => domyślnie pay.redai.pl => baza nfc_pay
+TENANT=please-support-me.com php artisan db:seed   # seeduje bazę nfc_shop1
+# bez TENANT => domyślnie pay.please-support-me.com => baza nfc_pay
 ```
 
 Istniejące bazy mają już tabele — NIE uruchamiaj `migrate` na produkcji bez
@@ -43,13 +40,13 @@ potrzeby.
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name pay.redai.pl shop1.redai.pl shop2.redai.pl please-support-me.com;
+    server_name pay.please-support-me.com please-support-me.com www.please-support-me.com;
 
     root /var/www/pay/unified/public;
     index index.php;
 
     # ssl_certificate / ssl_certificate_key — wg posiadanych certyfikatów
-    # (osobne/SAN dla redai.pl i please-support-me.com).
+    # (SAN dla please-support-me.com i pay.please-support-me.com).
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;

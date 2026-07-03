@@ -68,7 +68,7 @@ return [
         // przypięte do tego połączenia (protected $connection = 'gateway'),
         // dzięki czemu czytają dane bramki niezależnie od domyślnej bazy
         // wybranej per host przez ResolveTenant (na hoście sklepu domyślny
-        // 'mysql' wskazuje nfc_shop1/nfc_shop2).
+        // 'mysql' wskazuje nfc_shop1).
         'gateway' => [
             'driver' => env('DB_GATEWAY_DRIVER', 'mysql'),
             'url' => env('DB_URL'),

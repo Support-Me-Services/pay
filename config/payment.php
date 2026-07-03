@@ -24,7 +24,7 @@ return [
         'second_key' => env('PAYU_SECOND_KEY'),
     ],
 
-    // Drugi POS (nowy sklep "NFC Pay - sklep demo" / shop1.redai.pl) — używany
+    // Drugi POS (nowy sklep "NFC Pay - sklep demo" / please-support-me.com) — używany
     // tylko do sprawdzania, czy PayU sprovisionował metody (sygnał aktywacji).
     'payu_newpos' => [
         'client_id' => env('PAYU_NEWPOS_CLIENT_ID'),

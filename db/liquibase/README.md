@@ -10,8 +10,8 @@ wykonania na **PostgreSQL** (Cloud SQL `nfc-postgres-prod`).
 | `mariadb-raw/` | Surowy `generateChangeLog` z żywej prod MariaDB (introspekcja). **Referencja** — nie wykonuje się 1:1 na PG. |
 | `postgres/`    | Wersja przetłumaczona na PostgreSQL — **to się uruchamia**, by utworzyć schemat. |
 
-Trzy bazy = trzy osobne changelogi (każdy wykonywany na swojej bazie):
-`nfc_pay`, `nfc_shop1`, `nfc_shop2`.
+Dwie bazy = dwa osobne changelogi (każdy wykonywany na swojej bazie):
+`nfc_pay`, `nfc_shop1`.
 
 ## Tłumaczenie typów MariaDB → PostgreSQL (zastosowane w `postgres/`)
 
@@ -40,14 +40,11 @@ liquibase \
   --url="jdbc:postgresql://10.60.96.3:5432/nfc_pay" \
   --username=nfc_pay --password=<haslo> \
   update
-# ... i analogicznie nfc_shop1.xml -> /nfc_shop1, nfc_shop2.xml -> /nfc_shop2
+# ... i analogicznie nfc_shop1.xml -> /nfc_shop1
 ```
 
 ## Weryfikacja
 
 Changelogi z `postgres/` zostały zastosowane na lokalnym PostgreSQL 16 (Docker) i tworzą
-schemat czysto: liczby tabel zgodne z prod (15 / 21 / 18), `BOOLEAN` i ograniczenia `CHECK`
+schemat czysto: liczby tabel zgodne z prod (15 / 21), `BOOLEAN` i ograniczenia `CHECK`
 z enumów poprawne.
-
-> Uwaga: `nfc_shop2` odzwierciedla **obecny** stan prod (18 tabel) — jest tam historycznie
-> niekompletny względem `nfc_shop1`. Changelog wiernie to odwzorowuje (świadomie nie „naprawia").

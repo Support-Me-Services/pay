@@ -10,7 +10,7 @@ use Illuminate\Database\Seeder;
  * te same 6 pozycji co dawniej w StorefrontController::CATEGORIES.
  *
  * Uruchom dla bazy church:
- *   TENANT=shop1.redai.pl php artisan db:seed --class=Database\\Seeders\\CategoriesSeeder
+ *   TENANT=please-support-me.com php artisan db:seed --class=Database\\Seeders\\CategoriesSeeder
  */
 class CategoriesSeeder extends Seeder
 {

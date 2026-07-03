@@ -58,7 +58,7 @@ class PayUProvider implements PaymentProviderInterface
             // BLIK wymaga obiektu buyer z e-mailem; nie zbieramy danych klienta,
             // więc używamy syntetycznego adresu per transakcja.
             $payload['buyer'] = [
-                'email' => 'klient+' . substr($transaction->id, 0, 8) . '@pay.redai.pl',
+                'email' => 'klient+' . substr($transaction->id, 0, 8) . '@pay.please-support-me.com',
                 'language' => 'pl',
             ];
             $payload['payMethods'] = [

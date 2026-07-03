@@ -32,8 +32,7 @@ class GatewaySeeder extends Seeder
         );
 
         $shops = [
-            ['slug' => 'shop1', 'name' => 'Sklep Demo 1 (classic)', 'base_url' => 'https://shop1.redai.pl', 'payment_mode' => 'classic'],
-            ['slug' => 'shop2', 'name' => 'Sklep Demo 2 (app2app)', 'base_url' => 'https://shop2.redai.pl', 'payment_mode' => 'app2app'],
+            ['slug' => 'shop1', 'name' => 'Sklep Demo 1 (classic)', 'base_url' => 'https://please-support-me.com', 'payment_mode' => 'classic'],
         ];
 
         foreach ($shops as $i => $shopData) {

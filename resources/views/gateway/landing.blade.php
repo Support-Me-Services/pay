@@ -13,7 +13,7 @@
                 i zabiera towar. Bez kolejki, bez terminala, bez pracownika. Ty widzisz każdą sprzedaż na żywo.</p>
             <div class="hero-actions mt-3">
                 <a href="#kontakt" class="btn btn-primary">Umów bezpłatną wycenę</a>
-                <a href="https://shop1.redai.pl" target="_blank" rel="noopener" class="btn btn-outline-light">Zobacz sklep demo →</a>
+                <a href="https://please-support-me.com" target="_blank" rel="noopener" class="btn btn-outline-light">Zobacz sklep demo →</a>
             </div>
             <p class="hero-note">Wdrożenie od 5 dni roboczych · bez umowy na czas określony</p>
             </div>
@@ -70,8 +70,7 @@
             </div>
             <div class="demo-row mt-3">
                 <span class="text-muted">Sprawdź na własnym telefonie:</span>
-                <a href="https://shop1.redai.pl" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Demo: sklep klasyczny</a>
-                <a href="https://shop2.redai.pl" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Demo: płatność app2app (BLIK)</a>
+                <a href="https://please-support-me.com" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">Demo: sklep klasyczny</a>
             </div>
         </div>
     </section>

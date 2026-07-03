@@ -21,7 +21,7 @@ class ProductsSeeder extends Seeder
             ['name' => 'Michał', 'password' => Hash::make('pay3322')]
         );
 
-        $shopNo = config('shop.id') === 'shop2' ? 2 : 1;
+        $shopNo = 1;
 
         foreach ($this->products($shopNo) as $i => $data) {
             $svg = $this->placeholderSvg($data['name'], $data['emoji'], $data['color']);

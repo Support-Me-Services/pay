@@ -47,8 +47,8 @@ class ResolveTenant
             'platform.shop_kind' => $tenant['kind'],
         ]);
 
-        // 1a) Klucz API bramki per-host — shop1 i shop2 mają różne klucze,
-        //     więc w trybie multi-host musi być ustawiany z mapy tenanta.
+        // 1a) Klucz API bramki per-host — sklep (church) ma własny klucz,
+        //     ustawiany z mapy tenanta.
         if (! empty($tenant['gateway_api_key'])) {
             config(['shop.gateway_api_key' => $tenant['gateway_api_key']]);
         }
@@ -88,10 +88,9 @@ class ResolveTenant
             // Widoki bramki: view('landing'), view('panel.login') itd.
             $finder->prependLocation(resource_path('views/gateway'));
         } else {
-            // Storefront: najpierw motyw (products|church), potem wspólne.
-            $theme = $tenant['kind'] === 'church' ? 'church' : 'products';
+            // Storefront: motyw church (jedyny) + widoki wspólne.
             $finder->prependLocation(resource_path('views/storefront/common'));
-            $finder->prependLocation(resource_path('views/storefront/'.$theme));
+            $finder->prependLocation(resource_path('views/storefront/church'));
         }
     }
 }

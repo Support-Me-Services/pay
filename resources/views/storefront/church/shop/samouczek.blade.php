@@ -78,7 +78,7 @@
                 <tr><td data-label="Element">Strefa (zone)</td><td data-label="Wartość"><span class="dc-inline">europe-central2-a</span></td></tr>
                 <tr><td data-label="Element">Katalog aplikacji na serwerze</td><td data-label="Wartość"><span class="dc-inline">/var/www/support-me</span></td></tr>
                 <tr><td data-label="Element">System / PHP</td><td data-label="Wartość">Debian 12 · PHP 8.2 · MySQL/MariaDB</td></tr>
-                <tr><td data-label="Element">Domeny</td><td data-label="Wartość">please-support-me.com (Taca/sklep) · pay.please-support-me.com (bramka) · shop2.please-support-me.com</td></tr>
+                <tr><td data-label="Element">Domeny</td><td data-label="Wartość">please-support-me.com (Taca/sklep) · pay.please-support-me.com (bramka)</td></tr>
                 <tr><td data-label="Element">Repozytorium (lokalnie)</td><td data-label="Wartość"><span class="dc-inline">/var/www/pay/unified</span> → GitHub</td></tr>
             </tbody>
         </table>
@@ -242,7 +242,7 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
         <ul>
             <li><strong>Nginx</strong> — serwer WWW, terminacja TLS, serwowanie statyków, reverse-proxy do PHP-FPM.</li>
             <li><strong>PHP 8.2 FPM</strong> — wykonywanie aplikacji Laravel (pula procesów).</li>
-            <li><strong>MariaDB/MySQL</strong> — bazy multi-tenant: <code>nfc_pay</code> (bramka), <code>nfc_shop1</code> (Taca/church), <code>nfc_shop2</code> (sklep produktowy).</li>
+            <li><strong>MariaDB/MySQL</strong> — bazy multi-tenant: <code>nfc_pay</code> (bramka) i <code>nfc_shop1</code> (Taca/church).</li>
             <li><strong>Redis</strong> (zalecane) — cache, sesje i kolejki zamiast sterownika bazodanowego.</li>
             <li><strong>Supervisor</strong> — utrzymuje proces kolejki (<code>queue:work</code>) przy życiu.</li>
             <li><strong>Cron</strong> — uruchamia harmonogram Laravela (<code>schedule:run</code>) co minutę.</li>
@@ -317,7 +317,7 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
     {{-- 8. NGINX + PHP-FPM --}}
     <section class="dc-module" id="nginx">
         <div class="dc-module__head"><span class="dc-module__num">8.</span><h2>Nginx + PHP-FPM (krok po kroku)</h2></div>
-        <p class="dc-lead">Nginx przyjmuje żądania i przekazuje PHP do procesu <strong>PHP-FPM</strong> przez gniazdo uniksowe. Poniżej instalacja, kompletny plik konfiguracyjny domeny (multi-domena: <code>please-support-me.com</code>, <code>pay.*</code>, <code>shop2.*</code>) oraz strojenie puli.</p>
+        <p class="dc-lead">Nginx przyjmuje żądania i przekazuje PHP do procesu <strong>PHP-FPM</strong> przez gniazdo uniksowe. Poniżej instalacja, kompletny plik konfiguracyjny domeny (multi-domena: <code>please-support-me.com</code>, <code>pay.*</code>) oraz strojenie puli.</p>
 
         <h3 class="dc-sub">8.1 Instalacja</h3>
         <pre class="dc-pre"><span class="p">#</span> apt -y install nginx php8.2-fpm php8.2-cli \
@@ -344,13 +344,13 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
         <pre class="dc-pre"><span class="c"># HTTP → przekierowanie na HTTPS</span>
 server {
     listen 80;
-    server_name please-support-me.com pay.please-support-me.com shop2.please-support-me.com www.please-support-me.com;
+    server_name please-support-me.com pay.please-support-me.com www.please-support-me.com;
     return 301 https://$host$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name please-support-me.com pay.please-support-me.com shop2.please-support-me.com;
+    server_name please-support-me.com pay.please-support-me.com www.please-support-me.com;
     root /var/www/support-me/public;
     index index.php;
 
@@ -398,15 +398,13 @@ server {
         <pre class="dc-pre"><span class="p">#</span> mysql -u root -p</pre>
         <pre class="dc-pre">CREATE DATABASE nfc_pay   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE DATABASE nfc_shop1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE DATABASE nfc_shop2 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 <span class="c">-- jeden użytkownik aplikacyjny do wszystkich tenantów</span>
 CREATE USER 'nfc_pay'@'127.0.0.1' IDENTIFIED BY '<i>SILNE_HASLO</i>';
 GRANT ALL PRIVILEGES ON nfc_pay.*   TO 'nfc_pay'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON nfc_shop1.* TO 'nfc_pay'@'127.0.0.1';
-GRANT ALL PRIVILEGES ON nfc_shop2.* TO 'nfc_pay'@'127.0.0.1';
 FLUSH PRIVILEGES;</pre>
-        <div class="dc-note">Te same nazwy (<code>nfc_pay</code>, <code>nfc_shop1</code>, <code>nfc_shop2</code>) trafiają do <code>.env</code> aplikacji (<code>DB_DATABASE</code>, <code>DB_GATEWAY_DATABASE</code>) i do mapy tenantów <code>config/tenants.php</code>. Każdy host → swoja baza domyślna, a modele bramki zawsze czytają <code>nfc_pay</code> przez połączenie <code>gateway</code>.</div>
+        <div class="dc-note">Te same nazwy (<code>nfc_pay</code>, <code>nfc_shop1</code>) trafiają do <code>.env</code> aplikacji (<code>DB_DATABASE</code>, <code>DB_GATEWAY_DATABASE</code>) i do mapy tenantów <code>config/tenants.php</code>. Każdy host → swoja baza domyślna, a modele bramki zawsze czytają <code>nfc_pay</code> przez połączenie <code>gateway</code>.</div>
 
         <h3 class="dc-sub">9.3 Strojenie (/etc/mysql/mariadb.conf.d/60-tuning.cnf)</h3>
         <pre class="dc-pre">[mysqld]
@@ -464,10 +462,9 @@ long_query_time = 1               <span class="c"># loguj zapytania &gt; 1 s</sp
         <div class="dc-note">Plik <code>.env</code> to <strong>sekret</strong> — jest w <code>.gitignore</code>, nigdy nie trafia do repo. Po każdej zmianie rób <code>php artisan config:clear</code> (a na produkcji <code>config:cache</code>).</div>
 
         <h3 class="dc-sub">10.4 Migracje — dla każdego tenanta osobno</h3>
-        <pre class="dc-pre"><span class="c"># bramka (nfc_pay) + sklepy (nfc_shop1, nfc_shop2)</span>
-<span class="p">#</span> TENANT=pay.please-support-me.com   php artisan migrate --force
-<span class="p">#</span> TENANT=please-support-me.com       php artisan migrate --force
-<span class="p">#</span> TENANT=shop2.please-support-me.com php artisan migrate --force
+        <pre class="dc-pre"><span class="c"># bramka (nfc_pay) + sklep (nfc_shop1)</span>
+<span class="p">#</span> TENANT=pay.please-support-me.com php artisan migrate --force
+<span class="p">#</span> TENANT=please-support-me.com     php artisan migrate --force
 <span class="c"># produkty sklepu donacyjnego (Serduszko, Brelok...) — seed:</span>
 <span class="p">#</span> TENANT=please-support-me.com php artisan db:seed --class=ShopItemSeeder --force</pre>
 
@@ -528,7 +525,7 @@ stopwaitsecs=3600</pre>
         <h3 class="dc-sub">12.1 Certyfikat SSL (Let’s Encrypt)</h3>
         <pre class="dc-pre"><span class="p">#</span> apt -y install certbot python3-certbot-nginx
 <span class="p">#</span> certbot --nginx -d please-support-me.com -d www.please-support-me.com \
-        -d pay.please-support-me.com -d shop2.please-support-me.com
+        -d pay.please-support-me.com
 <span class="c"># auto-odnawianie — sprawdz timer:</span>
 <span class="p">#</span> systemctl status certbot.timer && certbot renew --dry-run</pre>
 
@@ -538,7 +535,7 @@ stopwaitsecs=3600</pre>
 set -euo pipefail
 TS=$(date +%F_%H%M)
 DEST=/var/backups/support-me; mkdir -p "$DEST"
-for db in nfc_pay nfc_shop1 nfc_shop2; do
+for db in nfc_pay nfc_shop1; do
   mysqldump --single-transaction "$db" | gzip > "$DEST/${db}_${TS}.sql.gz"
 done
 tar czf "$DEST/storage_${TS}.tar.gz" -C /var/www/support-me storage/app

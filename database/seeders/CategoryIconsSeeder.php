@@ -14,7 +14,7 @@ use Illuminate\Database\Seeder;
  * Idempotentny: aktualizuje wyłącznie kolumnę `icon` po slug, nie tworzy rekordów.
  *
  * Uruchom dla bazy church:
- *   TENANT=shop1.redai.pl php artisan db:seed --class=Database\\Seeders\\CategoryIconsSeeder
+ *   TENANT=please-support-me.com php artisan db:seed --class=Database\\Seeders\\CategoryIconsSeeder
  */
 class CategoryIconsSeeder extends Seeder
 {

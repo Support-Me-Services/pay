@@ -2,7 +2,7 @@
 
 return [
 
-    // Identyfikator instancji sklepu (shop1 | shop2) — różni się tylko w .env
+    // Identyfikator instancji sklepu (shop1) — różni się tylko w .env
     'id' => env('SHOP_ID', 'shop1'),
     'name' => env('SHOP_NAME', 'Sklep Demo'),
 
@@ -10,8 +10,8 @@ return [
     // app2app — wymuszony BLIK / aplikacja banku
     'payment_mode' => env('PAYMENT_MODE', 'classic'),
 
-    // Bramka płatności (pay.redai.pl)
-    'gateway_url' => rtrim(env('GATEWAY_URL', 'https://pay.redai.pl'), '/'),
+    // Bramka płatności (pay.please-support-me.com)
+    'gateway_url' => rtrim(env('GATEWAY_URL', 'https://pay.please-support-me.com'), '/'),
     'gateway_api_key' => env('GATEWAY_API_KEY', ''),
 
     // Adres e-mail, na który trafiają zgłoszenia rekrutacyjne (z CV w załączniku).

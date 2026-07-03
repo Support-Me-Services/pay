@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 /**
  * Tokenowany endpoint dla zewnętrznego monitoringu aktywacji konta PayU.
  * Sygnał aktywacji: PayU provisionuje metody płatności na nowym POS-ie
- * (4433543, sklep zweryfikowany pod https://shop1.redai.pl).
+ * (4433543, sklep zweryfikowany pod https://please-support-me.com).
  */
 class ActivationStatusController extends Controller
 {

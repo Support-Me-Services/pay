@@ -21,7 +21,7 @@ class StorefrontServiceProvider extends ServiceProvider
             Route::domain($host)->middleware('web')->group(__DIR__.'/routes/web.php');
         }
 
-        // Migracje ładowane bezwarunkowo — `migrate` z TENANT=shop1/shop2
+        // Migracje ładowane bezwarunkowo — `migrate` z TENANT=please-support-me.com
         // utworzy tabele sklepu w wybranej bazie.
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
 
