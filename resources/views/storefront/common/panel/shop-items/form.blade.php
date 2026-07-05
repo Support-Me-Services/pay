@@ -24,6 +24,12 @@
                     @error('name')<div class="form-error">{{ $message }}</div>@enderror
                 </div>
 
+                <div class="form-group">
+                    <label for="description">Opis produktu</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Krótki opis oferty (widoczny w sklepie)">{{ old('description', $item->description) }}</textarea>
+                    @error('description')<div class="form-error">{{ $message }}</div>@enderror
+                </div>
+
                 <div class="d-flex gap-2" style="flex-wrap:wrap">
                     <div class="form-group" style="flex:1;min-width:220px">
                         <label for="slug">Slug (URL)</label>
@@ -31,10 +37,10 @@
                         @error('slug')<div class="form-error">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-group" style="flex:0 0 160px">
-                        <label for="min_amount_pln">Min. kwota (zł) *</label>
-                        <input type="number" id="min_amount_pln" name="min_amount_pln" min="1" max="5000" required
-                               value="{{ old('min_amount_pln', $item->exists ? $item->minAmountPln() : 1) }}">
-                        @error('min_amount_pln')<div class="form-error">{{ $message }}</div>@enderror
+                        <label for="price_pln">Cena (zł) *</label>
+                        <input type="number" id="price_pln" name="price_pln" min="1" max="5000" required
+                               value="{{ old('price_pln', $item->exists ? $item->pricePln() : 1) }}">
+                        @error('price_pln')<div class="form-error">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-group" style="flex:0 0 120px">
                         <label for="sort">Kolejność</label>

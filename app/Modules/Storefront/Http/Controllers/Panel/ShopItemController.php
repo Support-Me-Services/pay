@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 /**
- * Panel: produkty sklepu donacyjnego (NFC). Zarządzanie listą, minimalną kwotą,
+ * Panel: produkty sklepu (NFC). Zarządzanie listą, ceną, opisem,
  * tagiem NFC oraz produktem domyślnym („Serduszko").
  */
 class ShopItemController extends Controller
@@ -23,7 +23,7 @@ class ShopItemController extends Controller
 
     public function create()
     {
-        return view('panel.shop-items.form', ['item' => new ShopItem(['min_amount' => 100, 'active' => true])]);
+        return view('panel.shop-items.form', ['item' => new ShopItem(['min_amount' => 100, 'price' => 100, 'active' => true])]);
     }
 
     public function store(Request $request)
@@ -67,22 +67,27 @@ class ShopItemController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'slug')->ignore($current?->id)],
-            'min_amount_pln' => ['required', 'integer', 'min:1', 'max:5000'],
+            'price_pln' => ['required', 'integer', 'min:1', 'max:5000'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'tag_uid' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'tag_uid')->ignore($current?->id)],
             'sort' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'image_file' => ['nullable', 'image', 'max:5120'],
             'active' => ['nullable', 'boolean'],
         ], [], [
             'name' => 'nazwa',
-            'min_amount_pln' => 'minimalna kwota',
+            'price_pln' => 'cena',
             'tag_uid' => 'tag NFC',
             'image_file' => 'grafika',
         ]);
 
+        $priceGr = (int) $data['price_pln'] * 100;
+
         $out = [
             'name' => $data['name'],
             'slug' => Str::slug($data['slug'] ?? '') ?: Str::slug($data['name']),
-            'min_amount' => (int) $data['min_amount_pln'] * 100,
+            'price' => $priceGr,
+            'min_amount' => $priceGr,   // w trybie sklepu min = cena (spójność z modelem darowiznowym)
+            'description' => $data['description'] ?? null,
             'tag_uid' => $data['tag_uid'] ?? null,
             'sort' => (int) ($data['sort'] ?? 0),
             'active' => $request->boolean('active'),

@@ -5,21 +5,36 @@ namespace App\Modules\Storefront\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Produkt sklepu donacyjnego (NFC) — np. „Serduszko", „Brelok", „Kubek".
- * Kwota płacona przez użytkownika jest dowolna, ale nie niższa niż `min_amount`.
+ * Produkt sklepu NFC — np. „Serduszko", „Brelok", „Kubek".
+ * W trybie sklepowym (branch sklep-payu) obowiązuje STAŁA cena `price`
+ * (z fallbackiem do `min_amount`); `min_amount` pozostaje dla zgodności
+ * z modelem darowiznowym na pozostałych gałęziach.
  */
 class ShopItem extends Model
 {
     protected $fillable = [
-        'slug', 'name', 'image', 'min_amount', 'is_default', 'tag_uid', 'active', 'sort',
+        'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'tag_uid', 'active', 'sort',
     ];
 
     protected $casts = [
         'min_amount' => 'integer',
+        'price'      => 'integer',
         'is_default' => 'boolean',
         'active'     => 'boolean',
         'sort'       => 'integer',
     ];
+
+    /** Cena w groszach (stała); fallback do minimalnej kwoty, jeśli nie ustawiono. */
+    public function priceGrosze(): int
+    {
+        return (int) ($this->price ?? $this->min_amount);
+    }
+
+    /** Cena w złotych jako liczba (np. 39). */
+    public function pricePln(): int
+    {
+        return (int) round($this->priceGrosze() / 100);
+    }
 
     /** Minimalna kwota w złotych jako liczba (np. 1, 10). */
     public function minAmountPln(): int

@@ -1,10 +1,16 @@
 @extends('layouts.landing')
 
-@section('title', 'Wesprzyj — ' . config('shop.name'))
-@section('meta-description', 'Wesprzyj SupportMe — wybierz produkt i wpłać dowolną kwotę.')
+@section('title', 'Sklep — ' . config('shop.name'))
+@section('meta-description', 'Sklep SupportMe — gadżety i tagi NFC. Wybierz produkt i kup online: BLIK, szybki przelew, karta.')
 
 @push('head')
 <link rel="stylesheet" href="{{ asset('css/sklep.css') }}?v={{ substr(md5_file(public_path('css/sklep.css')), 0, 10) }}">
+<style>
+    .paywin__price{ font-size:34px; font-weight:800; line-height:1; margin:6px 0 2px; }
+    .paywin__price small{ font-size:18px; font-weight:700; margin-left:4px; }
+    .paywin__desc{ max-width:34ch; margin:10px auto 4px; font-size:15px; line-height:1.45; color:#4a5568; text-align:center; }
+    .paywin__ship{ margin:8px auto 0; font-size:13px; color:#6b7280; }
+</style>
 @endpush
 
 @section('content')
@@ -14,22 +20,7 @@
     $start = $ordered->firstWhere('slug', $startSlug) ?? $default ?? $ordered->first();
     $startIdx = $ordered->search(fn ($i) => $i->slug === optional($start)->slug);
     $startIdx = $startIdx === false ? 0 : $startIdx;
-    $serverErr = session('error') ?? ($errors->first('amount_pln') ?: null);
-@endphp
-
-@php
-    // Fundacje wspierane (karuzela). Edytuj listę / wrzuć logo do public/img/fundacje/<slug>.(svg|png|webp).
-    $foundations = [
-        ['slug' => 'legalsight',     'name' => 'LegalSight Polska'],
-        ['slug' => 'twoja-fundacja', 'name' => 'Twoja Fundacja'],
-    ];
-    foreach ($foundations as $k => $f) {
-        $logo = null;
-        foreach (['svg','png','webp','jpg'] as $e) {
-            if (is_file(public_path("img/fundacje/{$f['slug']}.$e"))) { $logo = "img/fundacje/{$f['slug']}.$e"; break; }
-        }
-        $foundations[$k]['logo'] = $logo;
-    }
+    $serverErr = session('error');
 @endphp
 
 <div class="paywin" id="paywin" data-main="{{ route('main') }}" data-start="{{ $startIdx }}">
@@ -44,43 +35,22 @@
         </div>
     </div>
 
-    <label class="paywin__amount" for="payAmount">
-        <input id="payAmount" class="paywin__input" type="text" inputmode="numeric" autocomplete="off"
-               autofocus value="{{ optional($start)->minAmountPln() }}" aria-label="Kwota wsparcia w złotych">
-        <span class="paywin__zl">zł</span>
-    </label>
+    <p class="paywin__desc" id="payDesc">{{ optional($start)->description }}</p>
+
+    <div class="paywin__price" id="payPrice">{{ optional($start)->pricePln() }}<small>zł</small></div>
 
     <p class="paywin__err" id="payErr" role="alert" @if(! $serverErr) hidden @endif>{{ $serverErr }}</p>
-
-    <div class="paywin__support">
-        <p class="paywin__support-label">Dochód przeznaczamy na wsparcie:</p>
-        <div class="fnd" id="fnd">
-            <button class="fnd__nav fnd__nav--prev" type="button" aria-label="Poprzednia fundacja">&lsaquo;</button>
-            <div class="fnd__viewport">
-                <div class="fnd__track" id="fndTrack">
-                    @foreach($foundations as $i => $f)
-                        <div class="fnd__item{{ $i === 0 ? ' is-active' : '' }}" data-slug="{{ $f['slug'] }}" title="{{ $f['name'] }}">
-                            <div class="fnd__logo">
-                                @if($f['logo'])<img src="{{ asset($f['logo']) }}" alt="{{ $f['name'] }}">@else<span class="fnd__name">{{ $f['name'] }}</span>@endif
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-            <button class="fnd__nav fnd__nav--next" type="button" aria-label="Nastepna fundacja">&rsaquo;</button>
-        </div>
-    </div>
 
     <div class="paywin__dots" id="payDots" aria-hidden="true"></div>
 
     <form method="POST" id="payForm" action="{{ route('shop.buy', optional($start)->slug) }}" class="paywin__form">
         @csrf
-        <input type="hidden" name="amount_pln" id="payHidden" value="{{ optional($start)->minAmountPln() }}">
-        <input type="hidden" name="fundacja" id="fndInput" value="{{ $foundations[0]['slug'] }}">
-        <button type="submit" class="paywin__btn">Wesprzyj<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A"/><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" stroke-width="1.5" stroke-linecap="round"/><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button type="submit" class="paywin__btn">Kupuję i płacę<svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true" style="margin-left:8px"><path d="M6 6h15l-1.5 9h-12L5 3H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="20" r="1.4" fill="currentColor"/><circle cx="18" cy="20" r="1.4" fill="currentColor"/></svg></button>
     </form>
 
-    <p class="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer">Politykę prywatności (PDF)</a> i <a href="{{ route('regulamin') }}" target="_blank" rel="noopener noreferrer">Regulamin</a></p>
+    <p class="paywin__ship">Wysyłka kurierem: 1–3 dni robocze · zwrot do 14 dni</p>
+
+    <p class="paywin__policy">Klikając „Kupuję i płacę" akceptujesz <a href="{{ asset('polityka-prywatnosci.pdf') }}" target="_blank" rel="noopener noreferrer">Politykę prywatności (PDF)</a> i <a href="{{ route('regulamin') }}" target="_blank" rel="noopener noreferrer">Regulamin</a></p>
 
     <div class="paywin__hint">‹ przesuń, aby zmienić produkt ›</div>
 </div>
@@ -88,7 +58,8 @@
 <script id="pay-data" type="application/json">{!! $ordered->map(fn ($i) => [
     'slug'   => $i->slug,
     'name'   => $i->name,
-    'min'    => $i->minAmountPln(),
+    'desc'   => $i->description,
+    'price'  => $i->pricePln(),
     'image'  => asset($i->image),
     'isSvg'  => $i->isSvg(),
     'action' => route('shop.buy', $i->slug),
@@ -106,9 +77,8 @@
     var img    = document.getElementById('payImg');
     var visual = document.getElementById('payVisual');
     var nameEl = document.getElementById('payName');
-    var input  = document.getElementById('payAmount');
-    var hidden = document.getElementById('payHidden');
-    var err    = document.getElementById('payErr');
+    var descEl = document.getElementById('payDesc');
+    var priceEl= document.getElementById('payPrice');
     var form   = document.getElementById('payForm');
     var dotsW  = document.getElementById('payDots');
     var MAIN   = win.getAttribute('data-main');
@@ -121,54 +91,22 @@
     var dots = dotsW.querySelectorAll('.paywin__dot');
     function syncDots() { dots.forEach(function (d, i) { d.classList.toggle('is-on', i === idx); }); }
 
-    function render(resetAmount) {
+    function render() {
         var it = data[idx];
         img.src = it.image; img.alt = it.name;
         visual.className = 'paywin__visual' + (it.isSvg ? ' is-svg' : '');
         nameEl.textContent = it.name;
+        descEl.textContent = it.desc || '';
+        priceEl.innerHTML = it.price + '<small>zł</small>';
         form.action = it.action;
-        if (resetAmount) { input.value = it.min; hidden.value = it.min; }
-        err.hidden = true;
         syncDots();
-    }
-
-    function focusInput() {
-        try {
-            input.focus({ preventScroll: true });
-            var v = input.value; input.value = ''; input.value = v;
-            if (input.setSelectionRange) input.setSelectionRange(v.length, v.length);
-        } catch (e) {}
     }
 
     function go(delta) {
         idx = (idx + delta + data.length) % data.length;
-        render(true);
+        render();
         card.classList.remove('is-in'); void card.offsetWidth; card.classList.add('is-in');
-        focusInput();
     }
-
-    // tylko cyfry, max 4 znaki (≤ 5000)
-    input.addEventListener('input', function () {
-        var v = input.value.replace(/\D+/g, '').replace(/^0+(?=\d)/, '');
-        if (v.length > 4) v = v.slice(0, 4);
-        input.value = v; hidden.value = v;
-        if (v !== '' && parseInt(v, 10) >= data[idx].min) err.hidden = true;
-    });
-
-    form.addEventListener('submit', function (e) {
-        var v = parseInt(input.value, 10), min = data[idx].min;
-        if (isNaN(v) || v < min) {
-            e.preventDefault();
-            err.textContent = 'Minimalna kwota dla „' + data[idx].name + '” to ' + min + ' zł.';
-            err.hidden = false; focusInput(); return;
-        }
-        if (v > 5000) {
-            e.preventDefault();
-            err.textContent = 'Maksymalna kwota to 5000 zł.';
-            err.hidden = false; focusInput(); return;
-        }
-        hidden.value = v;
-    });
 
     // zamknięcie → strona główna
     function close() { window.location.href = MAIN; }
@@ -207,47 +145,8 @@
     window.addEventListener('pointerup',  function (e) { if (e.pointerType === 'mouse') up(e.clientX); });
 
     // start
-    render(false);
+    render();
     syncDots();
-    focusInput();
-    setTimeout(focusInput, 200);
-    window.addEventListener('load', focusInput);
-})();
-</script>
-
-<script>
-(function () {
-    var fnd = document.getElementById('fnd');
-    if (!fnd) return;
-    var track = document.getElementById('fndTrack');
-    var vp = fnd.querySelector('.fnd__viewport');
-    var input = document.getElementById('fndInput');
-    var items = [].slice.call(track.children);
-    var IW = 150, active = 0;
-
-    function layout() {
-        var w = vp.clientWidth;
-        track.style.transform = 'translateX(' + (w / 2 - (active * IW + IW / 2)) + 'px)';
-        items.forEach(function (it, i) { it.classList.toggle('is-active', i === active); });
-        if (input && items[active]) input.value = items[active].getAttribute('data-slug') || '';
-    }
-    function setActive(i) { active = Math.max(0, Math.min(items.length - 1, i)); layout(); }
-
-    items.forEach(function (it, i) { it.addEventListener('click', function () { setActive(i); }); });
-    var prev = fnd.querySelector('.fnd__nav--prev'), next = fnd.querySelector('.fnd__nav--next');
-    if (prev) prev.addEventListener('click', function () { setActive(active - 1); });
-    if (next) next.addEventListener('click', function () { setActive(active + 1); });
-
-    // swipe lokalny — nie propaguj do swipe produktow
-    var sx = null;
-    vp.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; e.stopPropagation(); }, { passive: true });
-    vp.addEventListener('touchmove', function (e) { e.stopPropagation(); }, { passive: true });
-    vp.addEventListener('touchend', function (e) { if (sx === null) return; var dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 40) setActive(active + (dx < 0 ? 1 : -1)); sx = null; }, { passive: true });
-    vp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-
-    window.addEventListener('resize', layout);
-    setTimeout(layout, 60);
-    layout();
 })();
 </script>
 @endsection

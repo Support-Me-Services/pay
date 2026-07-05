@@ -8,14 +8,14 @@ use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
 
 /**
- * Sklep donacyjny (produkty NFC). Każdy produkt ma minimalną kwotę; użytkownik
- * wybiera kwotę ≥ min w modalu i kupuje (KUP) jedną transakcją w bramce.
- * Domyślny produkt („Serduszko", min 1 zł) pokazuje się w modalu po wejściu.
+ * Sklep internetowy (produkty NFC). Każdy produkt ma STAŁĄ cenę; użytkownik
+ * klika „Kupuję i płacę" i finalizuje zakup jedną transakcją w bramce.
+ * Domyślny produkt pokazuje się na stronie sklepu po wejściu.
  * Produkty trzymane w tabeli `shop_items` (zarządzane w panelu).
  */
 class CompanyStoreController extends Controller
 {
-    /** GET / — strona sklepu: siatka produktów + auto-modal domyślnego. */
+    /** GET / — strona sklepu: siatka produktów + auto-podgląd domyślnego. */
     public function index()
     {
         $items = ShopItem::where('active', true)->orderBy('sort')->orderBy('id')->get();
@@ -27,7 +27,7 @@ class CompanyStoreController extends Controller
         ]);
     }
 
-    /** POST /sklep/kup/{slug} — utwórz transakcję na wybraną kwotę (≥ min produktu). */
+    /** POST /sklep/kup/{slug} — utwórz transakcję na stałą cenę produktu. */
     public function purchase(Request $request, string $slug, GatewayClient $gateway)
     {
         // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i od razu kierujemy na podziekowanie.
@@ -36,21 +36,12 @@ class CompanyStoreController extends Controller
         }
 
         $item = ShopItem::where('slug', $slug)->where('active', true)->firstOrFail();
-        $minPln = (int) max(1, ceil($item->min_amount / 100));
 
-        // Walidacja serwerowa: kwota całkowita w zł, nie niższa niż minimum produktu.
-        $validated = $request->validate([
-            'amount_pln' => ['required', 'integer', 'min:' . $minPln, 'max:5000'],
-        ], [
-            'amount_pln.min' => "Minimalna kwota dla „{$item->name}” to {$minPln} zł.",
-            'amount_pln.required' => 'Podaj kwotę.',
-            'amount_pln.integer' => 'Kwota musi być liczbą całkowitą (zł).',
-        ]);
-
-        $amount = $validated['amount_pln'] * 100; // grosze
+        // Cena jest stała (po stronie serwera) — kwota nie pochodzi od użytkownika.
+        $amount = $item->priceGrosze(); // grosze
 
         $order = Order::create([
-            'product_id' => null,        // sklep donacyjny — bez wiązania z tabelą products (parafie)
+            'product_id' => null,        // sklep gadżetów — bez wiązania z tabelą products (parafie)
             'amount' => $amount,
             'status' => 'pending',
         ]);
