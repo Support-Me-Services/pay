@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Storefront\Http\Controllers\CareersController;
+use App\Modules\Storefront\Http\Controllers\CartController;
 use App\Modules\Storefront\Http\Controllers\CompanyStoreController;
 use App\Modules\Storefront\Http\Controllers\ContactController;
 use App\Modules\Storefront\Http\Controllers\GatewayWebhookController;
@@ -14,8 +15,16 @@ Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
 // Landing „Technologia, która pomaga czynić dobro" — przeniesiony pod /main.
 Route::get('/main', [StorefrontController::class, 'index'])->name('main');
 
-// Sklep donacyjny (NFC) — zakup produktu na wybraną kwotę (≥ min. produktu)
+// Sklep (NFC) — szybki zakup pojedynczego produktu (stała cena)
 Route::post('/sklep/kup/{slug}', [CompanyStoreController::class, 'purchase'])->name('shop.buy');
+
+// Koszyk (sesyjny) — dodawanie pozycji, ilości i finalizacja całości
+Route::get('/koszyk', [CartController::class, 'show'])->name('cart.show');
+Route::post('/koszyk/dodaj/{slug}', [CartController::class, 'add'])->name('cart.add');
+Route::post('/koszyk/aktualizuj/{slug}', [CartController::class, 'update'])->name('cart.update');
+Route::post('/koszyk/usun/{slug}', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/koszyk/dostawa', [CartController::class, 'setShipping'])->name('cart.shipping');
+Route::post('/koszyk/kup', [CartController::class, 'checkout'])->name('cart.checkout');
 
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');

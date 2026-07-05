@@ -51,6 +51,7 @@
 </head>
 <body class="lp">
 <div class="lp-page">
+    @php $cartCount = array_sum((array) session('cart', [])); @endphp
     <header class="lp-header">
         <a href="{{ route('main') }}" aria-label="SupportME">
             <img class="lp-logo" src="{{ asset('img/landing/logo.svg') }}" alt="SupportME">
@@ -59,7 +60,8 @@
             <a href="{{ route('main') }}" @if(request()->routeIs('main')) aria-current="page" @endif>Strona główna</a>
             <a href="{{ route('careers') }}" @if(request()->routeIs('careers')) aria-current="page" @endif>Rekrutacja</a>
             <a href="{{ route('investors') }}" @if(request()->routeIs('investors')) aria-current="page" @endif>Inwestorzy i akcjonariusze</a>
-            <a class="lp-nav__support" href="{{ route('home', ['produkt' => 'serduszko']) }}">Wesprzyj</a>
+            <a class="lp-nav__support" href="{{ route('cart.show') }}">Koszyk
+                @if($cartCount)<span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:7px;padding:0 5px;border-radius:10px;background:#fff;color:#2563eb;font-size:12px;font-weight:800;line-height:1;vertical-align:middle">{{ $cartCount }}</span>@endif</a>
         </nav>
         <button class="lp-burger" type="button" aria-label="Menu" aria-expanded="false"
                 onclick="var h=this.closest('.lp-header');var o=h.classList.toggle('lp-open');this.setAttribute('aria-expanded',o)">
