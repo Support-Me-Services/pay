@@ -1,0 +1,6 @@
+CREATE DATABASE IF NOT EXISTS nfc_pay   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE DATABASE IF NOT EXISTS nfc_shop1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'nfc_pay'@'%' IDENTIFIED BY 'secret';
+GRANT ALL PRIVILEGES ON nfc_pay.*   TO 'nfc_pay'@'%';
+GRANT ALL PRIVILEGES ON nfc_shop1.* TO 'nfc_pay'@'%';
+FLUSH PRIVILEGES;
