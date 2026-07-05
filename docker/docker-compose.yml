@@ -1,0 +1,38 @@
+# Lokalne uruchomienie aplikacji (PHP 8.2 + MySQL) w Dockerze.
+# Użycie:  cd docker && docker compose up -d   → http://localhost:8000
+#
+# vendor/ i storage/ leżą na szybkich wolumenach Dockera (NIE na bind-mount
+# Windows/macOS), inaczej każde żądanie czyta tysiące plików i trwa minuty.
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "13306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    build: .
+    working_dir: /app
+    volumes:
+      - ..:/app                       # kod repo (bind-mount, edytowalny)
+      - vendor:/app/vendor            # szybki wolumen (poza wolnym mountem)
+      - appstorage:/app/storage       # szybki wolumen (cache widoków, sesje, logi)
+      - ./entrypoint.sh:/entrypoint.sh:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh /entrypoint.sh
+
+volumes:
+  vendor:
+  appstorage:
