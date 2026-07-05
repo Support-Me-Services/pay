@@ -57,6 +57,7 @@
         </a>
         <nav class="lp-nav">
             <a href="{{ route('main') }}" @if(request()->routeIs('main')) aria-current="page" @endif>Strona główna</a>
+            <a href="{{ route('beneficiaries') }}" @if(request()->routeIs('beneficiaries')) aria-current="page" @endif>Wspieramy</a>
             <a href="{{ route('careers') }}" @if(request()->routeIs('careers')) aria-current="page" @endif>Rekrutacja</a>
             <a href="{{ route('investors') }}" @if(request()->routeIs('investors')) aria-current="page" @endif>Inwestorzy i akcjonariusze</a>
             <a class="lp-nav__support" href="{{ route('home', ['produkt' => 'serduszko']) }}">Wesprzyj</a>

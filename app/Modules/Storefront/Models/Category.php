@@ -11,8 +11,9 @@ class Category extends Model
 {
     /** Źródła pozycji listowanych na stronie kategorii: klucz => etykieta PL. */
     public const SOURCES = [
-        'none'     => 'Brak (pusty stan)',
-        'parishes' => 'Parafie',
+        'none'          => 'Brak (pusty stan)',
+        'parishes'      => 'Parafie',
+        'beneficiaries' => 'Strona „Wspieramy"',
     ];
 
     protected $fillable = [

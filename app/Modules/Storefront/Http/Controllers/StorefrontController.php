@@ -30,6 +30,11 @@ class StorefrontController extends Controller
                 'label_html' => $cat->label_html ?: e($cat->label_text),
                 'intro' => $cat->intro,
                 'icon' => $cat->icon,
+                // Link kafelka sterowany polem „źródło" (z panelu), nie na sztywno:
+                // 'beneficiaries' -> podstrona „Wspieramy", inaczej strona kategorii.
+                'url' => $cat->source === 'beneficiaries'
+                    ? route('beneficiaries')
+                    : route('category', $cat->slug),
             ])
             ->all();
 
