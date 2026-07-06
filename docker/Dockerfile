@@ -1,10 +1,16 @@
 FROM php:8.2-cli
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libonig-dev libzip-dev unzip git \
+        libonig-dev libzip-dev unzip git ca-certificates \
  && docker-php-ext-install pdo_mysql mbstring zip \
  && docker-php-ext-enable opcache \
  && rm -rf /var/lib/apt/lists/*
+
+# Środowisko z Avast HTTPS-scanningiem (MITM TLS własnym root CA). Ten root jest
+# zaufany w Windows, ale nie w kontenerze — bez tego composer nie pobierze
+# zależności (SSL certificate problem). Dodajemy go do zaufanych CA kontenera.
+COPY avast-root.crt /usr/local/share/ca-certificates/avast-root.crt
+RUN update-ca-certificates
 
 # opcache musi działać pod SAPI CLI (php artisan serve = wbudowany serwer PHP),
 # inaczej każde żądanie parsuje cały vendor/ z wolnego bind-mountu (Windows/macOS).
