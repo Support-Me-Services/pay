@@ -20,14 +20,14 @@ Route::get('/main', [StorefrontController::class, 'index'])->name('main');
 // Darowizna z „/" — wpłata na wybraną kwotę (≥ min produktu).
 Route::post('/sklep/kup/{slug}', [CompanyStoreController::class, 'purchase'])->name('shop.buy');
 
-// Sklep per‑konto (stała cena + koszyk) pod /user/{handle}
-Route::get('/user/{handle}', [UserShopController::class, 'index'])->name('user.shop');
-Route::get('/user/{handle}/koszyk', [CartController::class, 'show'])->name('user.cart.show');
-Route::post('/user/{handle}/koszyk/dodaj/{item}', [CartController::class, 'add'])->name('user.cart.add');
-Route::post('/user/{handle}/koszyk/aktualizuj/{item}', [CartController::class, 'update'])->name('user.cart.update');
-Route::post('/user/{handle}/koszyk/usun/{item}', [CartController::class, 'remove'])->name('user.cart.remove');
-Route::post('/user/{handle}/koszyk/dostawa', [CartController::class, 'setShipping'])->name('user.cart.shipping');
-Route::post('/user/{handle}/koszyk/kup', [CartController::class, 'checkout'])->name('user.cart.checkout');
+// Sklep per‑konto (stała cena + koszyk) pod /people/{handle}
+Route::get('/people/{handle}', [UserShopController::class, 'index'])->name('user.shop');
+Route::get('/people/{handle}/koszyk', [CartController::class, 'show'])->name('user.cart.show');
+Route::post('/people/{handle}/koszyk/dodaj/{item}', [CartController::class, 'add'])->name('user.cart.add');
+Route::post('/people/{handle}/koszyk/aktualizuj/{item}', [CartController::class, 'update'])->name('user.cart.update');
+Route::post('/people/{handle}/koszyk/usun/{item}', [CartController::class, 'remove'])->name('user.cart.remove');
+Route::post('/people/{handle}/koszyk/dostawa', [CartController::class, 'setShipping'])->name('user.cart.shipping');
+Route::post('/people/{handle}/koszyk/kup', [CartController::class, 'checkout'])->name('user.cart.checkout');
 
 // Podstrona „Wspieramy" — węzły edytowalne w panelu
 Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('beneficiaries');
