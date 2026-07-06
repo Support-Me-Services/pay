@@ -51,8 +51,9 @@
 </head>
 <body class="lp">
 <div class="lp-page">
+    @php $shopHandle = $shopHandle ?? null; $cartCount = $shopHandle ? array_sum((array) session("cart.$shopHandle", [])) : 0; @endphp
     <header class="lp-header">
-        <a href="{{ route('main') }}" aria-label="SupportME">
+        <a href="{{ $shopHandle ? route('user.shop', $shopHandle) : route('main') }}" aria-label="SupportME">
             <img class="lp-logo" src="{{ asset('img/landing/logo.svg') }}" alt="SupportME">
         </a>
         <nav class="lp-nav">
@@ -60,7 +61,12 @@
             <a href="{{ route('beneficiaries') }}" @if(request()->routeIs('beneficiaries')) aria-current="page" @endif>Wspieramy</a>
             <a href="{{ route('careers') }}" @if(request()->routeIs('careers')) aria-current="page" @endif>Rekrutacja</a>
             <a href="{{ route('investors') }}" @if(request()->routeIs('investors')) aria-current="page" @endif>Inwestorzy i akcjonariusze</a>
-            <a class="lp-nav__support" href="{{ route('home', ['produkt' => 'serduszko']) }}">Wesprzyj</a>
+            @if($shopHandle)
+                <a class="lp-nav__support" href="{{ route('user.cart.show', $shopHandle) }}">Koszyk
+                    @if($cartCount)<span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin-left:7px;padding:0 5px;border-radius:10px;background:#fff;color:#2563eb;font-size:12px;font-weight:800;line-height:1;vertical-align:middle">{{ $cartCount }}</span>@endif</a>
+            @else
+                <a class="lp-nav__support" href="{{ route('home') }}">Wesprzyj</a>
+            @endif
         </nav>
         <button class="lp-burger" type="button" aria-label="Menu" aria-expanded="false"
                 onclick="var h=this.closest('.lp-header');var o=h.classList.toggle('lp-open');this.setAttribute('aria-expanded',o)">
@@ -91,15 +97,28 @@
                 <a href="mailto:marcin.lula@please-support-me.com" aria-label="E-mail"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:1em;height:1em;vertical-align:-.12em;margin-right:.45em"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>marcin.lula@please-support-me.com</a><br>
                 <a href="tel:+48694841749" aria-label="Telefon"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="width:1em;height:1em;vertical-align:-.12em;margin-right:.45em"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>694 841 749</a>
             </div>
-            <div class="lp-footer__qr">
-                <a class="lp-footer__qr-card" href="{{ asset('img/qr-home.svg') }}" aria-label="Powiększ kod QR" onclick="event.preventDefault();document.getElementById('qrZoom').classList.add('is-open')">
-                    <img src="{{ asset('img/qr-home.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com" width="108" height="108">
-                </a>
-                <div class="lp-footer__qr-caption">
-                    <strong>Zeskanuj — wejdź na stronę</strong>
-                    please-support-me.com
+            @if($shopHandle)
+                @php $shopUrl = route('user.shop', $shopHandle); $shopName = $owner->name ?? $shopHandle; @endphp
+                <div class="lp-footer__qr">
+                    <a class="lp-footer__qr-card" href="{{ $shopUrl }}" aria-label="Przejdź do sklepu {{ $shopName }}">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=216x216&margin=0&data={{ urlencode($shopUrl) }}" alt="Kod QR do sklepu {{ $shopName }}" width="108" height="108">
+                    </a>
+                    <div class="lp-footer__qr-caption">
+                        <strong>Zeskanuj — sklep</strong>
+                        {{ $shopName }}
+                    </div>
                 </div>
-            </div>
+            @else
+                <div class="lp-footer__qr">
+                    <a class="lp-footer__qr-card" href="{{ asset('img/qr-home.svg') }}" aria-label="Powiększ kod QR" onclick="event.preventDefault();document.getElementById('qrZoom').classList.add('is-open')">
+                        <img src="{{ asset('img/qr-home.svg') }}" alt="Kod QR prowadzący na stronę please-support-me.com" width="108" height="108">
+                    </a>
+                    <div class="lp-footer__qr-caption">
+                        <strong>Zeskanuj — wejdź na stronę</strong>
+                        please-support-me.com
+                    </div>
+                </div>
+            @endif
         </div>
     </footer>
 </div>
