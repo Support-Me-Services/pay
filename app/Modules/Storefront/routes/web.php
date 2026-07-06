@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Storefront\Http\Controllers\BeneficiariesController;
 use App\Modules\Storefront\Http\Controllers\CareersController;
 use App\Modules\Storefront\Http\Controllers\CartController;
 use App\Modules\Storefront\Http\Controllers\CompanyStoreController;
@@ -25,6 +26,9 @@ Route::post('/koszyk/aktualizuj/{slug}', [CartController::class, 'update'])->nam
 Route::post('/koszyk/usun/{slug}', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/koszyk/dostawa', [CartController::class, 'setShipping'])->name('cart.shipping');
 Route::post('/koszyk/kup', [CartController::class, 'checkout'])->name('cart.checkout');
+
+// Podstrona „Wspieramy" — węzły edytowalne w panelu
+Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('beneficiaries');
 
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
@@ -105,6 +109,13 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::put('/categories/{category}', [Panel\CategoryController::class, 'update'])->name('categories.update');
         Route::post('/categories/{category}/reorder', [Panel\CategoryController::class, 'reorder'])->name('categories.reorder');
         Route::delete('/categories/{category}', [Panel\CategoryController::class, 'destroy'])->name('categories.destroy');
+
+        // Podstrona „Wspieramy" — węzły (nagłówek + grafika + tekst); kolejność drag&drop
+        Route::get('/beneficiaries', [Panel\BeneficiaryNodeController::class, 'index'])->name('beneficiaries.index');
+        Route::post('/beneficiaries', [Panel\BeneficiaryNodeController::class, 'store'])->name('beneficiaries.store');
+        Route::post('/beneficiaries/reorder', [Panel\BeneficiaryNodeController::class, 'reorder'])->name('beneficiaries.reorder');
+        Route::post('/beneficiaries/{node}', [Panel\BeneficiaryNodeController::class, 'update'])->name('beneficiaries.update');
+        Route::delete('/beneficiaries/{node}', [Panel\BeneficiaryNodeController::class, 'destroy'])->name('beneficiaries.destroy');
 
         // Parafie do obdzwonienia (CRM — lista potencjalnych z OSM)
         Route::get('/potential-parishes', [Panel\PotentialParishController::class, 'index'])->name('potential-parishes.index');

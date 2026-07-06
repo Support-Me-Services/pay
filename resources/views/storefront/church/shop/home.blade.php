@@ -52,7 +52,7 @@
         </div>
         <div class="lp-cats">
             @foreach($categories as $cat)
-                <a class="lp-cat" href="{{ route('category', $cat['slug']) }}">
+                <a class="lp-cat" href="{{ $cat['url'] }}">
                     <span class="lp-cat__disc">@if(!empty($cat['icon']))<img class="lp-cat__disc-img" src="{{ asset('storage/' . $cat['icon']) }}" alt="">@endif</span>
                     <span class="lp-cat__label">{!! $cat['label_html'] !!}</span>
                 </a>
