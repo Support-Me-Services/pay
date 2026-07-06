@@ -59,7 +59,7 @@
 
     @if($lines->isEmpty())
         <p class="cart__empty">Koszyk jest pusty.</p>
-        <a class="cart__back" href="{{ route('home') }}">← Wróć do sklepu</a>
+        <a class="cart__back" href="{{ route('user.shop', $shopHandle) }}">← Wróć do sklepu</a>
     @else
         <div class="cart__list">
             @foreach($lines as $l)
@@ -69,13 +69,13 @@
                         <div class="citem__name">{{ $l['item']->name }}</div>
                         <div class="citem__unit">{{ $l['item']->pricePln() }} zł / szt.</div>
                     </div>
-                    <form class="citem__qty" method="POST" action="{{ route('cart.update', $l['item']->slug) }}">
+                    <form class="citem__qty" method="POST" action="{{ route('user.cart.update', [$shopHandle, $l['item']->id]) }}">
                         @csrf
                         <input type="number" name="qty" min="0" max="99" value="{{ $l['qty'] }}" aria-label="Ilość">
                         <button type="submit" class="citem__set">Zmień</button>
                     </form>
                     <div class="citem__line">{{ number_format($l['lineGrosze'] / 100, 2, ',', ' ') }} zł</div>
-                    <form method="POST" action="{{ route('cart.remove', $l['item']->slug) }}">
+                    <form method="POST" action="{{ route('user.cart.remove', [$shopHandle, $l['item']->id]) }}">
                         @csrf
                         <button type="submit" class="citem__del" aria-label="Usuń z koszyka">&times;</button>
                     </form>
@@ -86,7 +86,7 @@
         <div class="cart__foot">
             <div class="ship">
                 <div class="ship__title">Dostawa</div>
-                <form method="POST" action="{{ route('cart.shipping') }}">
+                <form method="POST" action="{{ route('user.cart.shipping', $shopHandle) }}">
                     @csrf
                     @foreach($methods as $code => $m)
                         @php $enabled = ! empty($m['enabled']); @endphp
@@ -115,8 +115,8 @@
             </div>
 
             <div class="cart__actions">
-                <a class="cart__back" href="{{ route('home') }}">← Kontynuuj zakupy</a>
-                <form method="POST" action="{{ route('cart.checkout') }}">
+                <a class="cart__back" href="{{ route('user.shop', $shopHandle) }}">← Kontynuuj zakupy</a>
+                <form method="POST" action="{{ route('user.cart.checkout', $shopHandle) }}">
                     @csrf
                     <button type="submit" class="cart__buy">Kupuję i płacę</button>
                 </form>

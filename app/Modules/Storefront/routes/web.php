@@ -9,23 +9,25 @@ use App\Modules\Storefront\Http\Controllers\GatewayWebhookController;
 use App\Modules\Storefront\Http\Controllers\OrderReturnController;
 use App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\StorefrontController;
+use App\Modules\Storefront\Http\Controllers\UserShopController;
 use Illuminate\Support\Facades\Route;
 
-// Strona główna serwisu = Sklep firmowy (gadżety charytatywne).
+// Strona główna „/" — model darowiznowy (produkty konta głównego, kwota ≥ min).
 Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
-// Landing „Technologia, która pomaga czynić dobro" — przeniesiony pod /main.
+// Landing „Technologia, która pomaga czynić dobro" — pod /main.
 Route::get('/main', [StorefrontController::class, 'index'])->name('main');
 
-// Sklep (NFC) — szybki zakup pojedynczego produktu (stała cena)
+// Darowizna z „/" — wpłata na wybraną kwotę (≥ min produktu).
 Route::post('/sklep/kup/{slug}', [CompanyStoreController::class, 'purchase'])->name('shop.buy');
 
-// Koszyk (sesyjny) — dodawanie pozycji, ilości i finalizacja całości
-Route::get('/koszyk', [CartController::class, 'show'])->name('cart.show');
-Route::post('/koszyk/dodaj/{slug}', [CartController::class, 'add'])->name('cart.add');
-Route::post('/koszyk/aktualizuj/{slug}', [CartController::class, 'update'])->name('cart.update');
-Route::post('/koszyk/usun/{slug}', [CartController::class, 'remove'])->name('cart.remove');
-Route::post('/koszyk/dostawa', [CartController::class, 'setShipping'])->name('cart.shipping');
-Route::post('/koszyk/kup', [CartController::class, 'checkout'])->name('cart.checkout');
+// Sklep per‑konto (stała cena + koszyk) pod /user/{handle}
+Route::get('/user/{handle}', [UserShopController::class, 'index'])->name('user.shop');
+Route::get('/user/{handle}/koszyk', [CartController::class, 'show'])->name('user.cart.show');
+Route::post('/user/{handle}/koszyk/dodaj/{item}', [CartController::class, 'add'])->name('user.cart.add');
+Route::post('/user/{handle}/koszyk/aktualizuj/{item}', [CartController::class, 'update'])->name('user.cart.update');
+Route::post('/user/{handle}/koszyk/usun/{item}', [CartController::class, 'remove'])->name('user.cart.remove');
+Route::post('/user/{handle}/koszyk/dostawa', [CartController::class, 'setShipping'])->name('user.cart.shipping');
+Route::post('/user/{handle}/koszyk/kup', [CartController::class, 'checkout'])->name('user.cart.checkout');
 
 // Podstrona „Wspieramy" — węzły edytowalne w panelu
 Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('beneficiaries');

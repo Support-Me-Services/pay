@@ -1,7 +1,7 @@
 @extends('layouts.landing')
 
-@section('title', 'Sklep — ' . config('shop.name'))
-@section('meta-description', 'Sklep SupportMe — gadżety i tagi NFC. Dodaj do koszyka i zapłać online: BLIK, szybki przelew, karta.')
+@section('title', 'Sklep — ' . $owner->name)
+@section('meta-description', 'Sklep ' . $owner->name . ' — gadżety i tagi NFC. Dodaj do koszyka i zapłać online.')
 
 @push('head')
 <style>
@@ -30,7 +30,7 @@
 @section('content')
 <main class="shop">
     <div class="shop__head">
-        <h1>Sklep</h1>
+        <h1>Sklep — {{ $owner->name }}</h1>
         <p>Gadżety i tagi NFC — dodaj do koszyka i zapłać online.</p>
     </div>
 
@@ -46,7 +46,7 @@
                 <h2 class="pcard__name">{{ $item->name }}</h2>
                 @if($item->description)<p class="pcard__desc">{{ $item->description }}</p>@endif
                 <div class="pcard__price">{{ $item->pricePln() }}<small>zł</small></div>
-                <form method="POST" action="{{ route('cart.add', $item->slug) }}">
+                <form method="POST" action="{{ route('user.cart.add', [$shopHandle, $item->id]) }}">
                     @csrf
                     <button class="pcard__btn" type="submit">Dodaj do koszyka</button>
                 </form>

@@ -5,6 +5,7 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\ShopItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -16,7 +17,7 @@ class ShopItemController extends Controller
 {
     public function index()
     {
-        $items = ShopItem::orderBy('sort')->orderBy('id')->get();
+        $items = ShopItem::forUser(Auth::id())->ordered()->get();
 
         return view('panel.shop-items.index', compact('items'));
     }
@@ -28,7 +29,7 @@ class ShopItemController extends Controller
 
     public function store(Request $request)
     {
-        $item = ShopItem::create($this->validated($request));
+        $item = ShopItem::create($this->validated($request) + ['user_id' => Auth::id()]);
         $this->applyDefault($request, $item);
 
         return redirect()->route('panel.shop-items.index')->with('success', 'Produkt dodany.');
@@ -36,11 +37,14 @@ class ShopItemController extends Controller
 
     public function edit(ShopItem $shopItem)
     {
+        $this->guard($shopItem);
+
         return view('panel.shop-items.form', ['item' => $shopItem]);
     }
 
     public function update(Request $request, ShopItem $shopItem)
     {
+        $this->guard($shopItem);
         $shopItem->update($this->validated($request, $shopItem));
         $this->applyDefault($request, $shopItem);
 
@@ -49,6 +53,7 @@ class ShopItemController extends Controller
 
     public function toggle(ShopItem $shopItem)
     {
+        $this->guard($shopItem);
         $shopItem->update(['active' => ! $shopItem->active]);
 
         return back()->with('success', $shopItem->active ? 'Produkt aktywowany.' : 'Produkt dezaktywowany.');
@@ -56,9 +61,16 @@ class ShopItemController extends Controller
 
     public function destroy(ShopItem $shopItem)
     {
+        $this->guard($shopItem);
         $shopItem->delete();
 
         return redirect()->route('panel.shop-items.index')->with('success', 'Produkt usunięty.');
+    }
+
+    /** Tylko właściciel może edytować/usuwać swój produkt. */
+    private function guard(ShopItem $item): void
+    {
+        abort_unless((int) $item->user_id === (int) Auth::id(), 403);
     }
 
     /** Walidacja + normalizacja (zł→grosze, slug, upload grafiki). */
@@ -66,7 +78,7 @@ class ShopItemController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'slug')->ignore($current?->id)],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'slug')->where('user_id', Auth::id())->ignore($current?->id)],
             'price_pln' => ['required', 'integer', 'min:1', 'max:5000'],
             'description' => ['nullable', 'string', 'max:2000'],
             'tag_uid' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'tag_uid')->ignore($current?->id)],
@@ -105,7 +117,7 @@ class ShopItemController extends Controller
     private function applyDefault(Request $request, ShopItem $item): void
     {
         if ($request->boolean('is_default')) {
-            ShopItem::where('id', '!=', $item->id)->update(['is_default' => false]);
+            ShopItem::where('user_id', $item->user_id)->where('id', '!=', $item->id)->update(['is_default' => false]);
             $item->update(['is_default' => true]);
         } elseif ($item->is_default) {
             // odznaczono domyślny — pozostaw bez domyślnego (lub wymuś inny w UI)

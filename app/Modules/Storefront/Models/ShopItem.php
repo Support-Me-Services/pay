@@ -2,27 +2,49 @@
 
 namespace App\Modules\Storefront\Models;
 
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Produkt sklepu NFC — np. „Serduszko", „Brelok", „Kubek".
- * W trybie sklepowym (branch sklep-payu) obowiązuje STAŁA cena `price`
- * (z fallbackiem do `min_amount`); `min_amount` pozostaje dla zgodności
- * z modelem darowiznowym na pozostałych gałęziach.
+ * Należy do właściciela (`user_id`) — sklepy per‑konto (/user/{handle}).
+ * W trybie sklepowym obowiązuje STAŁA cena `price` (z fallbackiem do
+ * `min_amount`); `min_amount` używany w prezentacji darowiznowej na `/`.
  */
 class ShopItem extends Model
 {
     protected $fillable = [
-        'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'tag_uid', 'active', 'sort',
+        'user_id', 'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'tag_uid', 'active', 'sort',
     ];
 
     protected $casts = [
+        'user_id'    => 'integer',
         'min_amount' => 'integer',
         'price'      => 'integer',
         'is_default' => 'boolean',
         'active'     => 'boolean',
         'sort'       => 'integer',
     ];
+
+    /** Właściciel produktu (konto). */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /** Produkty danego właściciela. */
+    public function scopeForUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /** Kolejność: sort, potem id. */
+    public function scopeOrdered(Builder $query): Builder
+    {
+        return $query->orderBy('sort')->orderBy('id');
+    }
 
     /** Cena w groszach (stała); fallback do minimalnej kwoty, jeśli nie ustawiono. */
     public function priceGrosze(): int

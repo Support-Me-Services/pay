@@ -41,7 +41,7 @@
                     <span class="badge badge-brand" style="margin-left:6px">{{ $unreadMessages }}</span>
                 @endif
             </a>
-            <a href="{{ route('home') }}" target="_blank">Podgląd sklepu ↗</a>
+            <a href="{{ route('user.shop', auth()->user()->handle) }}" target="_blank">Mój sklep ↗</a>
             <div class="nav-sep"></div>
             <form method="POST" action="{{ route('panel.logout') }}">
                 @csrf

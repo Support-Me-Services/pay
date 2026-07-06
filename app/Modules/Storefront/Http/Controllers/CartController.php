@@ -2,28 +2,30 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
+use App\Models\User;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
 
 /**
- * Koszyk sklepu (sesyjny). Pozwala dodać wiele produktów, zmienić ilości
- * i sfinalizować całość jedną transakcją „Kupuję i płacę".
- * Zawartość koszyka trzymana w sesji jako [slug => ilość].
+ * Koszyk sklepu per‑konto (/user/{handle}). Osobny koszyk dla każdego sklepu:
+ * sesja pod kluczem `cart.{handle}` jako [id_produktu => ilość]; pozycje
+ * scope’owane do właściciela sklepu. Dostawa (ship.{handle}) jak dotąd.
  */
 class CartController extends Controller
 {
-    private const KEY = 'cart';
-
-    /** GET /koszyk — podgląd koszyka. */
-    public function show()
+    /** GET /user/{handle}/koszyk */
+    public function show(string $handle)
     {
-        [$lines, $subtotal] = $this->resolve();
-        [$shipCode, $shipMethod, $shipPoint] = $this->shipping();
+        $owner = $this->owner($handle);
+        [$lines, $subtotal] = $this->resolve($owner, $handle);
+        [$shipCode, $shipMethod, $shipPoint] = $this->shipping($handle);
         $shipCost = $lines->isEmpty() ? 0 : (int) $shipMethod['price'];
 
         return view('shop.koszyk', [
+            'shopHandle' => $handle,
+            'owner' => $owner,
             'lines' => $lines,
             'subtotal' => $subtotal,
             'methods' => config('shipping.methods'),
@@ -34,82 +36,84 @@ class CartController extends Controller
         ]);
     }
 
-    /** POST /koszyk/dostawa — wybór metody dostawy (+ punkt dla paczkomatu). */
-    public function setShipping(Request $request)
+    /** POST /user/{handle}/koszyk/dodaj/{item} */
+    public function add(Request $request, string $handle, string $item)
+    {
+        $owner = $this->owner($handle);
+        $shopItem = ShopItem::forUser($owner->id)->where('id', (int) $item)->where('active', true)->firstOrFail();
+
+        $cart = $this->cart($handle);
+        $cart[$shopItem->id] = min(99, ($cart[$shopItem->id] ?? 0) + max(1, (int) $request->input('qty', 1)));
+        session([$this->key($handle) => $cart]);
+
+        return redirect()->back()->with('success', "Dodano do koszyka: {$shopItem->name}.");
+    }
+
+    /** POST /user/{handle}/koszyk/aktualizuj/{item} */
+    public function update(Request $request, string $handle, string $item)
+    {
+        $qty = (int) $request->input('qty', 1);
+        $cart = $this->cart($handle);
+
+        if ($qty <= 0) {
+            unset($cart[$item]);
+        } else {
+            $cart[$item] = min(99, $qty);
+        }
+        session([$this->key($handle) => $cart]);
+
+        return redirect()->route('user.cart.show', $handle);
+    }
+
+    /** POST /user/{handle}/koszyk/usun/{item} */
+    public function remove(string $handle, string $item)
+    {
+        $cart = $this->cart($handle);
+        unset($cart[$item]);
+        session([$this->key($handle) => $cart]);
+
+        return redirect()->route('user.cart.show', $handle)->with('success', 'Usunięto z koszyka.');
+    }
+
+    /** POST /user/{handle}/koszyk/dostawa */
+    public function setShipping(Request $request, string $handle)
     {
         $methods = config('shipping.methods');
         $code = (string) $request->input('ship');
 
         if (! isset($methods[$code])) {
-            return redirect()->route('cart.show')->with('error', 'Nieznana metoda dostawy.');
+            return redirect()->route('user.cart.show', $handle)->with('error', 'Nieznana metoda dostawy.');
         }
         if (empty($methods[$code]['enabled'])) {
-            return redirect()->route('cart.show')->with('error', 'Ta metoda dostawy będzie dostępna wkrótce.');
+            return redirect()->route('user.cart.show', $handle)->with('error', 'Ta metoda dostawy będzie dostępna wkrótce.');
         }
 
-        session(['ship' => $code]);
-        session(['ship_point' => $methods[$code]['point'] ? trim((string) $request->input('ship_point')) : null]);
+        session(["ship.$handle" => $code]);
+        session(["ship_point.$handle" => $methods[$code]['point'] ? trim((string) $request->input('ship_point')) : null]);
 
-        return redirect()->route('cart.show')->with('success', 'Zapisano metodę dostawy.');
+        return redirect()->route('user.cart.show', $handle)->with('success', 'Zapisano metodę dostawy.');
     }
 
-    /** POST /koszyk/dodaj/{slug} — dodaj produkt (domyślnie +1). */
-    public function add(Request $request, string $slug)
+    /** POST /user/{handle}/koszyk/kup — finalizacja koszyka tego sklepu. */
+    public function checkout(string $handle, GatewayClient $gateway)
     {
-        $item = ShopItem::where('slug', $slug)->where('active', true)->firstOrFail();
-
-        $cart = $this->cart();
-        $cart[$slug] = min(99, ($cart[$slug] ?? 0) + max(1, (int) $request->input('qty', 1)));
-        session([self::KEY => $cart]);
-
-        return redirect()->back()->with('success', "Dodano do koszyka: {$item->name}.");
-    }
-
-    /** POST /koszyk/aktualizuj/{slug} — ustaw ilość (0 = usuń). */
-    public function update(Request $request, string $slug)
-    {
-        $qty = (int) $request->input('qty', 1);
-        $cart = $this->cart();
-
-        if ($qty <= 0) {
-            unset($cart[$slug]);
-        } else {
-            $cart[$slug] = min(99, $qty);
-        }
-        session([self::KEY => $cart]);
-
-        return redirect()->route('cart.show');
-    }
-
-    /** POST /koszyk/usun/{slug} — usuń pozycję. */
-    public function remove(string $slug)
-    {
-        $cart = $this->cart();
-        unset($cart[$slug]);
-        session([self::KEY => $cart]);
-
-        return redirect()->route('cart.show')->with('success', 'Usunięto z koszyka.');
-    }
-
-    /** POST /koszyk/kup — finalizacja całego koszyka jedną transakcją. */
-    public function checkout(GatewayClient $gateway)
-    {
-        [$lines, $subtotal] = $this->resolve();
+        $owner = $this->owner($handle);
+        [$lines, $subtotal] = $this->resolve($owner, $handle);
 
         if ($lines->isEmpty()) {
-            return redirect()->route('cart.show')->with('error', 'Koszyk jest pusty.');
+            return redirect()->route('user.cart.show', $handle)->with('error', 'Koszyk jest pusty.');
         }
 
-        [$shipCode, $shipMethod, $shipPoint] = $this->shipping();
+        [$shipCode, $shipMethod, $shipPoint] = $this->shipping($handle);
         if ($shipMethod['point'] && ($shipPoint === null || $shipPoint === '')) {
-            return redirect()->route('cart.show')
+            return redirect()->route('user.cart.show', $handle)
                 ->with('error', 'Wybierz i podaj numer paczkomatu / punktu odbioru.');
         }
         $total = $subtotal + (int) $shipMethod['price'];
 
         // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na podziekowanie.
         if (config('payment.bypass')) {
-            $this->clear();
+            $this->clear($handle);
 
             return redirect()->route('main', ['dzieki' => 1]);
         }
@@ -120,8 +124,8 @@ class CartController extends Controller
 
         try {
             $result = $gateway->createTransaction([
-                'product_external_id' => 'cart-'.$order->id,
-                'product_name' => 'Zamówienie: '.mb_substr($names, 0, 90).' | Dostawa: '.$ship,
+                'product_external_id' => 'cart-'.$handle.'-'.$order->id,
+                'product_name' => 'Zamówienie ('.$handle.'): '.mb_substr($names, 0, 80).' | Dostawa: '.$ship,
                 'amount' => $total,
                 'currency' => 'PLN',
                 'return_url' => route('order.return', $order->id),
@@ -129,55 +133,51 @@ class CartController extends Controller
                 'tag_uid' => null,
             ]);
         } catch (\Throwable $e) {
-            return redirect()->route('cart.show')
+            return redirect()->route('user.cart.show', $handle)
                 ->with('error', 'Płatność jest chwilowo niedostępna. Spróbuj ponownie za moment.');
         }
 
         $order->update(['transaction_id' => $result['uuid']]);
-        $this->clear();
+        $this->clear($handle);
 
         return redirect()->away($result['payment_url']);
     }
 
-    /**
-     * Wybrana metoda dostawy z sesji (z walidacją i fallbackiem do domyślnej).
-     *
-     * @return array{0:string,1:array,2:?string} [$code, $method, $point]
-     */
-    private function shipping(): array
+    /** Właściciel sklepu po handle. */
+    private function owner(string $handle): User
     {
-        $methods = config('shipping.methods');
-        $code = (string) session('ship', config('shipping.default'));
-        if (! isset($methods[$code]) || empty($methods[$code]['enabled'])) {
-            $code = config('shipping.default');
-        }
-
-        return [$code, $methods[$code], session('ship_point')];
+        return User::where('handle', $handle)->firstOrFail();
     }
 
-    /** Wyczyść koszyk i punkt odbioru po złożeniu zamówienia. */
-    private function clear(): void
+    /** Klucz sesji koszyka danego sklepu. */
+    private function key(string $handle): string
     {
-        session()->forget([self::KEY, 'ship_point']);
+        return "cart.$handle";
+    }
+
+    /** Aktualny koszyk sklepu (id => ilość, tylko dodatnie). */
+    private function cart(string $handle): array
+    {
+        return array_filter((array) session($this->key($handle), []), fn ($q) => (int) $q > 0);
     }
 
     /**
-     * Rozwiązanie koszyka na pozycje z aktualnych danych produktów.
+     * Pozycje koszyka z aktualnych danych produktów danego sklepu.
      *
      * @return array{0: \Illuminate\Support\Collection, 1: int} [$lines, $totalGrosze]
      */
-    private function resolve(): array
+    private function resolve(User $owner, string $handle): array
     {
-        $cart = $this->cart();
+        $cart = $this->cart($handle);
         if (! $cart) {
             return [collect(), 0];
         }
 
-        $items = ShopItem::whereIn('slug', array_keys($cart))->where('active', true)->get()->keyBy('slug');
+        $items = ShopItem::forUser($owner->id)->whereIn('id', array_keys($cart))->where('active', true)->get()->keyBy('id');
 
         $lines = collect();
-        foreach ($cart as $slug => $qty) {
-            if (! $item = $items->get($slug)) {
+        foreach ($cart as $id => $qty) {
+            if (! $item = $items->get($id)) {
                 continue;
             }
             $lines->push([
@@ -190,9 +190,25 @@ class CartController extends Controller
         return [$lines, (int) $lines->sum('lineGrosze')];
     }
 
-    /** Aktualny koszyk z sesji (tylko dodatnie ilości). */
-    private function cart(): array
+    /**
+     * Wybrana metoda dostawy (per sklep) z fallbackiem do domyślnej/aktywnej.
+     *
+     * @return array{0:string,1:array,2:?string} [$code, $method, $point]
+     */
+    private function shipping(string $handle): array
     {
-        return array_filter((array) session(self::KEY, []), fn ($q) => (int) $q > 0);
+        $methods = config('shipping.methods');
+        $code = (string) session("ship.$handle", config('shipping.default'));
+        if (! isset($methods[$code]) || empty($methods[$code]['enabled'])) {
+            $code = config('shipping.default');
+        }
+
+        return [$code, $methods[$code], session("ship_point.$handle")];
+    }
+
+    /** Wyczyść koszyk i punkt odbioru sklepu po złożeniu zamówienia. */
+    private function clear(string $handle): void
+    {
+        session()->forget([$this->key($handle), "ship_point.$handle"]);
     }
 }
