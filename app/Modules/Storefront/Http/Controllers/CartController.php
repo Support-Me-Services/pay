@@ -43,6 +43,9 @@ class CartController extends Controller
         if (! isset($methods[$code])) {
             return redirect()->route('cart.show')->with('error', 'Nieznana metoda dostawy.');
         }
+        if (empty($methods[$code]['enabled'])) {
+            return redirect()->route('cart.show')->with('error', 'Ta metoda dostawy będzie dostępna wkrótce.');
+        }
 
         session(['ship' => $code]);
         session(['ship_point' => $methods[$code]['point'] ? trim((string) $request->input('ship_point')) : null]);
@@ -145,7 +148,7 @@ class CartController extends Controller
     {
         $methods = config('shipping.methods');
         $code = (string) session('ship', config('shipping.default'));
-        if (! isset($methods[$code])) {
+        if (! isset($methods[$code]) || empty($methods[$code]['enabled'])) {
             $code = config('shipping.default');
         }
 

@@ -40,6 +40,9 @@
     .ship__point{ margin:2px 0 10px; }
     .ship__point input{ width:100%; padding:10px 12px; border:1px solid #d5dbe2; border-radius:8px; }
     .ship__apply{ padding:9px 15px; border:1px solid #2563eb; background:#fff; color:#2563eb; border-radius:8px; font-weight:700; cursor:pointer; }
+    .ship__opt.is-disabled{ opacity:.6; cursor:not-allowed; background:#f8fafc; }
+    .ship__soon{ display:inline-block; margin-left:8px; padding:1px 8px; border-radius:999px; background:#eef2f7; color:#64748b; font-size:11px; font-weight:700; vertical-align:middle; }
+    .ship__note{ font-size:12.5px; color:#6b7280; margin:6px 0 10px; }
     .cart__sums{ margin:18px 0; }
     .cart__row{ display:flex; justify-content:space-between; padding:5px 0; color:#334155; }
     .cart__row--total{ border-top:1px solid #e6eaef; margin-top:6px; padding-top:12px; font-size:20px; }
@@ -86,24 +89,28 @@
                 <form method="POST" action="{{ route('cart.shipping') }}">
                     @csrf
                     @foreach($methods as $code => $m)
-                        <label class="ship__opt">
+                        @php $enabled = ! empty($m['enabled']); @endphp
+                        <label class="ship__opt{{ $enabled ? '' : ' is-disabled' }}">
                             <input type="radio" name="ship" value="{{ $code }}" @checked($code === $shipCode)
-                                   data-point="{{ $m['point'] ? 1 : 0 }}" onchange="shipToggle(this)">
-                            <span class="ship__label">{{ $m['label'] }}</span>
-                            <span class="ship__price">{{ $m['price'] ? number_format($m['price'] / 100, 2, ',', ' ').' zł' : 'gratis' }}</span>
+                                   data-point="{{ $m['point'] ? 1 : 0 }}" onchange="shipToggle(this)" @disabled(! $enabled)>
+                            <span class="ship__label">{{ $m['label'] }}@unless($enabled)<span class="ship__soon">dostępne wkrótce</span>@endunless</span>
+                            <span class="ship__price">{{ $m['price'] ? number_format($m['price'] / 100, 2, ',', ' ').' zł' : 'bez kosztów' }}</span>
                         </label>
                     @endforeach
+                    <p class="ship__note">Na razie realizujemy wyłącznie <strong>odbiór osobisty</strong>. Pozostałe metody (paczkomaty, kurierzy) udostępnimy wkrótce.</p>
                     <div class="ship__point" id="shipPoint" @style(['display:none' => ! $methods[$shipCode]['point']])>
                         <input type="text" name="ship_point" value="{{ $shipPoint }}" maxlength="64"
                                placeholder="Nr paczkomatu / punktu odbioru (np. WAW01A)">
                     </div>
-                    <button type="submit" class="ship__apply">Zastosuj dostawę</button>
+                    @if(collect($methods)->where('enabled', true)->count() > 1)
+                        <button type="submit" class="ship__apply">Zastosuj dostawę</button>
+                    @endif
                 </form>
             </div>
 
             <div class="cart__sums">
                 <div class="cart__row"><span>Produkty</span><span>{{ number_format($subtotal / 100, 2, ',', ' ') }} zł</span></div>
-                <div class="cart__row"><span>Dostawa — {{ $methods[$shipCode]['label'] }}</span><span>{{ $shipCost ? number_format($shipCost / 100, 2, ',', ' ').' zł' : 'gratis' }}</span></div>
+                <div class="cart__row"><span>Dostawa — {{ $methods[$shipCode]['label'] }}</span><span>{{ $shipCost ? number_format($shipCost / 100, 2, ',', ' ').' zł' : 'bez kosztów' }}</span></div>
                 <div class="cart__row cart__row--total"><span>Razem</span><strong>{{ number_format($total / 100, 2, ',', ' ') }} zł</strong></div>
             </div>
 
