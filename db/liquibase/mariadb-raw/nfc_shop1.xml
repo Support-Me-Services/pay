@@ -610,4 +610,97 @@
     <changeSet author="Marcin (generated)" id="1782550516877-56">
         <addForeignKeyConstraint baseColumnNames="salesperson_id" baseTableName="products" constraintName="products_salesperson_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="salespeople" validate="true"/>
     </changeSet>
+    <!-- ============================================================================= -->
+    <!-- Delta 2026-07: wariant sklepowy PayU (cena+opis) + sklepy per-konto           -->
+    <!-- (users.handle, shop_items.user_id) + podstrona „Wspieramy" (beneficiary_nodes) -->
+    <!-- ============================================================================= -->
+    <changeSet author="Marcin Lula" id="20260707-shop-1">
+        <comment>Wariant sklepowy PayU: shop_items.price (grosze) + description (oferta)</comment>
+        <addColumn tableName="shop_items">
+            <column name="price" type="INT UNSIGNED"/>
+            <column name="description" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-2">
+        <comment>Backfill: brakująca cena = dotychczasowe min_amount</comment>
+        <sql>UPDATE shop_items SET price = min_amount WHERE price IS NULL</sql>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-3">
+        <comment>Sklepy per-konto: users.handle = slug sklepu pod /people/{handle}</comment>
+        <addColumn tableName="users">
+            <column name="handle" type="VARCHAR(255)"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-4">
+        <createIndex indexName="users_handle_unique" tableName="users" unique="true">
+            <column name="handle"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-5">
+        <comment>Backfill handle: admin@local lub pierwsze konto -> lula-marcin; reszta -> user-{id}</comment>
+        <sql>UPDATE users SET name = 'Marcin Lula', handle = 'lula-marcin' WHERE email = 'admin@local'</sql>
+        <sql>UPDATE users SET handle = 'lula-marcin' WHERE handle IS NULL AND (SELECT c FROM (SELECT COUNT(*) c FROM users u WHERE u.handle = 'lula-marcin') z) = 0 AND id = (SELECT m FROM (SELECT MIN(id) m FROM users) y)</sql>
+        <sql>UPDATE users SET handle = CONCAT('user-', id) WHERE handle IS NULL</sql>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-6">
+        <comment>Właściciel produktu (sklepy per-konto)</comment>
+        <addColumn tableName="shop_items">
+            <column name="user_id" type="BIGINT UNSIGNED"/>
+        </addColumn>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-7">
+        <createIndex indexName="shop_items_user_id_index" tableName="shop_items">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-8">
+        <comment>Backfill: istniejące produkty -> właściciel lula-marcin</comment>
+        <sql>UPDATE shop_items SET user_id = (SELECT id FROM users WHERE handle = 'lula-marcin' LIMIT 1) WHERE user_id IS NULL</sql>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-9">
+        <comment>Slug unikalny per-konto zamiast globalnie: usuń stary globalny unique</comment>
+        <dropIndex indexName="shop_items_slug_unique" tableName="shop_items"/>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-10">
+        <createIndex indexName="shop_items_user_id_slug_unique" tableName="shop_items" unique="true">
+            <column name="user_id"/>
+            <column name="slug"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="Marcin Lula" id="20260707-shop-11">
+        <comment>Podstrona „Wspieramy" (/beneficiaries) — węzły edytowalne w panelu</comment>
+        <createTable tableName="beneficiary_nodes">
+            <column autoIncrement="true" name="id" type="BIGINT UNSIGNED">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="heading" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="image" type="VARCHAR(255)"/>
+            <column defaultValue="left" name="image_side" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="100" name="image_scale" type="SMALLINT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="image_x" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="image_y" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValue="left" name="text_align" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="body_html" type="LONGTEXT"/>
+            <column defaultValueNumeric="0" name="position" type="INT UNSIGNED">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="1" name="active" type="TINYINT(1)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
+            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
+        </createTable>
+    </changeSet>
 </databaseChangeLog>
