@@ -26,8 +26,12 @@ return new class extends Migration
         }
 
         // Slug unikalny w obrębie sklepu (user_id, slug), nie globalnie.
+        // Uwaga: dropIndex po nazwie (nie dropUnique) — przenośne. Na Postgresie
+        // unik slug bywa INDEKSEM (nie constraintem, gdy tworzony przez Liquibase),
+        // więc dropUnique -> DROP CONSTRAINT nie działa; dropIndex -> DROP INDEX działa
+        // i na Postgresie, i na MySQL/MariaDB.
         Schema::table('shop_items', function (Blueprint $table) {
-            $table->dropUnique(['slug']);
+            $table->dropIndex('shop_items_slug_unique');
             $table->unique(['user_id', 'slug']);
         });
     }
