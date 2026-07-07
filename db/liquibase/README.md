@@ -1,7 +1,15 @@
 # Liquibase — schemat baz (MariaDB → PostgreSQL)
 
-Changelogi Liquibase odwzorowujące **obecny schemat produkcji** (MariaDB) i gotowe do
-wykonania na **PostgreSQL** (Cloud SQL `nfc-postgres-prod`).
+> **⚠️ PRECEDENCJA (od 2026-07-07): jedno źródło prawdy schematu = migracje Laravel
+> (`artisan migrate`).** Liquibase to narzędzie do **budowy bazy OD ZERA** (użyte przy
+> cutoverze na PG 2026-06-27). **NIE uruchamiaj `liquibase update` na żywych bazach
+> produkcji** — są wyprzedzone przez Laravel migrate (kolejne zmiany schematu idą tam),
+> a `databasechangelog` tego nie zna → `liquibase update` spróbowałby dodać istniejące
+> obiekty i padnie. Te changelogi trzymamy jako referencję/rebuild i dopisujemy do nich
+> delty równolegle do migracji Laravel, ale **wykonuje je tylko `artisan migrate`**.
+
+Changelogi Liquibase odwzorowujące **schemat produkcji** i gotowe do
+wykonania na **świeżej** bazie **PostgreSQL** (Cloud SQL `nfc-postgres-prod`).
 
 ## Struktura
 

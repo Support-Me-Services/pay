@@ -32,8 +32,42 @@ TENANT=please-support-me.com php artisan db:seed   # seeduje bazę nfc_shop1
 # bez TENANT => domyślnie pay.please-support-me.com => baza nfc_pay
 ```
 
-Istniejące bazy mają już tabele — NIE uruchamiaj `migrate` na produkcji bez
-potrzeby.
+## Migracje / zmiany schematu (WAŻNE — patrz incydent 2026-07-07)
+
+**Jedno źródło prawdy schematu = migracje Laravel (`artisan migrate`).** Liquibase
+w `db/liquibase/` to WYŁĄCZNIE referencja do budowy bazy od zera — **nie uruchamiaj
+`liquibase update` na żywych bazach** (są już wyprzedzone przez Laravel migrate;
+`databasechangelog` nie zna delt Laravela → konflikt).
+
+Topologia produkcji (łatwo pomylić):
+- Żywe bazy = **PostgreSQL** (Cloud SQL `10.60.96.3`): storefront `nfc_shop1`,
+  bramka `nfc_pay`. **MariaDB na VM (`sudo mysql ...`) to martwe legacy** — nie mylić.
+- `ResolveTenant` podmienia tylko NAZWĘ bazy na domyślnym połączeniu (`pgsql`);
+  w CLI wybór bazy przez `TENANT=<host>`.
+
+Deploy zawierający nowe migracje — procedura (krótkie okno):
+
+```bash
+# 1. BACKUP właściwej bazy (creds z .env):
+pg_dump -h 10.60.96.3 -U nfc_pay nfc_shop1 | gzip > ~/backup_nfc_shop1_$(date +%F-%H%M).sql.gz
+# 2. okno serwisowe + pull + migracja TEJ bazy tenanta:
+sudo -u www-data php artisan down
+sudo git pull --ff-only origin main
+#    --path OGRANICZ do modułu! goły `migrate` odpali gateway `create_shop_tables`,
+#    które tworzy events/shops/tags i KOLIDUJE z istniejącymi tabelami storefrontu:
+sudo -u www-data env TENANT=please-support-me.com php artisan migrate --force \
+  --path=app/Modules/Storefront/database/migrations
+sudo -u www-data env TENANT=please-support-me.com php artisan migrate --force \
+  --path=database/migrations            # bazowe (np. add_handle_to_users)
+sudo -u www-data php artisan optimize:clear
+sudo -u www-data php artisan up
+```
+
+Migracje MUSZĄ być **PG-safe**: unik zbudowany w PostgreSQL to INDEKS, więc w
+migracjach używaj `$table->dropIndex('nazwa_unique')`, **nie** `dropUnique([...])`
+(to drugie generuje `DROP CONSTRAINT` → `SQLSTATE 42704` → migracja wpół-zastosowana
+→ nowy kod rzuca 500). Rollback kodu przy 500: `sudo git reset --hard <poprzedni>`
++ `optimize:clear`.
 
 ## nginx — jeden server block
 
@@ -71,6 +105,8 @@ jeden `.env`.
 ```bash
 cd /var/www/support-me            # prod to checkout git (repo jest własnością root → sudo)
 sudo git pull --ff-only origin main
+# UWAGA: jeśli pull przyniósł nowe pliki migracji → NIE wystarczy ten skrót;
+#        wykonaj procedurę z sekcji „Migracje / zmiany schematu" (backup + scoped migrate).
 composer install --no-dev --optimize-autoloader   # tylko gdy zmieniły się zależności
 sudo -u www-data php8.2 artisan config:clear && sudo -u www-data php8.2 artisan view:clear && sudo -u www-data php8.2 artisan route:clear
 # config:cache / route:cache są bezpieczne — ResolveTenant nadpisuje config()
