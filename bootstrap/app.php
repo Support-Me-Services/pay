@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ResolveTenant;
 use App\Modules\Gateway\Http\Middleware\AuthenticateApiKey;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // motyw i bazę na podstawie hosta ZANIM zadziała sesja/CSRF (czytają z DB).
         $middleware->prependToGroup('web', ResolveTenant::class);
         $middleware->prependToGroup('api', ResolveTenant::class);
+
+        // Inertia (React): dzieli dane i obsługuje odpowiedzi X-Inertia.
+        // Na końcu grupy web — ResolveTenant (baza/tenant) musi zadziałać wcześniej.
+        $middleware->appendToGroup('web', HandleInertiaRequests::class);
 
         // Alias używany przez trasy API bramki (X-Api-Key).
         $middleware->alias([

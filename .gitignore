@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Inertia SSR — artefakt buildu (vite build --ssr)
+/bootstrap/ssr

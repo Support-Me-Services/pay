@@ -37,6 +37,18 @@ Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
 Route::view('/dziekujemy', 'shop.dziekujemy')->name('thanks');
 
+// [Pilotaż migracji na React/Inertia] — strona dowodowa, nie rusza istniejących widoków.
+Route::get('/react-pilot', function () {
+    return inertia('Pilot', [
+        'message' => 'Ta strona jest renderowana przez React (Inertia), a dane przychodzą z kontrolera Laravel.',
+        'tenant' => config('tenants.default') ?: request()->getHost(),
+        'items' => \App\Modules\Storefront\Models\ShopItem::query()
+            ->orderBy('sort')->orderBy('id')->limit(5)->get()
+            ->map(fn ($i) => ['id' => $i->id, 'name' => $i->name, 'price' => $i->pricePln().' zł'])
+            ->values(),
+    ]);
+})->name('react.pilot');
+
 // Podstrony segmentów (treść z Figmy)
 Route::view('/fundacje', 'shop.fundacje')->name('fundacje');
 Route::view('/parafie', 'shop.parafie')->name('parafie');
