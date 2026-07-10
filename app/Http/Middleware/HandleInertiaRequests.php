@@ -37,7 +37,40 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            //
+
+            // Komunikaty flash (redirecty kontrolerów -> Inertia).
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
+
+            // Zalogowane konto (dla panelu).
+            'auth' => [
+                'user' => fn () => $request->user() ? [
+                    'name' => $request->user()->name,
+                    'handle' => $request->user()->handle,
+                ] : null,
+            ],
+
+            // Nawigacja panelu + liczniki — tylko na trasach panelu (lazy).
+            'panel' => fn () => $request->routeIs('panel.*') ? [
+                'brand' => config('shop.name', 'SupportME'),
+                'nav' => [
+                    ['label' => 'Dashboard', 'href' => route('panel.dashboard'), 'active' => $request->routeIs('panel.dashboard')],
+                    ['label' => 'Parafie', 'href' => route('panel.products.index'), 'active' => $request->routeIs('panel.products.*') || $request->routeIs('panel.parishes.*')],
+                    ['label' => 'Kategorie', 'href' => route('panel.categories.index'), 'active' => $request->routeIs('panel.categories.*')],
+                    ['label' => 'Wspieramy', 'href' => route('panel.beneficiaries.index'), 'active' => $request->routeIs('panel.beneficiaries.*')],
+                    ['label' => 'Handlowcy', 'href' => route('panel.salespeople.index'), 'active' => $request->routeIs('panel.salespeople.*')],
+                    ['label' => 'Parafie do obdzwonienia', 'href' => route('panel.potential-parishes.index'), 'active' => $request->routeIs('panel.potential-parishes.*')],
+                    ['label' => 'Mapa pokrycia', 'href' => route('panel.coverage.map'), 'active' => $request->routeIs('panel.coverage.*')],
+                    ['label' => 'Sklep', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')],
+                    ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')],
+                    ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*'), 'badge' => \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count() ?: null],
+                    ['label' => 'Wiadomości', 'href' => route('panel.messages.index'), 'active' => $request->routeIs('panel.messages.*'), 'badge' => \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count() ?: null],
+                ],
+                'shopUrl' => $request->user()?->handle ? route('user.shop', $request->user()->handle) : null,
+                'logoutUrl' => route('panel.logout'),
+            ] : null,
         ];
     }
 }
