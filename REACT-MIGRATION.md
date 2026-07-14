@@ -81,7 +81,7 @@ Legenda ryzyka: 🟢 niskie · 🟡 średnie · 🔴 wysokie (żywe płatności 
 ### Faza 1 — Panel storefront (`resources/views/storefront/common/panel/`) 🟢
 Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niemal identyczne).
 
-- [ ] `dashboard` (wykresy — Chart.js → react‑chartjs‑2) 🟡
+- [x] `dashboard` (statystyki + wykres, Chart.js) 🟡 — **zrobione**
 - [ ] `login` (formularz logowania) 🟢
 - [x] `categories` (index + form, drzewo + reorder) 🟡 — **zrobione**
 - [x] `salespeople` (index + form) 🟢 — **zrobione**
