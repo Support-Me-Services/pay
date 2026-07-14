@@ -89,7 +89,7 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
 - [ ] `products` (index + form + **stats**; CRM parafii — większy) 🟡
 - [ ] `potential-parishes` (index) 🟢
 - [ ] `applications` (index + show) 🟢
-- [ ] `messages` (index + show) 🟢
+- [x] `messages` (index + show) 🟢 — **zrobione**
 - [ ] `beneficiaries` (index — **edytor węzłów: Quill + SortableJS**) 🔴 złożony
 - [ ] `coverage/map` (**interaktywna mapa**, dane AJAX) 🔴 złożony
 
