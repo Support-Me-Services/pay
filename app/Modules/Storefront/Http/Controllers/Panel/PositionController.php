@@ -5,6 +5,7 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\JobPosition;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PositionController extends Controller
 {
@@ -13,12 +14,19 @@ class PositionController extends Controller
         $positions = JobPosition::withCount('applications')
             ->orderBy('sort')->orderBy('id')->get();
 
-        return view('panel.positions.index', compact('positions'));
+        return Inertia::render('Panel/Positions/Index', [
+            'items' => $positions->map(fn (JobPosition $p) => $this->present($p))->values(),
+            'createUrl' => route('panel.positions.create'),
+        ]);
     }
 
     public function create()
     {
-        return view('panel.positions.form', ['position' => new JobPosition()]);
+        return Inertia::render('Panel/Positions/Form', [
+            'item' => null,
+            'storeUrl' => route('panel.positions.store'),
+            'indexUrl' => route('panel.positions.index'),
+        ]);
     }
 
     public function store(Request $request)
@@ -30,7 +38,31 @@ class PositionController extends Controller
 
     public function edit(JobPosition $position)
     {
-        return view('panel.positions.form', compact('position'));
+        return Inertia::render('Panel/Positions/Form', [
+            'item' => $this->present($position),
+            'storeUrl' => route('panel.positions.store'),
+            'indexUrl' => route('panel.positions.index'),
+        ]);
+    }
+
+    /** Serializacja stanowiska dla React (Inertia). */
+    private function present(JobPosition $p): array
+    {
+        return [
+            'id' => $p->id,
+            'title' => $p->title,
+            'location' => $p->location,
+            'employment_type' => $p->employment_type,
+            'description_html' => $p->description_html,
+            'sort' => (int) $p->sort,
+            'active' => (bool) $p->active,
+            'applications_count' => (int) ($p->applications_count ?? 0),
+            'applications_url' => route('panel.applications.index', ['position' => $p->id]),
+            'edit_url' => route('panel.positions.edit', $p),
+            'update_url' => route('panel.positions.update', $p),
+            'toggle_url' => route('panel.positions.toggle', $p),
+            'destroy_url' => route('panel.positions.destroy', $p),
+        ];
     }
 
     public function update(Request $request, JobPosition $position)

@@ -84,8 +84,8 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
 - [ ] `dashboard` (wykresy — Chart.js → react‑chartjs‑2) 🟡
 - [ ] `login` (formularz logowania) 🟢
 - [ ] `categories` (index + form, **drzewo `parent_id` + reorder**) 🟡
-- [ ] `salespeople` (index + form) 🟢
-- [ ] `positions` (index + form + toggle) 🟢
+- [x] `salespeople` (index + form) 🟢 — **zrobione**
+- [x] `positions` (index + form + toggle, Quill) 🟢 — **zrobione**
 - [ ] `products` (index + form + **stats**; CRM parafii — większy) 🟡
 - [ ] `potential-parishes` (index) 🟢
 - [ ] `applications` (index + show) 🟢
