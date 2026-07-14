@@ -7,6 +7,7 @@ use App\Modules\Storefront\Models\JobApplication;
 use App\Modules\Storefront\Models\JobPosition;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class ApplicationController extends Controller
 {
@@ -36,7 +37,45 @@ class ApplicationController extends Controller
             ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
         $filterPosition = $positionId ? JobPosition::find($positionId) : null;
 
-        return view('panel.applications.index', compact('applications', 'unread', 'filterPosition', 'status', 'statusCounts'));
+        $base = $positionId ? ['position' => $positionId] : [];
+        $total = (int) $statusCounts->sum();
+        $tabs = [['label' => 'Wszystkie', 'count' => $total, 'url' => route('panel.applications.index', $base), 'active' => ! $status]];
+        foreach (JobApplication::STATUSES as $key => $label) {
+            $tabs[] = ['label' => $label, 'count' => (int) ($statusCounts[$key] ?? 0), 'url' => route('panel.applications.index', $base + ['status' => $key]), 'active' => $status === $key];
+        }
+
+        return Inertia::render('Panel/Applications/Index', [
+            'items' => $applications->map(fn (JobApplication $a) => $this->present($a))->values(),
+            'unread' => $unread,
+            'tabs' => $tabs,
+            'filterPosition' => $filterPosition ? ['id' => $filterPosition->id, 'title' => $filterPosition->title] : null,
+            'clearFilterUrl' => route('panel.applications.index'),
+        ]);
+    }
+
+    /** Serializacja zgłoszenia dla React (Inertia). */
+    private function present(JobApplication $a): array
+    {
+        [$bg, $fg] = $a->statusColors();
+
+        return [
+            'id' => $a->id,
+            'name' => $a->name,
+            'email' => $a->email,
+            'phone' => $a->phone,
+            'created_at' => $a->created_at?->format('Y-m-d H:i'),
+            'is_read' => (bool) $a->is_read,
+            'status' => $a->status,
+            'status_label' => $a->statusLabel(),
+            'status_bg' => $bg,
+            'status_fg' => $fg,
+            'position_title' => $a->position?->title,
+            'cv_url' => $a->cv_path ? route('panel.applications.cv', $a) : null,
+            'cv_name' => $a->cv_original_name,
+            'show_url' => route('panel.applications.show', $a),
+            'status_url' => route('panel.applications.status', $a),
+            'destroy_url' => route('panel.applications.destroy', $a),
+        ];
     }
 
     /**
@@ -64,7 +103,11 @@ class ApplicationController extends Controller
 
         $application->load('position');
 
-        return view('panel.applications.show', compact('application'));
+        return Inertia::render('Panel/Applications/Show', [
+            'application' => $this->present($application) + ['message' => $application->message],
+            'statusOptions' => collect(JobApplication::STATUSES)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
+            'indexUrl' => route('panel.applications.index'),
+        ]);
     }
 
     /**
