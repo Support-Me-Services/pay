@@ -10,6 +10,7 @@ use App\Modules\Storefront\Models\Product;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class StorefrontController extends Controller
 {
@@ -90,7 +91,9 @@ class StorefrontController extends Controller
             return redirect()->route('home', ['produkt' => $item->slug], 302);
         }
 
-        return response()->view('shop.tag-not-found', [], 404);
+        return Inertia::render('Storefront/TagNotFound', [
+            'categoryUrl' => route('category', 'miejsca-kultu'),
+        ])->toResponse(request())->setStatusCode(404);
     }
 
     /**

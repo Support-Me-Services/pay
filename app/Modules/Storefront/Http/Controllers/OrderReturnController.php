@@ -5,6 +5,7 @@ namespace App\Modules\Storefront\Http\Controllers;
 use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Services\GatewayClient;
+use Inertia\Inertia;
 
 class OrderReturnController extends Controller
 {
@@ -44,16 +45,29 @@ class OrderReturnController extends Controller
                 ? random_int(1, 6)
                 : null;
 
-            return view('shop.return-success', compact('order', 'product', 'showTether', 'standNo'));
+            return Inertia::render('Storefront/ReturnSuccess', [
+                'amount' => $order->amountPln(),
+                'productName' => $product->name,
+                'productCity' => $product->city,
+                'orderId' => $order->id,
+                'categoryUrl' => route('category', 'miejsca-kultu'),
+            ]);
         }
 
         if ($order->status === 'failed') {
-            return view('shop.return-failure', compact('order'));
+            return Inertia::render('Storefront/ReturnFailure', [
+                'orderId' => $order->id,
+                'retryUrl' => route('product.show', $order->product->slug),
+                'categoryUrl' => route('category', 'miejsca-kultu'),
+            ]);
         }
 
         // Płatność jeszcze nieprzetworzona (np. webhook PayU w drodze) — ekran
         // oczekiwania z odpytywaniem statusu.
-        return view('shop.return-pending', compact('order'));
+        return Inertia::render('Storefront/ReturnPending', [
+            'orderId' => $order->id,
+            'statusUrl' => route('order.status', $order->id),
+        ]);
     }
 
     /**
