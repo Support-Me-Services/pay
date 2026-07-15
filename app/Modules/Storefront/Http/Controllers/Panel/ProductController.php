@@ -10,6 +10,7 @@ use App\Modules\Storefront\Services\ShopStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
@@ -43,15 +44,52 @@ class ProductController extends Controller
             ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
         $total = Product::count();
 
-        return view('panel.products.index', compact('parishes', 'status', 'q', 'statusCounts', 'total'));
+        // Zakładki-liczniki (filtr statusu), zachowując wyszukiwanie.
+        $tabs = [[
+            'key' => null, 'label' => 'Wszystkie', 'count' => $total,
+            'url' => route('panel.products.index', array_filter(['q' => $q])), 'active' => ! $status,
+        ]];
+        foreach (Product::STATUSES as $key => $label) {
+            $tabs[] = [
+                'key' => $key, 'label' => $label, 'count' => (int) ($statusCounts[$key] ?? 0),
+                'url' => route('panel.products.index', array_filter(['status' => $key, 'q' => $q])),
+                'active' => $status === $key,
+            ];
+        }
+
+        return Inertia::render('Panel/Products/Index', [
+            'items' => $parishes->map(fn (Product $p) => $this->presentRow($p))->values(),
+            'tabs' => $tabs,
+            'q' => $q,
+            'indexUrl' => route('panel.products.index'),
+            'createUrl' => route('panel.products.create'),
+        ]);
+    }
+
+    /** Serializacja wiersza listy parafii dla React. */
+    private function presentRow(Product $p): array
+    {
+        [$bg, $fg] = $p->statusColors();
+
+        return [
+            'id' => $p->id,
+            'name' => $p->name,
+            'city' => $p->city,
+            'voivodeship' => $p->voivodeship,
+            'status_label' => $p->statusLabel(),
+            'status_bg' => $bg,
+            'status_fg' => $fg,
+            'salesperson_name' => $p->salesperson?->name,
+            'tag_uid' => $p->tag_uid,
+            'orders_count' => $p->orders_count,
+            'edit_url' => route('panel.products.edit', $p),
+            'stats_url' => route('panel.products.stats', $p),
+        ];
     }
 
     public function create()
     {
-        return view('panel.products.form', [
-            'product' => new Product(),
-            'salespeople' => Salesperson::orderBy('name')->get(),
-        ]);
+        return $this->form(new Product());
     }
 
     public function store(Request $request)
@@ -71,12 +109,71 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load('notes');
+        $product->load('notes', 'images');
 
-        return view('panel.products.form', [
-            'product' => $product,
-            'salespeople' => Salesperson::orderBy('name')->get(),
+        return $this->form($product);
+    }
+
+    /** Wspólny render formularza dodawania/edycji parafii (Inertia). */
+    private function form(Product $product)
+    {
+        $exists = $product->exists;
+        [$bg, $fg] = $product->statusColors();
+
+        return Inertia::render('Panel/Products/Form', [
+            'product' => [
+                'id' => $product->id,
+                'exists' => $exists,
+                'name' => $product->name,
+                'city' => $product->city,
+                'voivodeship' => $product->voivodeship,
+                'phone' => $product->phone,
+                'website' => $product->website,
+                'status' => $product->status ?? 'kontakt',
+                'status_label' => $product->statusLabel(),
+                'status_bg' => $bg,
+                'status_fg' => $fg,
+                'salesperson_id' => $product->salesperson_id,
+                // Cena w formularzu w złotówkach (kropka dziesiętna), pusta dla nowej.
+                'price' => $exists ? number_format($product->price / 100, 2, '.', '') : '',
+                'tag_uid' => $product->tag_uid,
+                'pickup_instruction' => $product->pickup_instruction,
+                'description_html' => $product->description_html,
+                'main_image_url' => $product->main_image ? asset('storage/' . $product->main_image) : null,
+            ],
+            'images' => $exists
+                ? $product->images->map(fn ($img) => ['id' => $img->id, 'url' => asset('storage/' . $img->path)])->values()
+                : [],
+            'notes' => $exists ? $product->notes->map(fn ($n) => $this->presentNote($n))->values() : [],
+            'salespeople' => Salesperson::orderBy('name')->get(['id', 'name']),
+            'statuses' => collect(Product::STATUSES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
+            'voivodeships' => Salesperson::VOIVODESHIPS,
+            'noteTypes' => collect(ParishNote::TYPES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
+            'urls' => [
+                'store' => route('panel.products.store'),
+                'update' => $exists ? route('panel.products.update', $product) : null,
+                'index' => route('panel.products.index'),
+                'editorUpload' => route('panel.products.editor-upload'),
+                'status' => $exists ? route('panel.parishes.status', $product) : null,
+                // Szablony URL-i (podmiana __ID__ po stronie React).
+                'imageDelete' => $exists ? route('panel.products.images.delete', [$product, '__ID__']) : null,
+                'notesStore' => $exists ? route('panel.parishes.notes.store', $product) : null,
+                'notesDestroy' => $exists ? route('panel.parishes.notes.destroy', [$product, '__ID__']) : null,
+            ],
         ]);
+    }
+
+    /** Serializacja notatki CRM dla React. */
+    private function presentNote(ParishNote $n): array
+    {
+        return [
+            'id' => $n->id,
+            'body' => $n->body,
+            'type' => $n->type,
+            'type_label' => $n->typeLabel(),
+            'author' => $n->author,
+            'created_at' => $n->created_at?->format('Y-m-d H:i'),
+        ];
     }
 
     /**
@@ -172,7 +269,22 @@ class ProductController extends Controller
         $last30 = $stats->summary(productId: $product->id, days: 30);
         $series = $stats->dailyPurchases(productId: $product->id, days: 30);
 
-        return view('panel.products.stats', compact('product', 'total', 'last30', 'series'));
+        // Przychód formatujemy tu (grosze → PLN), reszta metryk to liczby całkowite.
+        $withRevenue = fn (array $s) => [...$s, 'revenue' => ShopStatsService::formatPln($s['revenue'])];
+
+        return Inertia::render('Panel/Products/Stats', [
+            'product' => ['name' => $product->name],
+            'total' => $withRevenue($total),
+            'last30' => $withRevenue($last30),
+            // Lejek sprzedażowy (łącznie) — wartości bezwzględne, skalowanie w React.
+            'funnel' => [
+                ['label' => 'Otwarcia tagów', 'value' => $total['opens']],
+                ['label' => 'Kliki „Kup"', 'value' => $total['clicks']],
+                ['label' => 'Zakupy', 'value' => $total['purchases']],
+            ],
+            'series' => $series,
+            'indexUrl' => route('panel.products.index'),
+        ]);
     }
 
     /**

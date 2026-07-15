@@ -39,6 +39,8 @@ migracja panelu „Sklep": `061240d`.
 3. **Formularze**: `useForm(...)`; pliki → `{ forceFormData: true }`; edycja → `transform(d => ({...d, _method:'put'}))`.
    Błędy walidacji: `form.errors` (Inertia dzieli je automatycznie; kontroler bez zmian).
 4. **Redirecty** (`store/update/destroy`): zostają — Inertia je obsłuży (flash przez shared `flash`).
+   Endpointy AJAX/JSON (auto-zapis, notatki CRM, upload obrazka w edytorze) zostają — z Reacta
+   wołane `fetch`-em z nagłówkiem `X-CSRF-TOKEN` (token w shared prop `csrf_token`, dodany w `HandleInertiaRequests`).
 5. **Build + weryfikacja** (patrz niżej). Usuń martwy widok Blade.
 6. Style: na razie **reużywamy `theme.css`** (panel) — bez re‑stylingu. Docelowo Tailwind/Vite.
 
@@ -82,12 +84,12 @@ Legenda ryzyka: 🟢 niskie · 🟡 średnie · 🔴 wysokie (żywe płatności 
 Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niemal identyczne).
 
 - [x] `dashboard` (statystyki + wykres, Chart.js) 🟡 — **zrobione**
-- [ ] `login` (formularz logowania) 🟢
+- [x] `login` (formularz logowania) 🟢 — **zrobione** (strona standalone, bez chromu panelu)
 - [x] `categories` (index + form, drzewo + reorder) 🟡 — **zrobione**
 - [x] `salespeople` (index + form) 🟢 — **zrobione**
 - [x] `positions` (index + form + toggle, Quill) 🟢 — **zrobione**
-- [ ] `products` (index + form + **stats**; CRM parafii — większy) 🟡
-- [ ] `potential-parishes` (index) 🟢
+- [x] `products` (index + form + **stats**; CRM parafii) 🟡 — **zrobione** (Quill+upload, galeria, pipeline statusów, notatki CRM AJAX, lejek+BarChart)
+- [x] `potential-parishes` (index) 🟢 — **zrobione** (filtry GET + auto-zapis inline)
 - [x] `applications` (index + show, filtry + zmiana statusu + CV) 🟢 — **zrobione**
 - [x] `messages` (index + show) 🟢 — **zrobione**
 - [ ] `beneficiaries` (index — **edytor węzłów: Quill + SortableJS**) 🔴 złożony
