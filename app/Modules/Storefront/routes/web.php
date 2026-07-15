@@ -60,9 +60,15 @@ Route::get('/react-pilot', function () {
 
 // Podstrony segmentów (treść z Figmy)
 Route::view('/fundacje', 'shop.fundacje')->name('fundacje');
-Route::view('/parafie', 'shop.parafie')->name('parafie');
+Route::get('/parafie', fn () => Inertia::render('Storefront/Parafie', [
+    'pageTitle' => 'Parafie — SupportME',
+    'pageDescription' => 'Support Me pomaga parafiom zwiększyć dostępność darowizn bezgotówkowych dzięki tagom NFC na tacach. Prosty, bezpieczny sposób na wsparcie kościoła telefonem.',
+]))->name('parafie');
 Route::view('/szkoly', 'shop.szkoly')->name('szkoly');
-Route::view('/mecenasi/lokalny-rolnik', 'shop.mecenasi-lokalny-rolnik')->name('mecenasi.lokalnyrolnik');
+Route::get('/mecenasi/lokalny-rolnik', fn () => Inertia::render('Storefront/MecenasiLokalnyRolnik', [
+    'pageTitle' => 'Mecenas: LokalnyRolnik — SupportME',
+    'pageDescription' => 'LokalnyRolnik — Mecenas SupportME. Polska platforma e-commerce łącząca klientów z lokalnymi rolnikami i producentami żywności wspiera, poprzez SupportME, cele fundacji.',
+]))->name('mecenasi.lokalnyrolnik');
 // Inwestorzy i akcjonariusze (statyczna strona marketingowa wg Figmy „Inwestorzy")
 Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
     'css' => $css('inwestorzy.css'),
