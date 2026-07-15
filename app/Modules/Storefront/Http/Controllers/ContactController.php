@@ -4,6 +4,7 @@ namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Models\ContactMessage;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ContactController extends Controller
 {
@@ -16,7 +17,13 @@ class ContactController extends Controller
         $stanowisko = trim((string) $request->query('stanowisko', ''));
         $subject = $stanowisko !== '' ? ('Aplikacja: ' . $stanowisko) : '';
 
-        return view('shop.kontakt', compact('subject'));
+        return Inertia::render('Storefront/Kontakt', [
+            'subject' => $subject,
+            'storeUrl' => route('contact.store'),
+            'css' => asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10),
+            'pageTitle' => 'Kontakt — ' . config('shop.name'),
+            'pageDescription' => 'Napisz do nas — odpowiemy najszybciej, jak to możliwe.',
+        ]);
     }
 
     /**
