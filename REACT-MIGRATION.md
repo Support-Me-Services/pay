@@ -106,17 +106,23 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
   migracja przez `--path` (framework + `Modules/Gateway/database/migrations`),
   bo pełny `migrate` koliduje ze storefrontem na tabeli `events`.
 
-### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO
+### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO — **W TOKU**
 Wymaga SSR + weryfikacji OG/meta i zgodności PayU po każdej stronie.
-- [ ] layouty: `church/layouts/{landing,public}.blade.php` → `StorefrontLayout.jsx`
-- [ ] `home`, `storefront` (`/` darowizna — paywin), `index`
-- [ ] `user-shop` (`/people/{handle}`), `koszyk`, `category`, `product`
-- [ ] `beneficiaries` (`/beneficiaries`), `oferta`, `fundacje`, `parafie`, `szkoly`, `mecenasi-lokalny-rolnik`
-- [ ] `regulamin`, `dziekujemy`, `praca`, `aplikuj`, `kontakt`, `docs`, `samouczek`, `inwestorzy`
-- [ ] `tag-not-found`, `return-{success,pending,failure}`
+- [x] layout `landing` → **`StorefrontLayout.jsx`** (OG/meta w `<Head>` z SSR; współdzielone
+  `seo`+`routes` w `HandleInertiaRequests`, tylko rola storefront). Layout `public` — TODO.
+- [x] statyczne marketingowe: **`inwestorzy`, `dziekujemy`, `parafie`, `mecenasi-lokalny-rolnik`**
+  (Route::view → Inertia::render; page-scoped CSS w `<style>`/prop `css` z hashem serwerowym).
+- [ ] **Dynamiczne / okołopłatnicze** (kontrolery + „Wesprzyj/Kup" → PayU): `home`, `storefront`
+  (`/` darowizna — paywin), `user-shop` (`/people/{handle}`), `category`, `product`, `koszyk`,
+  `index`, `kontakt`, `aplikuj`, `praca`, `beneficiaries`, `return-{success,pending,failure}`,
+  `tag-not-found` (2 ostatnie + `index` używają layoutu `public`).
+- [ ] pozostałe statyczne: `fundacje`, `szkoly`, `oferta`, `regulamin`.
+- [ ] **DUŻE strony statyczne**: `docs` (~1431 linii), `samouczek` (~1115) — czysta treść,
+  zerowa interaktywność; rekomendacja: **zostawić w Blade** lub migrować na końcu (wysoki koszt,
+  ryzyko regresji, znikoma korzyść). Blade i Inertia współistnieją — nie blokują siebie.
 - ⚠️ **PayU (potwierdzone na prod, do zachowania):** czas realizacji w `regulamin`,
   administrator danych w polityce (PDF), produkty z opisem/ceną/koszykiem w `user-shop`.
-  OG/meta obecnie w `landing.blade` — przenieść do `<Head>` (Inertia) bez utraty podglądów linków.
+  OG/meta przenoszone do `<Head>` (Inertia) bez utraty podglądów linków — weryfikować per strona.
 
 ### Faza 3 — Bramka publiczna + płatności 🔴 NAJOSTROŻNIEJ (żywe płatności PayU)
 - [ ] `gateway/landing`
