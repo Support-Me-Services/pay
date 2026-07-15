@@ -7,6 +7,7 @@ use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 /**
  * Strona główna „/" — model DAROWIZNOWY (paywin „Wesprzyj — X zł").
@@ -17,15 +18,53 @@ use Illuminate\Http\Request;
 class CompanyStoreController extends Controller
 {
     /** GET / — darowiznowy storefront produktów konta głównego. */
-    public function index()
+    public function index(Request $request)
     {
         $owner = $this->owner();
         $items = $owner
-            ? ShopItem::forUser($owner->id)->where('active', true)->ordered()->get()
+            ? ShopItem::forUser($owner->id)->where('active', true)->ordered()->get()->values()
             : collect();
         $default = $items->firstWhere('is_default', true) ?? $items->first();
 
-        return view('shop.storefront', ['items' => $items, 'default' => $default]);
+        // Indeks startowy: produkt z ?produkt= (link z tagu NFC/podstron), inaczej domyślny.
+        $startSlug = $request->query('produkt');
+        $start = $items->firstWhere('slug', $startSlug) ?? $default ?? $items->first();
+        $startIdx = $items->search(fn ($i) => $i->slug === optional($start)->slug);
+        $startIdx = $startIdx === false ? 0 : $startIdx;
+
+        // Fundacje wspierane (karuzela) — logo z public/img/fundacje/<slug>.(svg|png|webp|jpg).
+        $foundations = collect([
+            ['slug' => 'legalsight', 'name' => 'LegalSight Polska'],
+            ['slug' => 'twoja-fundacja', 'name' => 'Twoja Fundacja'],
+        ])->map(function (array $f) {
+            $logo = null;
+            foreach (['svg', 'png', 'webp', 'jpg'] as $e) {
+                if (is_file(public_path("img/fundacje/{$f['slug']}.$e"))) {
+                    $logo = asset("img/fundacje/{$f['slug']}.$e");
+                    break;
+                }
+            }
+
+            return $f + ['logo' => $logo];
+        })->values();
+
+        return Inertia::render('Storefront/Storefront', [
+            'items' => $items->map(fn (ShopItem $i) => [
+                'slug' => $i->slug,
+                'name' => $i->name,
+                'min' => $i->minAmountPln(),
+                'image' => asset($i->image),
+                'is_svg' => $i->isSvg(),
+                'action' => route('shop.buy', $i->slug),
+            ])->values(),
+            'startIdx' => $startIdx,
+            'foundations' => $foundations,
+            'mainUrl' => route('main'),
+            'regulaminUrl' => route('regulamin'),
+            'pageTitle' => 'Wesprzyj — ' . config('shop.name'),
+            'pageDescription' => 'Wesprzyj SupportMe — wybierz produkt i wpłać dowolną kwotę.',
+            'css' => asset('css/sklep.css') . '?v=' . substr(md5_file(public_path('css/sklep.css')), 0, 10),
+        ]);
     }
 
     /** POST /sklep/kup/{slug} — darowizna na wybraną kwotę (≥ min produktu). */
