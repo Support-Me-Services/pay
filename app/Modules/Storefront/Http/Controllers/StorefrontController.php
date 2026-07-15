@@ -173,7 +173,29 @@ class StorefrontController extends Controller
 
         Event::create(['product_id' => $product->id, 'type' => 'page_view']);
 
-        return view('shop.product', compact('product'));
+        // Sugerowane kwoty (zł); domyślna = cena bazowa parafii, fallback 20 zł.
+        $presets = [10, 20, 50, 100, 200];
+        $default = (int) round($product->price / 100);
+        if (! in_array($default, $presets, true)) {
+            $default = 20;
+        }
+
+        return Inertia::render('Storefront/Product', [
+            'product' => [
+                'name' => $product->name,
+                'city' => $product->city,
+                'purpose' => $product->purpose,
+                'image' => $product->main_image ? asset('storage/' . $product->main_image) : null,
+                'description_html' => $product->description_html,
+            ],
+            'presets' => $presets,
+            'default' => $default,
+            'buyUrl' => route('product.buy', $product->slug),
+            'categoryUrl' => route('category', 'miejsca-kultu'),
+            'css' => asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10),
+            'pageTitle' => 'Wesprzyj: ' . $product->name . ' — ' . config('shop.name'),
+            'pageDescription' => 'Złóż cyfrową tacę na rzecz parafii ' . $product->name . '. Szybka wpłata BLIK, bez gotówki.',
+        ]);
     }
 
     /**
