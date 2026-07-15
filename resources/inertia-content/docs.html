@@ -1,58 +1,7 @@
-@extends('layouts.landing')
-
-@section('title', 'Dokumentacja techniczna — SupportME')
-@section('meta-description', 'Pełna dokumentacja techniczna platformy SupportME — moduł po module: trasy, metody, pola, tabele i przepływy.')
-
-@push('head')
-<link rel="stylesheet" href="{{ asset('css/docs.css') }}?v={{ substr(md5_file(public_path('css/docs.css')), 0, 10) }}">
-@endpush
-
-@section('content')
-@php
-    $stats = [
-        ['n' => '2',       'l' => 'moduły aplikacji'],
-        ['n' => '32',      'l' => 'kontrolery'],
-        ['n' => '19',      'l' => 'modele danych'],
-        ['n' => '~25',     'l' => 'tabel w bazach'],
-        ['n' => '69',      'l' => 'widoków (Blade)'],
-        ['n' => '109',     'l' => 'tras (web · API · webhooki)'],
-        ['n' => '~13 500', 'l' => 'linii kodu'],
-        ['n' => '3',       'l' => 'bazy danych (multi-tenant)'],
-    ];
-    $toc = [
-        ['1','arch','Architektura multi-tenant'],
-        ['2','platnosci','Warstwa płatności — przegląd'],
-        ['3','sklep','Sklep donacyjny NFC (/)'],
-        ['4','taca','Cyfrowa Taca — wejście NFC i parafie'],
-        ['5','main','Strona główna /main'],
-        ['6','inwestorzy','Inwestorzy i akcjonariusze'],
-        ['7','rekrutacja','Rekrutacja i kariera'],
-        ['8','kontakt','Kontakt'],
-        ['9','regulamin','Regulamin'],
-        ['10','powrot','Powrót z płatności'],
-        ['11','client','Klient bramki i webhooki (sklep)'],
-        ['12','gateway','Moduł Gateway — bramka PayU'],
-        ['13','gw-api','Gateway: API i webhooki'],
-        ['14','gw-panel','Gateway: panel zarządzania'],
-        ['15','panel-auth','Panel: logowanie i dashboard'],
-        ['16','panel-parafie','Panel: Parafie + CRM'],
-        ['17','panel-kat','Panel: Kategorie'],
-        ['18','panel-hand','Panel: Handlowcy'],
-        ['19','panel-leady','Panel: Parafie do obdzwonienia + mapa'],
-        ['20','panel-sklep','Panel: Sklep — produkty NFC'],
-        ['21','panel-praca','Panel: Praca — stanowiska'],
-        ['22','panel-apl','Panel: Aplikacje rekrutacyjne'],
-        ['23','panel-wiad','Panel: Wiadomości'],
-        ['24','analityka','Eventy i analityka'],
-        ['25','baza','Pełny schemat bazy danych'],
-        ['26','stack','Stack technologiczny i statystyki'],
-    ];
-@endphp
-
 <section class="dc-hero">
     <h1>Dokumentacja techniczna platformy SupportME</h1>
     <p>Pełny opis systemu moduł po module: co robi każdy element, jakie udostępnia trasy, jakie metody zawiera, jakie ma pola i z których tabel korzysta oraz co dokładnie dzieje się podczas działania. Dokument wygenerowany na podstawie analizy kodu źródłowego.</p>
-    <div class="dc-hero__meta">Aktualizacja: {{ now()->translatedFormat('j F Y') }} · Laravel 12 · PHP 8.2+ · architektura multi-tenant</div>
+    <div class="dc-hero__meta">Aktualizacja: __DATE__ · Laravel 12 · PHP 8.2+ · architektura multi-tenant</div>
 </section>
 
 <div class="dc-wrap">
@@ -61,9 +10,32 @@
     <nav class="dc-toc" id="gora">
         <h2>Spis treści</h2>
         <ol>
-            @foreach($toc as $t)
-                <li><span class="dc-toc__n">{{ $t[0] }}.</span> <a href="#{{ $t[1] }}">{{ $t[2] }}</a></li>
-            @endforeach
+                            <li><span class="dc-toc__n">1.</span> <a href="#arch">Architektura multi-tenant</a></li>
+                <li><span class="dc-toc__n">2.</span> <a href="#platnosci">Warstwa płatności — przegląd</a></li>
+                <li><span class="dc-toc__n">3.</span> <a href="#sklep">Sklep donacyjny NFC (/)</a></li>
+                <li><span class="dc-toc__n">4.</span> <a href="#taca">Cyfrowa Taca — wejście NFC i parafie</a></li>
+                <li><span class="dc-toc__n">5.</span> <a href="#main">Strona główna /main</a></li>
+                <li><span class="dc-toc__n">6.</span> <a href="#inwestorzy">Inwestorzy i akcjonariusze</a></li>
+                <li><span class="dc-toc__n">7.</span> <a href="#rekrutacja">Rekrutacja i kariera</a></li>
+                <li><span class="dc-toc__n">8.</span> <a href="#kontakt">Kontakt</a></li>
+                <li><span class="dc-toc__n">9.</span> <a href="#regulamin">Regulamin</a></li>
+                <li><span class="dc-toc__n">10.</span> <a href="#powrot">Powrót z płatności</a></li>
+                <li><span class="dc-toc__n">11.</span> <a href="#client">Klient bramki i webhooki (sklep)</a></li>
+                <li><span class="dc-toc__n">12.</span> <a href="#gateway">Moduł Gateway — bramka PayU</a></li>
+                <li><span class="dc-toc__n">13.</span> <a href="#gw-api">Gateway: API i webhooki</a></li>
+                <li><span class="dc-toc__n">14.</span> <a href="#gw-panel">Gateway: panel zarządzania</a></li>
+                <li><span class="dc-toc__n">15.</span> <a href="#panel-auth">Panel: logowanie i dashboard</a></li>
+                <li><span class="dc-toc__n">16.</span> <a href="#panel-parafie">Panel: Parafie + CRM</a></li>
+                <li><span class="dc-toc__n">17.</span> <a href="#panel-kat">Panel: Kategorie</a></li>
+                <li><span class="dc-toc__n">18.</span> <a href="#panel-hand">Panel: Handlowcy</a></li>
+                <li><span class="dc-toc__n">19.</span> <a href="#panel-leady">Panel: Parafie do obdzwonienia + mapa</a></li>
+                <li><span class="dc-toc__n">20.</span> <a href="#panel-sklep">Panel: Sklep — produkty NFC</a></li>
+                <li><span class="dc-toc__n">21.</span> <a href="#panel-praca">Panel: Praca — stanowiska</a></li>
+                <li><span class="dc-toc__n">22.</span> <a href="#panel-apl">Panel: Aplikacje rekrutacyjne</a></li>
+                <li><span class="dc-toc__n">23.</span> <a href="#panel-wiad">Panel: Wiadomości</a></li>
+                <li><span class="dc-toc__n">24.</span> <a href="#analityka">Eventy i analityka</a></li>
+                <li><span class="dc-toc__n">25.</span> <a href="#baza">Pełny schemat bazy danych</a></li>
+                <li><span class="dc-toc__n">26.</span> <a href="#stack">Stack technologiczny i statystyki</a></li>
         </ol>
     </nav>
 
@@ -75,7 +47,7 @@
         Kwoty pieniężne w bazie przechowywane są w <strong>groszach</strong> (liczby całkowite).
     </p>
 
-    {{-- ============ 1. ARCHITEKTURA ============ --}}
+    
     <section class="dc-module" id="arch">
         <div class="dc-module__head"><span class="dc-module__num">1.</span><h2>Architektura multi-tenant</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Jedna aplikacja Laravel obsługuje kilka niezależnych serwisów. To, który moduł i która baza danych obsłużą żądanie, zależy od <strong>hostu (domeny)</strong>. Rozstrzyga to middleware <code>ResolveTenant</code>, uruchamiany jako pierwszy — przed sesją i tokenem CSRF — bo musi ustawić bazę i kontekst zanim cokolwiek innego się wykona.</p>
@@ -111,7 +83,7 @@
         </div>
     </section>
 
-    {{-- ============ 2. PŁATNOŚCI PRZEGLĄD ============ --}}
+    
     <section class="dc-module" id="platnosci">
         <div class="dc-module__head"><span class="dc-module__num">2.</span><h2>Warstwa płatności — przegląd</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Płatności obsługuje osobny moduł <strong>Gateway</strong> (własna baza <code>nfc_pay</code>), z którym sklepy komunikują się przez REST API i webhooki. Sklep nigdy nie rozmawia bezpośrednio z PayU — robi to bramka, co pozwala obsłużyć wiele sklepów jednym, bezpiecznym połączeniem z operatorem. Pełny cykl jest wielowarstwowy: webhook + aktywny polling + podpisy kryptograficzne.</p>
@@ -130,7 +102,7 @@
         </div>
     </section>
 
-    {{-- ============ 3. SKLEP NFC ============ --}}
+    
     <section class="dc-module" id="sklep">
         <div class="dc-module__head"><span class="dc-module__num">3.</span><h2>Sklep donacyjny NFC (/)</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Strona główna serwisu. Wyświetla produkty oznaczone tagami NFC (Serduszko, Kubek, Koszulka, Pin, Brelok). Każdy produkt ma własną <strong>minimalną kwotę</strong>. Domyślny produkt („Serduszko”, min. 1 zł) otwiera się automatycznie w modalu po wejściu. Kwota jest edytowalna w modalu, a walidacja minimum działa zarówno w przeglądarce, jak i na serwerze. Obsługiwane przez <code>CompanyStoreController</code>.</p>
@@ -184,7 +156,7 @@
         </div>
     </section>
 
-    {{-- ============ 4. TACA ============ --}}
+    
     <section class="dc-module" id="taca">
         <div class="dc-module__head"><span class="dc-module__num">4.</span><h2>Cyfrowa Taca — wejście NFC i parafie</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Główna funkcja platformy. Darczyńca zbliża telefon do znacznika NFC w kościele, trafia na stronę parafii, wybiera kwotę i płaci, a na końcu widzi ekran „Bóg zapłać”. Wszystkim steruje <code>StorefrontController</code>; dane parafii zarządzane są w panelu (sekcja 16). Każdy etap loguje zdarzenie do analityki.</p>
@@ -252,7 +224,7 @@
         </div>
     </section>
 
-    {{-- ============ 5. MAIN ============ --}}
+    
     <section class="dc-module" id="main">
         <div class="dc-module__head"><span class="dc-module__num">5.</span><h2>Strona główna /main</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Landing „Technologia, która pomaga czynić dobro” — zbudowany pixel-perfect z makiet Figmy (desktop i mobile). Sekcje są dynamiczne: kategorie „Kogo wspieramy?” pobierane są z bazy i zarządzane z panelu.</p>
@@ -271,14 +243,14 @@
         <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">StorefrontController::index() · views/…/shop/home.blade.php · layouts/landing.blade.php · public/css/landing.css · public/img/og-supportme.png</div></div>
     </section>
 
-    {{-- ============ 6. INWESTORZY ============ --}}
+    
     <section class="dc-module" id="inwestorzy">
         <div class="dc-module__head"><span class="dc-module__num">6.</span><h2>Inwestorzy i akcjonariusze</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Statyczna strona marketingowa (<code>GET /inwestorzy</code>, nazwa trasy <code>investors</code>) zbudowana 1:1 z makiety Figmy. Hero „Inwestorzy i akcjonariusze”, sekcja misji kapitałowej („Wierzymy, że kapitał może służyć dobru”) oraz karty akcjonariuszy z kwotami inwestycji (kapitałowa + wsparcie usługowe). Renderowana bez kontrolera (<code>Route::view</code>).</p>
         <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (Route::view) · views/…/shop/inwestorzy.blade.php · public/css/inwestorzy.css</div></div>
     </section>
 
-    {{-- ============ 7. REKRUTACJA ============ --}}
+    
     <section class="dc-module" id="rekrutacja">
         <div class="dc-module__head"><span class="dc-module__num">7.</span><h2>Rekrutacja i kariera</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Pełny system rekrutacyjny: publiczna lista ofert (zarządzana z panelu), strony ofert, formularz aplikacji z uploadem CV oraz powiadomienie e-mail z załączonym CV. Obsługiwany przez <code>CareersController</code>. CV trafia na <strong>prywatny dysk</strong> (niedostępny publicznie), a pobrać je można tylko z panelu.</p>
@@ -343,7 +315,7 @@
         <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">CareersController.php · Models/JobPosition.php, JobApplication.php · Mail/JobApplicationReceived.php · views/…/shop/{praca,oferta,aplikuj}.blade.php · views/emails/job-application.blade.php</div></div>
     </section>
 
-    {{-- ============ 8. KONTAKT ============ --}}
+    
     <section class="dc-module" id="kontakt">
         <div class="dc-module__head"><span class="dc-module__num">8.</span><h2>Kontakt</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Publiczny formularz kontaktowy (<code>ContactController</code>). Wiadomości zapisywane są do bazy i trafiają do skrzynki w panelu z licznikiem nieprzeczytanych. Temat może być wstępnie wypełniony z linku z oferty pracy (<code>?stanowisko=…</code>).</p>
@@ -370,7 +342,7 @@
         <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">ContactController.php · Models/ContactMessage.php · views/…/shop/kontakt.blade.php</div></div>
     </section>
 
-    {{-- ============ 9. REGULAMIN ============ --}}
+    
     <section class="dc-module" id="regulamin">
         <div class="dc-module__head"><span class="dc-module__num">9.</span><h2>Regulamin</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Statyczny dokument prawny (<code>GET /regulamin</code>, nazwa <code>regulamin</code>) — kompletny regulamin sklepu internetowego przeniesiony 1:1 z dokumentu źródłowego. 12 paragrafów + wzór formularza odstąpienia.</p>
@@ -385,7 +357,7 @@
         <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (Route::view) · views/…/shop/regulamin.blade.php · public/css/subpages.css</div></div>
     </section>
 
-    {{-- ============ 10. POWRÓT ============ --}}
+    
     <section class="dc-module" id="powrot">
         <div class="dc-module__head"><span class="dc-module__num">10.</span><h2>Powrót z płatności</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Po powrocie z bramki <code>OrderReturnController</code> synchronizuje status zamówienia i pokazuje właściwy ekran: sukces („Bóg zapłać”), oczekiwanie (z pollingiem) lub niepowodzenie (z opcją ponowienia). To zabezpiecza przed sytuacją, gdy klient wróci wcześniej niż dotrze webhook.</p>
@@ -422,7 +394,7 @@
         <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">OrderReturnController.php · views/…/shop/return-{success,pending,failure}.blade.php</div></div>
     </section>
 
-    {{-- ============ 11. GATEWAY CLIENT ============ --}}
+    
     <section class="dc-module" id="client">
         <div class="dc-module__head"><span class="dc-module__num">11.</span><h2>Klient bramki i webhooki (po stronie sklepu)</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Sklep komunikuje się z bramką przez serwis <code>GatewayClient</code> oraz odbiera powiadomienia zwrotne (webhooki) o opłaceniu. Zdarzenia analityczne (np. <code>tag_open</code>) wysyłane są asynchronicznie, by nie spowalniać odpowiedzi.</p>
@@ -469,12 +441,11 @@ $data = $request-&gt;validate([
             </tbody>
         </table>
 
-        @php $f="docs-client"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Klient bramki: przepływ webhooka i odbiór powiadomienia o płatności.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-client"><img src="__FIG:docs-client__" loading="lazy" alt=""><figcaption>Klient bramki: przepływ webhooka i odbiór powiadomienia o płatności.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-client.png</code> (np. log webhooka, kod GatewayClient, ekran zamówienia opłaconego) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 12. GATEWAY ============ --}}
+    
     <section class="dc-module" id="gateway">
         <div class="dc-module__head"><span class="dc-module__num">12.</span><h2>Moduł Gateway — bramka PayU</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Samodzielna bramka płatnicza działająca jako odrębna aplikacja (<code>pay.please-support-me.com</code>, baza <code>nfc_pay</code>). Integruje PayU, obsługuje wiele sklepów, tagi NFC, transakcje, zdarzenia i statystyki. Zawiera 15 kontrolerów, własne API, panel oraz warstwę dostawców płatności (provider).</p>
@@ -565,12 +536,11 @@ if (! in_array($statusCode, [<i>'SUCCESS','WARNING_CONTINUE_3DS','WARNING_CONTIN
             </tbody>
         </table>
 
-        @php $f="docs-gateway"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Moduł Gateway: cykl życia transakcji od created do paid.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-gateway"><img src="__FIG:docs-gateway__" loading="lazy" alt=""><figcaption>Moduł Gateway: cykl życia transakcji od created do paid.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-gateway.png</code> (np. lista transakcji, diagram stanów, panel PayU) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 13. GATEWAY API ============ --}}
+    
     <section class="dc-module" id="gw-api">
         <div class="dc-module__head"><span class="dc-module__num">13.</span><h2>Gateway: API i webhooki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Bramka udostępnia REST API dla sklepów (autoryzacja kluczem) oraz endpointy płatności i webhooki. Wszystkie powiadomienia są podpisywane i weryfikowane kryptograficznie.</p>
@@ -646,12 +616,11 @@ $status = match ($payuStatus) {
             </tbody>
         </table>
 
-        @php $f="docs-gw-api"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>API i webhooki bramki: sekwencja transakcja → płatność → notyfikacja.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-gw-api"><img src="__FIG:docs-gw-api__" loading="lazy" alt=""><figcaption>API i webhooki bramki: sekwencja transakcja → płatność → notyfikacja.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-gw-api.png</code> (np. log webhooka PayU, ekran BLIK, odpowiedź API) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 14. GATEWAY PANEL ============ --}}
+    
     <section class="dc-module" id="gw-panel">
         <div class="dc-module__head"><span class="dc-module__num">14.</span><h2>Gateway: panel zarządzania</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Panel bramki (osobne logowanie) służy do zarządzania sklepami, tagami NFC, statystykami i leadami. Zawiera też moduły demonstracyjne (anti-theft, tryb testowy płatności).</p>
@@ -721,12 +690,11 @@ protected $connection = 'gateway';</pre>
         </table>
         <p>Moduł <strong>Anti-theft</strong> (<code>AntitheftCheck</code> → <code>antitheft_checks</code>: <code>shop_id</code>, <code>status</code> ok/warning, <code>foreign_tags_found</code>, <code>checked_at</code>) jest oznaczony w kodzie komentarzem <code>// FIKCYJNE — moduł demo, brak realnej detekcji</code> i zawsze zwraca <code>foreign_tags_found = 0</code> — szkielet gotowy do rozbudowy.</p>
 
-        @php $f="docs-gw-panel"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel bramki: zarządzanie sklepami i tagami NFC.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-gw-panel"><img src="__FIG:docs-gw-panel__" loading="lazy" alt=""><figcaption>Panel bramki: zarządzanie sklepami i tagami NFC.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-gw-panel.png</code> (np. lista sklepów, formularz taga, statystyki) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 15. PANEL AUTH + DASHBOARD ============ --}}
+    
     <section class="dc-module" id="panel-auth">
         <div class="dc-module__head"><span class="dc-module__num">15.</span><h2>Panel: logowanie i dashboard</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Panel sklepu (<code>/panel</code>) chroniony jest logowaniem (middleware <code>auth</code>). Po zalogowaniu dashboard pokazuje kondycję sprzedaży. Łącznie panel udostępnia ponad 50 tras.</p>
@@ -771,12 +739,11 @@ $request-&gt;session()-&gt;<b>regenerate()</b>; <span class="c">// anty session-
 return redirect()-&gt;intended(route('panel.dashboard'));</pre>
         <p>Dlaczego to ważne: ogólny komunikat błędu utrudnia enumerację kont, a regeneracja ID sesji po zalogowaniu zamyka klasę ataków na przejęcie sesji. Wylogowanie dodatkowo unieważnia sesję i regeneruje token CSRF.</p>
 
-        @php $f="docs-panel-auth"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel: ekran logowania i dashboard z metrykami.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-auth"><img src="__FIG:docs-panel-auth__" loading="lazy" alt=""><figcaption>Panel: ekran logowania i dashboard z metrykami.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-auth.png</code> (np. formularz logowania, dashboard, wykres) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 16. PANEL PARAFIE ============ --}}
+    
     <section class="dc-module" id="panel-parafie">
         <div class="dc-module__head"><span class="dc-module__num">16.</span><h2>Panel: Parafie + CRM</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Najbogatsza sekcja panelu (<code>ProductController</code>): pełny CRUD parafii wraz z galerią zdjęć, opisem WYSIWYG, statystykami oraz wbudowanym CRM (statusy leada, notatki, przypisany handlowiec). Publikacja parafii sterowana jest statusem — ustawienie „aktywna” włącza widoczność publiczną.</p>
@@ -856,12 +823,11 @@ $data['salesperson_id'] = $data['salesperson_id'] ?: null;</pre>
         </table>
         <p>Notatki dodawane są AJAX-em i zwracane jako JSON (bez przeładowania) wraz z etykietą typu i datą. Usunięcie notatki sprawdza, że należy ona do tej parafii (<code>abort_unless($note-&gt;product_id === $product-&gt;id, 404)</code>) — ochrona przed manipulacją ID.</p>
 
-        @php $f="docs-panel-parafie"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel parafii: formularz CRM z galerią, statusem i notatkami.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-parafie"><img src="__FIG:docs-panel-parafie__" loading="lazy" alt=""><figcaption>Panel parafii: formularz CRM z galerią, statusem i notatkami.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-parafie.png</code> (np. lista parafii z zakładkami statusów, formularz, panel notatek) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 17. PANEL KATEGORIE ============ --}}
+    
     <section class="dc-module" id="panel-kat">
         <div class="dc-module__head"><span class="dc-module__num">17.</span><h2>Panel: Kategorie</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Drzewo kategorii „Kogo wspieramy?” (<code>CategoryController</code>) sterujące sekcjami na stronie głównej. Obsługuje zagnieżdżanie (parent/child), zmianę kolejności i ikony, z ochroną przed cyklami.</p>
@@ -918,12 +884,11 @@ foreach ($all-&gt;where('parent_id', $parentId) as $cat) {
 <span class="c">// usunięcie rodzica NIE kasuje dzieci — FK nullOnDelete czyni je top-level</span></pre>
         <p>Dlaczego to ważne: rekurencyjne <code>descendantIds</code> zbiera całe poddrzewo, więc select rodzica nigdy nie zaproponuje opcji tworzącej cykl. Usunięcie kategorii dzięki <code>nullOnDelete</code> przenosi dzieci na poziom wyższy zamiast je kasować.</p>
 
-        @php $f="docs-panel-kat"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel kategorii: drzewo z wcięciami, zmiana kolejności i ikony.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-kat"><img src="__FIG:docs-panel-kat__" loading="lazy" alt=""><figcaption>Panel kategorii: drzewo z wcięciami, zmiana kolejności i ikony.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-kat.png</code> (np. drzewo kategorii, formularz, select rodzica) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 18. PANEL HANDLOWCY ============ --}}
+    
     <section class="dc-module" id="panel-hand">
         <div class="dc-module__head"><span class="dc-module__num">18.</span><h2>Panel: Handlowcy</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">CRUD handlowców (<code>SalespersonController</code>) z przypisaniem obsługiwanych województw i licznikiem przypisanych parafii. Integruje się z CRM parafii i mapą pokrycia.</p>
@@ -962,12 +927,11 @@ foreach ($all-&gt;where('parent_id', $parentId) as $cat) {
 $data['voivodeships'] = ! empty($data['voivodeships']) ? array_values($data['voivodeships']) : null;</pre>
         <p>Dlaczego to ważne: zamknięty słownik (<code>in:</code>) blokuje literówki i „lewe” województwa, dzięki czemu filtr mapy pokrycia i przypisania CRM zawsze działają na spójnych wartościach. Cast <code>'array'</code> w modelu serializuje listę do JSON i deserializuje z powrotem bez ręcznego <code>json_encode</code>.</p>
 
-        @php $f="docs-panel-hand"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel handlowców: lista z licznikiem parafii i wybór województw.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-hand"><img src="__FIG:docs-panel-hand__" loading="lazy" alt=""><figcaption>Panel handlowców: lista z licznikiem parafii i wybór województw.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-hand.png</code> (np. lista handlowców, formularz z checkboxami województw) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 19. PANEL LEADY + MAPA ============ --}}
+    
     <section class="dc-module" id="panel-leady">
         <div class="dc-module__head"><span class="dc-module__num">19.</span><h2>Panel: Parafie do obdzwonienia + mapa pokrycia</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Lista leadów parafialnych (<code>PotentialParishController</code>) zaimportowanych z OpenStreetMap, z lejkiem obdzwaniania i interaktywną mapą pokrycia (Leaflet). Filtry: województwo, status, handlowiec, obecność telefonu. Paginacja po 50.</p>
@@ -1033,12 +997,11 @@ if ($hasPhone === 'with') {
         <h3 class="dc-sub">Mapa pokrycia (coverageData) — transfer danych</h3>
         <p>Endpoint <code>GET /panel/coverage</code> ładuje markery AJAX-em (NIE wkleja 20 tys. punktów do HTML). <code>coverageData()</code> zwraca tylko niezbędne kolumny (<code>id, name, city, voivodeship, lat, lon, phone, status, salesperson_id, note</code>) plus kolor wg statusu — oszczędność transferu i czasu renderu. Filtry mapy są te same co listy, więc markery można zawężać re-fetchem.</p>
 
-        @php $f="docs-panel-leady"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel leadów: lista do obdzwonienia + interaktywna mapa pokrycia (Leaflet).</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-leady"><img src="__FIG:docs-panel-leady__" loading="lazy" alt=""><figcaption>Panel leadów: lista do obdzwonienia + interaktywna mapa pokrycia (Leaflet).</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-leady.png</code> (np. mapa z klastrami markerów, lista z filtrami, popup parafii) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 20. PANEL SKLEP ============ --}}
+    
     <section class="dc-module" id="panel-sklep">
         <div class="dc-module__head"><span class="dc-module__num">20.</span><h2>Panel: Sklep — produkty NFC</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">CRUD produktów sklepu donacyjnego (<code>ShopItemController</code>): minimalna kwota, tag NFC, produkt domyślny (tylko jeden), upload grafiki, kolejność i aktywność. Cena wpisywana w złotych, zapisywana w groszach.</p>
@@ -1082,12 +1045,11 @@ if ($request-&gt;boolean('is_default')) {
 }</pre>
         <p>Dlaczego to ważne: produkt domyślny („Serduszko”) pokazuje się w modalu po wejściu na stronę sklepu — gdyby dwa były domyślne, modal byłby niejednoznaczny. <code>applyDefault</code> atomowo zdejmuje flagę ze wszystkich innych przed ustawieniem nowego domyślnego.</p>
 
-        @php $f="docs-panel-sklep"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel sklepu: lista produktów NFC z miniaturą, kwotą i flagą domyślnego.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-sklep"><img src="__FIG:docs-panel-sklep__" loading="lazy" alt=""><figcaption>Panel sklepu: lista produktów NFC z miniaturą, kwotą i flagą domyślnego.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-sklep.png</code> (np. lista produktów, formularz z kwotą i tagiem) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 21. PANEL PRACA ============ --}}
+    
     <section class="dc-module" id="panel-praca">
         <div class="dc-module__head"><span class="dc-module__num">21.</span><h2>Panel: Praca — stanowiska</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">CRUD ofert pracy (<code>PositionController</code>) z opisem WYSIWYG, lokalizacją, typem zatrudnienia, kolejnością i licznikiem aplikacji per oferta. Oferty pojawiają się publicznie na <code>/praca</code>.</p>
@@ -1115,12 +1077,11 @@ if ($request-&gt;boolean('is_default')) {
         </table>
         <p>Na co uważać: usunięcie stanowiska nie kasuje powiązanych zgłoszeń — FK <code>job_applications.job_position_id</code> ma <code>nullOnDelete</code>, więc aplikacje stają się „spontaniczne” (bez oferty), zamiast zniknąć. Lista stanowisk pokazuje licznik aplikacji per oferta (<code>withCount('applications')</code>).</p>
 
-        @php $f="docs-panel-praca"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel pracy: lista stanowisk z licznikiem aplikacji.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-praca"><img src="__FIG:docs-panel-praca__" loading="lazy" alt=""><figcaption>Panel pracy: lista stanowisk z licznikiem aplikacji.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-praca.png</code> (np. lista ofert, formularz stanowiska) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 22. PANEL APLIKACJE ============ --}}
+    
     <section class="dc-module" id="panel-apl">
         <div class="dc-module__head"><span class="dc-module__num">22.</span><h2>Panel: Aplikacje rekrutacyjne</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Skrzynka zgłoszeń rekrutacyjnych (<code>ApplicationController</code>) z pobieraniem CV z prywatnego dysku, statusami i filtrami. Licznik nieprzeczytanych widoczny w nawigacji panelu.</p>
@@ -1161,12 +1122,11 @@ return Storage::disk('local')-&gt;download(
 <span class="c">// usunięcie zgłoszenia kasuje też plik CV (sprzątanie dysku)</span></pre>
         <p>Dlaczego to ważne: CV zawiera dane osobowe — przechowywanie na dysku <code>local</code> (poza <code>public/</code>) oznacza, że nie da się go pobrać bez przejścia przez kontroler chroniony logowaniem. Walidacja <code>exists</code> chroni przed 500 przy zgubionym pliku.</p>
 
-        @php $f="docs-panel-apl"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel aplikacji: skrzynka zgłoszeń ze statusami i pobieraniem CV.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-apl"><img src="__FIG:docs-panel-apl__" loading="lazy" alt=""><figcaption>Panel aplikacji: skrzynka zgłoszeń ze statusami i pobieraniem CV.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-apl.png</code> (np. skrzynka zgłoszeń, szczegóły kandydata, przycisk CV) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 23. PANEL WIADOMOŚCI ============ --}}
+    
     <section class="dc-module" id="panel-wiad">
         <div class="dc-module__head"><span class="dc-module__num">23.</span><h2>Panel: Wiadomości</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Skrzynka wiadomości z formularza kontaktowego (<code>MessageController</code>) z licznikiem nieprzeczytanych.</p>
@@ -1195,12 +1155,11 @@ return Storage::disk('local')-&gt;download(
         </table>
         <p>Na co uważać: model ma <code>public $timestamps = false</code> i własne <code>created_at</code> z DB default (<code>useCurrent()</code>) — nie ma kolumny <code>updated_at</code>. Oznaczenie jako przeczytane to jedyna mutacja rekordu w panelu (poza usunięciem).</p>
 
-        @php $f="docs-panel-wiad"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Panel wiadomości: skrzynka kontaktowa z licznikiem nieprzeczytanych.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-panel-wiad"><img src="__FIG:docs-panel-wiad__" loading="lazy" alt=""><figcaption>Panel wiadomości: skrzynka kontaktowa z licznikiem nieprzeczytanych.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-wiad.png</code> (np. lista wiadomości, widok pojedynczej wiadomości) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 24. ANALITYKA ============ --}}
+    
     <section class="dc-module" id="analityka">
         <div class="dc-module__head"><span class="dc-module__num">24.</span><h2>Eventy i analityka</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">System rejestruje każde istotne zdarzenie — od zbliżenia telefonu po finalną wpłatę — co zasila statystyki w panelu i pozwala mierzyć konwersję. Zdarzenia trzymane są w tabeli <code>events</code> (z indeksem po typie i dacie), a agregacją zajmuje się <code>ShopStatsService</code>.</p>
@@ -1264,12 +1223,11 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
             </tbody>
         </table>
 
-        @php $f="docs-analityka"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Analityka: lejek zdarzeń i wykres dziennej konwersji.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-analityka"><img src="__FIG:docs-analityka__" loading="lazy" alt=""><figcaption>Analityka: lejek zdarzeń i wykres dziennej konwersji.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-analityka.png</code> (np. dashboard z metrykami, wykres słupkowy zakupów) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 25. SCHEMAT BAZY ============ --}}
+    
     <section class="dc-module" id="baza">
         <div class="dc-module__head"><span class="dc-module__num">25.</span><h2>Pełny schemat bazy danych</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">18 migracji budujących ~25 tabel w trzech bazach (multi-tenant). Poniżej wszystkie tabele z kluczowymi kolumnami.</p>
@@ -1379,12 +1337,11 @@ protected $connection = <b>'gateway'</b>; <span class="c">// zawsze nfc_pay, naw
 <span class="c">// połączenie 'mysql' jest podmieniane per host w ResolveTenant:</span>
 config(['database.connections.mysql.database' =&gt; <i>$tenant['database']</i>]);</pre>
 
-        @php $f="docs-baza"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt=""><figcaption>Schemat bazy: trzy bazy multi-tenant i relacje kluczy obcych.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="docs-baza"><img src="__FIG:docs-baza__" loading="lazy" alt=""><figcaption>Schemat bazy: trzy bazy multi-tenant i relacje kluczy obcych.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-baza.png</code> (np. diagram ERD, lista tabel w phpMyAdmin) — pojawi się tu automatycznie.</div>
     </section>
 
-    {{-- ============ 26. STACK ============ --}}
+    
     <section class="dc-module" id="stack">
         <div class="dc-module__head"><span class="dc-module__num">26.</span><h2>Stack technologiczny i statystyki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Lekki, nowoczesny stos oparty o Laravel 12 — bez ciężkiego frontendu SPA, co przekłada się na szybkość i prostotę utrzymania.</p>
@@ -1428,4 +1385,3 @@ config(['database.connections.mysql.database' =&gt; <i>$tenant['database']</i>])
 </div>
 
 <a href="#gora" class="dc-top" aria-label="Do góry">↑</a>
-@endsection

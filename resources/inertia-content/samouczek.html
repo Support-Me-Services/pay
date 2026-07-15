@@ -1,52 +1,3 @@
-@extends('layouts.landing')
-
-@section('title', 'Samouczek — modyfikacja stron z Claude · SupportME')
-@section('meta-description', 'Jak modyfikować podstrony SupportME z pomocą Claude: dostęp do serwera (SSH/Google Cloud), konfiguracja Figmy (Dev Mode + MCP) i pisanie promptów.')
-
-@push('head')
-<link rel="stylesheet" href="{{ asset('css/docs.css') }}?v={{ substr(md5_file(public_path('css/docs.css')), 0, 10) }}">
-@endpush
-
-@push('head')
-<style>
-/* Page-scoped: siatka kart przeglądu modułów (sekcja 15). Tylko ten plik. */
-.dc-modgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin:1.4rem 0 .4rem}
-.dc-modcard{border:1px solid rgba(0,0,0,.10);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,.55);box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.dc-modcard h4{margin:.5rem 0 .35rem;font-size:1rem;line-height:1.25}
-.dc-modcard p{margin:0;font-size:.9rem;opacity:.85;line-height:1.45}
-.dc-modcard code{font-size:.82em}
-.dc-modcard__tag{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:.18em .6em;border-radius:999px;line-height:1.4}
-.dc-modcard__tag--pub{background:#e8f3ec;color:#1f7a45}
-.dc-modcard__tag--adm{background:#eceaf6;color:#4a3f9e}
-@media (prefers-color-scheme:dark){
-  .dc-modcard{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
-  .dc-modcard__tag--pub{background:rgba(40,160,90,.18);color:#7fd6a3}
-  .dc-modcard__tag--adm{background:rgba(120,100,230,.18);color:#b6acf2}
-}
-</style>
-@endpush
-
-@section('content')
-@php
-    $toc = [
-        ['1','fakty','Co jest gdzie — szybkie fakty'],
-        ['2','dostep','Dostęp do serwera (SSH / Google Cloud)'],
-        ['3','deploy','Wdrażanie zmian — 2 warianty'],
-        ['4','figma','Konfiguracja Figmy (Dev Mode + MCP)'],
-        ['5','prompty','Jak pisać prompty do Claude'],
-            ['6','infra','Infrastruktura — minimalna i zalecana'],
-        ['7','serwer','Stawianie serwera od zera (Debian 12)'],
-        ['8','nginx','Nginx + PHP-FPM'],
-        ['9','baza-setup','Baza danych — MySQL / MariaDB'],
-        ['10','laravel','Wdrożenie aplikacji Laravel'],
-        ['11','uslugi','Usługi w tle: kolejki, scheduler, Redis'],
-        ['12','ssl-backup','SSL, backupy, monitoring i bezpieczeństwo'],
-        ['13','bezpieczenstwo','Bezpieczeństwo, zasady i zastrzeżenia'],
-        ['14','figma-pro','Praca z Figmą — pełny przewodnik'],
-        ['15','moduly','Moduły systemu — co robią i jak korzystać'],
-];
-@endphp
-
 <section class="dc-hero">
     <h1>Samouczek: modyfikacja stron z Claude</h1>
     <p>Krok po kroku: jak skonfigurować dostęp do serwera na Google Cloud, podłączyć Figmę w trybie Dev przez MCP i jak formułować polecenia, żeby Claude sprawnie zmieniał kolejne podstrony i wdrażał je na produkcję.</p>
@@ -58,13 +9,25 @@
     <nav class="dc-toc" id="gora">
         <h2>Spis treści</h2>
         <ol>
-            @foreach($toc as $t)
-                <li><span class="dc-toc__n">{{ $t[0] }}.</span> <a href="#{{ $t[1] }}">{{ $t[2] }}</a></li>
-            @endforeach
+                            <li><span class="dc-toc__n">1.</span> <a href="#fakty">Co jest gdzie — szybkie fakty</a></li>
+                <li><span class="dc-toc__n">2.</span> <a href="#dostep">Dostęp do serwera (SSH / Google Cloud)</a></li>
+                <li><span class="dc-toc__n">3.</span> <a href="#deploy">Wdrażanie zmian — 2 warianty</a></li>
+                <li><span class="dc-toc__n">4.</span> <a href="#figma">Konfiguracja Figmy (Dev Mode + MCP)</a></li>
+                <li><span class="dc-toc__n">5.</span> <a href="#prompty">Jak pisać prompty do Claude</a></li>
+                <li><span class="dc-toc__n">6.</span> <a href="#infra">Infrastruktura — minimalna i zalecana</a></li>
+                <li><span class="dc-toc__n">7.</span> <a href="#serwer">Stawianie serwera od zera (Debian 12)</a></li>
+                <li><span class="dc-toc__n">8.</span> <a href="#nginx">Nginx + PHP-FPM</a></li>
+                <li><span class="dc-toc__n">9.</span> <a href="#baza-setup">Baza danych — MySQL / MariaDB</a></li>
+                <li><span class="dc-toc__n">10.</span> <a href="#laravel">Wdrożenie aplikacji Laravel</a></li>
+                <li><span class="dc-toc__n">11.</span> <a href="#uslugi">Usługi w tle: kolejki, scheduler, Redis</a></li>
+                <li><span class="dc-toc__n">12.</span> <a href="#ssl-backup">SSL, backupy, monitoring i bezpieczeństwo</a></li>
+                <li><span class="dc-toc__n">13.</span> <a href="#bezpieczenstwo">Bezpieczeństwo, zasady i zastrzeżenia</a></li>
+                <li><span class="dc-toc__n">14.</span> <a href="#figma-pro">Praca z Figmą — pełny przewodnik</a></li>
+                <li><span class="dc-toc__n">15.</span> <a href="#moduly">Moduły systemu — co robią i jak korzystać</a></li>
         </ol>
     </nav>
 
-    {{-- 1. FAKTY --}}
+    
     <section class="dc-module" id="fakty">
         <div class="dc-module__head"><span class="dc-module__num">1.</span><h2>Co jest gdzie — szybkie fakty</h2></div>
         <p class="dc-lead">Zanim cokolwiek zmienisz, warto wiedzieć, gdzie żyje projekt. Te dane podajesz Claude (albo trzyma je w pamięci).</p>
@@ -85,7 +48,7 @@
         <div class="dc-note">Modyfikacje robi się <strong>lokalnie</strong> w repozytorium, a następnie <strong>wysyła na serwer</strong> (deploy — sekcja 3). Nie edytuje się plików bezpośrednio na produkcji.</div>
     </section>
 
-    {{-- 2. DOSTĘP --}}
+    
     <section class="dc-module" id="dostep">
         <div class="dc-module__head"><span class="dc-module__num">2.</span><h2>Dostęp do serwera (SSH / Google Cloud)</h2></div>
         <p class="dc-lead">Serwer stoi na Google Cloud (Compute Engine). Logujesz się po SSH jako <span class="dc-inline">root</span>. „Certyfikaty”, o których myślisz, to w praktyce <strong>klucze SSH</strong> — para plików: prywatny (zostaje na Twoim komputerze) i publiczny (ląduje na serwerze). Poniżej dwie drogi: prostsza przez narzędzie Google (<code>gcloud</code>) i ręczna (własny klucz).</p>
@@ -135,7 +98,7 @@
 <span class="c"># powinno zwrócić: instance-20260615-112018 oraz wersję PHP 8.2</span></pre>
     </section>
 
-    {{-- 3. DEPLOY --}}
+    
     <section class="dc-module" id="deploy">
         <div class="dc-module__head"><span class="dc-module__num">3.</span><h2>Wdrażanie zmian — 2 warianty</h2></div>
         <p class="dc-lead">Zmiany możesz wprowadzać na dwa sposoby. <strong>Wariant 1</strong> — Claude pracuje na Twoim komputerze (lokalne repo) i wysyła gotowe pliki na serwer. <strong>Wariant 2</strong> — logujesz się na serwer i uruchamiasz Claude bezpośrednio tam, a on edytuje pliki od razu na miejscu. Oba prowadzą do tego samego efektu na produkcji.</p>
@@ -171,7 +134,7 @@
         <div class="dc-note"><strong>Status na dziś:</strong> Claude nie jest jeszcze zainstalowany na tym serwerze — krok „uruchom <code>claude</code>” na razie nie zadziała. Gdy przekażesz <strong>login i hasło</strong> (lub dostęp SSH), podłączymy go tam: instalacja CLI + jednorazowe logowanie. Powyższy opis jest „na zapas”, żeby było wiadomo, jak to będzie wyglądać po podłączeniu.</div>
     </section>
 
-    {{-- 4. FIGMA --}}
+    
     <section class="dc-module" id="figma">
         <div class="dc-module__head"><span class="dc-module__num">4.</span><h2>Konfiguracja Figmy (Dev Mode + MCP)</h2></div>
         <p class="dc-lead">Żeby Claude robił podstrony „1:1 z Figmy”, musi <strong>czytać projekt z Figmy</strong>. Działa to przez serwer <strong>MCP Figmy</strong>, a plik musi być dostępny w <strong>trybie Dev</strong>.</p>
@@ -183,7 +146,7 @@
         <div class="dc-note"><strong>Awaryjnie, gdy MCP zwróci limit</strong> (konto ma tylko seat View = 6 odczytów/miesiąc): działa też <strong>Figma REST API</strong> z osobistym tokenem. Token (z uprawnieniem <em>File content: read</em>) zapisuje się w <code>unified/.env</code> jako <code>FIGMA_TOKEN</code> — Claude pobierze wtedy węzły i rendery bez MCP. Token to sekret: trafia tylko do <code>.env</code> (jest w <code>.gitignore</code>), nigdy do repo.</div>
     </section>
 
-    {{-- 5. PROMPTY --}}
+    
     <section class="dc-module" id="prompty">
         <div class="dc-module__head"><span class="dc-module__num">5.</span><h2>Jak pisać prompty do Claude</h2></div>
         <p class="dc-lead">Im konkretniej, tym lepszy efekt. Dobry prompt zawiera trzy rzeczy: <strong>którą podstronę</strong> zmienić, <strong>co</strong> zmienić, i <strong>źródło</strong> (Figma + link/node-id albo opis). Na końcu poproś o wdrożenie i weryfikację.</p>
@@ -213,11 +176,11 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
             </ul>
         </div>
 
-        <div class="dc-note">Pełny przegląd wszystkich modułów i podstron znajdziesz w <a href="{{ route('docs') }}">dokumentacji technicznej (/docs)</a> — przyda się, gdy chcesz wskazać Claude konkretny element do zmiany.</div>
+        <div class="dc-note">Pełny przegląd wszystkich modułów i podstron znajdziesz w <a href="__ROUTE_DOCS__">dokumentacji technicznej (/docs)</a> — przyda się, gdy chcesz wskazać Claude konkretny element do zmiany.</div>
     </section>
 
 
-    {{-- 6. INFRASTRUKTURA --}}
+    
     <section class="dc-module" id="infra">
         <div class="dc-module__head"><span class="dc-module__num">6.</span><h2>Infrastruktura — wariant minimalny i zalecany</h2></div>
         <p class="dc-lead">SupportME to aplikacja <strong>Laravel 12 (PHP 8.2)</strong> z bazą <strong>MySQL/MariaDB</strong> i serwerem <strong>Nginx</strong>. Całość spokojnie mieści się na jednej maszynie wirtualnej. Poniżej dwa profile sprzętowe: <em>minimalny</em> (pilotaż / kilka parafii) oraz <em>zalecany</em> (produkcja z ruchem z tagów NFC i kampaniami).</p>
@@ -261,7 +224,7 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
         </table>
     </section>
 
-    {{-- 7. SERWER OD ZERA --}}
+    
     <section class="dc-module" id="serwer">
         <div class="dc-module__head"><span class="dc-module__num">7.</span><h2>Stawianie serwera od zera (Debian 12)</h2></div>
         <p class="dc-lead">Kompletna procedura od pustej maszyny do utwardzonego (hardened) serwera gotowego pod aplikację. Wykonuj po kolei jako <code>root</code> (albo z <code>sudo</code>).</p>
@@ -314,7 +277,7 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
 <span class="p">#</span> fail2ban-client status sshd</pre>
     </section>
 
-    {{-- 8. NGINX + PHP-FPM --}}
+    
     <section class="dc-module" id="nginx">
         <div class="dc-module__head"><span class="dc-module__num">8.</span><h2>Nginx + PHP-FPM (krok po kroku)</h2></div>
         <p class="dc-lead">Nginx przyjmuje żądania i przekazuje PHP do procesu <strong>PHP-FPM</strong> przez gniazdo uniksowe. Poniżej instalacja, kompletny plik konfiguracyjny domeny (multi-domena: <code>please-support-me.com</code>, <code>pay.*</code>) oraz strojenie puli.</p>
@@ -381,10 +344,10 @@ server {
         <pre class="dc-pre"><span class="p">#</span> ln -s /etc/nginx/sites-available/support-me /etc/nginx/sites-enabled/
 <span class="p">#</span> rm -f /etc/nginx/sites-enabled/default
 <span class="p">#</span> nginx -t && systemctl reload nginx</pre>
-        <div class="dc-note">Każda z domen rozwiązuje się do tego samego <code>root</code>, a <strong>aplikacja sama wybiera tenant</strong> po nazwie hosta (patrz <a href="{{ route('docs') }}#arch">/docs → Architektura multi-tenant</a>). Dlatego jeden blok <code>server</code> obsługuje sklep, bramkę i sklep produktowy.</div>
+        <div class="dc-note">Każda z domen rozwiązuje się do tego samego <code>root</code>, a <strong>aplikacja sama wybiera tenant</strong> po nazwie hosta (patrz <a href="__ROUTE_DOCS__#arch">/docs → Architektura multi-tenant</a>). Dlatego jeden blok <code>server</code> obsługuje sklep, bramkę i sklep produktowy.</div>
     </section>
 
-    {{-- 9. MYSQL / MARIADB --}}
+    
     <section class="dc-module" id="baza-setup">
         <div class="dc-module__head"><span class="dc-module__num">9.</span><h2>Baza danych — MySQL / MariaDB</h2></div>
         <p class="dc-lead">Trzy bazy w modelu multi-tenant, jeden użytkownik aplikacyjny z dostępem do wszystkich. Poniżej instalacja, utwardzenie, założenie baz i strojenie.</p>
@@ -421,7 +384,7 @@ long_query_time = 1               <span class="c"># loguj zapytania &gt; 1 s</sp
 
 
 
-    {{-- 10. WDROŻENIE LARAVEL --}}
+    
     <section class="dc-module" id="laravel">
         <div class="dc-module__head"><span class="dc-module__num">10.</span><h2>Wdrożenie aplikacji Laravel (krok po kroku)</h2></div>
         <p class="dc-lead">Maszyna gotowa (sekcje 7–9). Teraz wgrywamy kod, instalujemy zależności, konfigurujemy <code>.env</code>, uruchamiamy migracje dla każdego tenanta i budujemy assety. Pracujemy w katalogu <span class="dc-inline">/var/www/support-me</span>.</p>
@@ -482,7 +445,7 @@ long_query_time = 1               <span class="c"># loguj zapytania &gt; 1 s</sp
         <div class="dc-note">Po każdym deployu pamiętaj o <code>php artisan config:cache</code> + <strong>reload PHP-FPM</strong> (<code>systemctl reload php8.2-fpm</code>) — przy <code>opcache.validate_timestamps=0</code> bez reloadu serwer trzyma stary bajtkod.</div>
     </section>
 
-    {{-- 11. USŁUGI W TLE --}}
+    
     <section class="dc-module" id="uslugi">
         <div class="dc-module__head"><span class="dc-module__num">11.</span><h2>Usługi w tle: kolejki, scheduler, Redis</h2></div>
         <p class="dc-lead">Webhooki PayU, wysyłka maili i rekonsyliacja transakcji idą przez <strong>kolejkę</strong>. Harmonogram Laravela (czyszczenie, przypomnienia) odpala <strong>cron</strong>. <strong>Redis</strong> to szybki cache/kolejka zamiast bazy.</p>
@@ -517,7 +480,7 @@ stopwaitsecs=3600</pre>
 * * * * * cd /var/www/support-me && php artisan schedule:run >> /dev/null 2>&1</pre>
     </section>
 
-    {{-- 12. SSL / BACKUP / BEZPIECZEŃSTWO --}}
+    
     <section class="dc-module" id="ssl-backup">
         <div class="dc-module__head"><span class="dc-module__num">12.</span><h2>SSL, backupy, monitoring i bezpieczeństwo</h2></div>
         <p class="dc-lead">Ostatni etap: szyfrowanie HTTPS, automatyczne kopie zapasowe, monitoring dostępności i checklista hardeningu. Bez tego nie ma „produkcji”.</p>
@@ -566,12 +529,12 @@ find "$DEST" -type f -mtime +14 -delete</pre>
                 <tr><td data-label="Obszar">Aktualizacje</td><td data-label="Stan docelowy"><code>unattended-upgrades</code> dla łatek bezpieczeństwa</td></tr>
             </tbody>
         </table>
-        <div class="dc-note">Pełna mapa modułów, tabel i pól aplikacji: <a href="{{ route('docs') }}">dokumentacja techniczna /docs</a>. Tam znajdziesz, który formularz zapisuje co i do której kolumny w bazie.</div>
+        <div class="dc-note">Pełna mapa modułów, tabel i pól aplikacji: <a href="__ROUTE_DOCS__">dokumentacja techniczna /docs</a>. Tam znajdziesz, który formularz zapisuje co i do której kolumny w bazie.</div>
     </section>
 
 
 
-    {{-- 13. BEZPIECZEŃSTWO, ZASADY I ZASTRZEŻENIA --}}
+    
     <section class="dc-module" id="bezpieczenstwo">
         <div class="dc-module__head"><span class="dc-module__num">13.</span><h2>Bezpieczeństwo, zasady postępowania i zastrzeżenia</h2></div>
         <p class="dc-lead">Ta sekcja jest <strong>obowiązkowa do przeczytania</strong> przed jakąkolwiek ingerencją w system. Platforma przetwarza wpłaty od darczyńców i dane osobowe — błąd operacyjny to nie „zepsuta podstrona”, tylko ryzyko finansowe i prawne (RODO). Stosuj poniższe zasady bezwzględnie.</p>
@@ -734,12 +697,12 @@ find "$DEST" -type f -mtime +14 -delete</pre>
         <div class="dc-note dc-note--warn">
             <strong>Zastrzeżenie odpowiedzialności.</strong> Wszelkie zmiany w infrastrukturze, kodzie i konfiguracji wykonujesz <strong>na własną odpowiedzialność</strong>. Przed modyfikacją produkcji wymagana jest zgoda właściciela systemu. Dokumentacja opisuje stan środowiska na dzień jej aktualizacji i może odbiegać od bieżącej konfiguracji — przed działaniem zweryfikuj stan faktyczny na serwerze. Nieautoryzowany dostęp do systemu, danych darczyńców lub kluczy jest zabroniony i może podlegać odpowiedzialności prawnej. Autor dokumentacji nie ponosi odpowiedzialności za szkody wynikłe z modyfikacji wykonanych niezgodnie z powyższymi zasadami.
         </div>
-        <div class="dc-note">Powiązane: konfiguracja dostępu (<a href="#dostep">sekcja 2</a>), hardening serwera (<a href="#serwer">sekcja 7</a>), backup i SSL (<a href="#ssl-backup">sekcja 12</a>), pełna mapa danych (<a href="{{ route('docs') }}#baza">/docs → schemat bazy</a>).</div>
+        <div class="dc-note">Powiązane: konfiguracja dostępu (<a href="#dostep">sekcja 2</a>), hardening serwera (<a href="#serwer">sekcja 7</a>), backup i SSL (<a href="#ssl-backup">sekcja 12</a>), pełna mapa danych (<a href="__ROUTE_DOCS__#baza">/docs → schemat bazy</a>).</div>
     </section>
 
 
 
-    {{-- 14. PRACA Z FIGMĄ --}}
+    
     <section class="dc-module" id="figma-pro">
         <div class="dc-module__head"><span class="dc-module__num">14.</span><h2>Praca z Figmą — pełny przewodnik (1:1, MCP, problemy)</h2></div>
         <p class="dc-lead">Najtrudniejsza część „robienia stron z Claude” to <strong>wierne odwzorowanie projektu z Figmy</strong>. Teoretycznie „przepisz design na kod” brzmi prosto — w praktyce piksele rzadko zgadzają się od pierwszego strzału, a projekty bywają niespójne lub niedokończone. Ta sekcja opisuje cały proces: od konfiguracji dostępu, przez realne problemy i ich przyczyny, po workflow „pixel-perfect” i checklisty. To najdłuższy rozdział samouczka — bo tu najłatwiej stracić godziny.</p>
@@ -827,13 +790,9 @@ https://www.figma.com/design/<i>FILEKEY</i>/Projekt?node-id=<i>1234-5678</i>
             <li><strong>Iteruj</strong> typografia → odstępy → kolory/cienie, aż różnice znikną „dla oka”.</li>
             <li><strong>Sprawdź na telefonie</strong> (realny viewport mobilny), nie tylko na desktopie.</li>
         </ol>
-        @php
-            $figs = ['figma-devmode','figma-overlay','figma-nodeid'];
-        @endphp
-        @foreach($figs as $f)
-            @php $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-            @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" alt="{{ $f }}" loading="lazy"><figcaption>{{ $f }}</figcaption></figure>@endif
-        @endforeach
+                <figure class="dc-fig" data-fig="figma-devmode"><img src="__FIG:figma-devmode__" alt="figma-devmode" loading="lazy"><figcaption>figma-devmode</figcaption></figure>
+        <figure class="dc-fig" data-fig="figma-overlay"><img src="__FIG:figma-overlay__" alt="figma-overlay" loading="lazy"><figcaption>figma-overlay</figcaption></figure>
+        <figure class="dc-fig" data-fig="figma-nodeid"><img src="__FIG:figma-nodeid__" alt="figma-nodeid" loading="lazy"><figcaption>figma-nodeid</figcaption></figure>
         <div class="dc-note">Zrzuty poglądowe (Dev Mode, nakładka, node-id) możesz wrzucić do <code>public/img/docs/</code> jako <code>figma-devmode.png</code>, <code>figma-overlay.png</code>, <code>figma-nodeid.png</code> — pojawią się tu automatycznie.</div>
 
         <h3 class="dc-sub">14.9 Częste pułapki (checklist przed „gotowe”)</h3>
@@ -864,14 +823,14 @@ Na końcu sprawdź na telefonie.</pre>
         <div class="dc-note">Więcej o pisaniu poleceń ogólnie: <a href="#prompty">sekcja 5 (Jak pisać prompty do Claude)</a>. Konfiguracja skrócona: <a href="#figma">sekcja 4 (Figma — szybki start)</a>.</div>
     </section>
 
-    {{-- 15. MODUŁY SYSTEMU --}}
+    
     <section class="dc-module" id="moduly">
         <div class="dc-module__head"><span class="dc-module__num">15.</span><h2>Moduły systemu — co robią i jak z nich korzystać</h2></div>
         <p class="dc-lead">SupportME to nie jedna strona, lecz zestaw współpracujących modułów: część <strong>publiczna</strong> (to, co widzi darczyńca i kandydat do pracy) oraz <strong>panel administracyjny</strong> pod <code>/panel</code> (to, czym zarządza zespół). Ta sekcja opisuje <strong>każdy moduł osobno</strong>: co robi, jak z niego korzystać krok po kroku i na co uważać. Przy każdym module jest miejsce na zrzut ekranu — wystarczy wrzucić plik do <code>public/img/docs/</code>, a pojawi się tu automatycznie.</p>
 
         <div class="dc-note"><strong>Jak czytać tę sekcję.</strong> Numeracja <code>15.1 … 15.x</code> to kolejne moduły. Najpierw idą moduły <em>publiczne</em> (frontend), potem <em>panel administracyjny</em>. Trasy (adresy URL) podane są dokładnie tak, jak działają na serwerze — możesz je wkleić w przeglądarkę po zalogowaniu do panelu.</p></div>
 
-        {{-- Mapa modułów (przegląd) --}}
+        
         <h3 class="dc-sub">15.0 Mapa modułów — szybki przegląd</h3>
         <p>Zanim wejdziesz w szczegóły, oto cała mapa systemu w jednym miejscu. Część publiczna prowadzi darczyńcę od taga NFC do płatności; panel obsługuje sprzedaż (CRM parafii), treści (kategorie, sklep) i rekrutację.</p>
         <div class="dc-modgrid">
@@ -892,10 +851,10 @@ Na końcu sprawdź na telefonie.</pre>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Eventy / analityka</h4><p>Zliczanie otwarć tagów i wpłat — źródło danych dla statystyk.</p></div>
         </div>
 
-        {{-- ========================= FRONTEND ========================= --}}
+        
         <h3 class="dc-sub" style="margin-top:2.4rem">Część publiczna (frontend)</h3>
 
-        {{-- 15.1 SKLEP DONACYJNY NFC --}}
+        
         <h3 class="dc-sub">15.1 Sklep donacyjny NFC — strona startowa <code>/</code></h3>
         <p>To <strong>strona główna serwisu</strong> (adres <code>/</code>). Prezentuje siatkę gadżetów charytatywnych powiązanych z tagami NFC (np. „Serduszko"). Darczyńca wybiera produkt, w okienku (modalu) podaje kwotę nie niższą niż minimum tego produktu i przechodzi do płatności — wszystko jedną transakcją w bramce. Produkt oznaczony jako <strong>domyślny</strong> otwiera się automatycznie po wejściu na stronę. Dane produktów pochodzą z modułu <em>Sklep</em> w panelu (15.11).</p>
         <ol class="dc-steps">
@@ -906,11 +865,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Po płatności</strong> darczyńca wraca na ekran potwierdzenia („Możesz zabrać towar", <code>/zwrot/{order}</code>).</li>
         </ol>
         <div class="dc-note">Gdy bramka płatności (PayU) jest jeszcze w trybie zatwierdzania, działa <strong>bypass</strong> (<code>config('payment.bypass')</code>): zakup od razu kieruje na stronę z podziękowaniem, z pominięciem realnej płatności. To celowe na czas wdrożenia.</div>
-        @php $f="modul-sklep-nfc"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Sklep donacyjny NFC"><figcaption>Sklep donacyjny NFC — siatka produktów i modal zakupu.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-sklep-nfc"><img src="__FIG:modul-sklep-nfc__" loading="lazy" alt="Sklep donacyjny NFC"><figcaption>Sklep donacyjny NFC — siatka produktów i modal zakupu.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-sklep-nfc.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.2 CYFROWA TACA / TAG NFC --}}
+        
         <h3 class="dc-sub">15.2 Cyfrowa Taca / wejście NFC — <code>/t/{tag}</code> i kategorie</h3>
         <p>To serce idei „cyfrowej tacy". Darczyńca <strong>zbliża telefon do taga NFC</strong> (naklejki/karty), telefon otwiera adres <code>/t/{tag_uid}</code>, a system rozpoznaje, do czego ten tag jest przypisany, rejestruje zdarzenie <em>otwarcia taga</em> i przekierowuje we właściwe miejsce: jeśli tag wskazuje parafię — na jej stronę produktu; jeśli wskazuje gadżet sklepu — na sklep z automatycznie otwartym modalem tego produktu. Uzupełnieniem są <strong>kategorie wsparcia</strong> (<code>/kategoria/{slug}</code>) prezentowane na stronie głównej w sekcji „Kogo wspieramy?".</p>
         <ol class="dc-steps">
@@ -920,11 +878,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Kategorie:</strong> na stronie głównej darczyńca może wejść w kategorię (<code>/kategoria/{slug}</code>); dla kategorii typu „parafie" wyświetla się lista realnych parafii.</li>
         </ol>
         <div class="dc-note dc-note--warn">UID taga musi być przypisany do <strong>aktywnej</strong> parafii lub aktywnego produktu sklepu. Jeśli tag prowadzi „donikąd", sprawdź w panelu, czy rekord jest aktywny i czy UID się zgadza (pola <em>tag UID</em> / <em>tag NFC</em>).</div>
-        @php $f="modul-tag-nfc"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Cyfrowa Taca / wejście NFC"><figcaption>Wejście z taga NFC i strona kategorii wsparcia.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-tag-nfc"><img src="__FIG:modul-tag-nfc__" loading="lazy" alt="Cyfrowa Taca / wejście NFC"><figcaption>Wejście z taga NFC i strona kategorii wsparcia.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-tag-nfc.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.3 STRONA GŁÓWNA /main --}}
+        
         <h3 class="dc-sub">15.3 Strona główna (landing) — <code>/main</code></h3>
         <p>Marketingowy landing „Technologia, która pomaga czynić dobro" — opowiada o idei SupportME, prezentuje sekcję „Kogo wspieramy?" (zasilaną z modułu Kategorie) i kieruje dalej. To dobra strona „o nas/jak to działa", oddzielona od sklepu, który zajmuje adres główny <code>/</code>.</p>
         <ol class="dc-steps">
@@ -932,11 +889,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Sekcja „Kogo wspieramy?"</strong> pokazuje kategorie najwyższego poziomu (kolejność i treść ustawiasz w module Kategorie, 15.10).</li>
             <li><strong>Treść/wygląd</strong> zmieniasz w szablonie (Blade) — to typowa robota „pod Figmę" (patrz sekcje 4 i 14).</li>
         </ol>
-        @php $f="modul-main"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Strona główna /main"><figcaption>Landing /main — „Technologia, która pomaga czynić dobro".</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-main"><img src="__FIG:modul-main__" loading="lazy" alt="Strona główna /main"><figcaption>Landing /main — „Technologia, która pomaga czynić dobro".</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-main.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.4 REKRUTACJA /praca --}}
+        
         <h3 class="dc-sub">15.4 Rekrutacja — <code>/praca</code></h3>
         <p>Publiczna część rekrutacyjna: lista aktywnych stanowisk (<code>/praca</code>), pojedyncza oferta na osobnej podstronie (<code>/praca/oferta/{position}</code>) oraz formularz aplikacyjny — zarówno <strong>spontaniczny</strong> (<code>/praca/aplikuj</code>), jak i <strong>na konkretną ofertę</strong> (<code>/praca/{position}/aplikuj</code>). Kandydat załącza CV; plik trafia na <strong>prywatny</strong> dysk (niepubliczny), a zgłoszenie ląduje w panelu (15.13). Treść ofert pochodzi z modułu Praca w panelu (15.12).</p>
         <ol class="dc-steps">
@@ -946,11 +902,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Wysyła zgłoszenie</strong> — walidacja serwerowa pilnuje formatu CV i zgody; zgłoszenie pojawia się w panelu jako nieprzeczytane.</li>
         </ol>
         <div class="dc-note dc-note--warn">CV przyjmowane jest <strong>tylko</strong> jako PDF, DOC lub DOCX (sprawdzane po rozszerzeniu i typie MIME), maks. 5 MB, a zgoda RODO jest <strong>wymagana</strong>. To zabezpieczenie serwerowe — nie da się go obejść przez sam HTML.</div>
-        @php $f="modul-praca"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Rekrutacja /praca"><figcaption>Lista ofert pracy i formularz aplikacyjny z CV.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-praca"><img src="__FIG:modul-praca__" loading="lazy" alt="Rekrutacja /praca"><figcaption>Lista ofert pracy i formularz aplikacyjny z CV.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-praca.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.5 KONTAKT --}}
+        
         <h3 class="dc-sub">15.5 Kontakt — <code>/kontakt</code></h3>
         <p>Prosty formularz kontaktowy. Wiadomości zapisują się w bazie i trafiają do skrzynki w panelu (15.14). Temat bywa wstępnie wypełniony, gdy ktoś trafi tu z linku „Aplikuj" (parametr <code>?stanowisko=</code>).</p>
         <ol class="dc-steps">
@@ -958,15 +913,14 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Wyślij</strong> — po zapisaniu zobaczysz komunikat „Dziękujemy, odezwiemy się.".</li>
             <li><strong>Wiadomość</strong> czeka w panelu w module Wiadomości jako <em>nieprzeczytana</em>.</li>
         </ol>
-        @php $f="modul-kontakt"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Formularz kontaktowy"><figcaption>Formularz kontaktowy /kontakt.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-kontakt"><img src="__FIG:modul-kontakt__" loading="lazy" alt="Formularz kontaktowy"><figcaption>Formularz kontaktowy /kontakt.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-kontakt.png</code> — pojawi się automatycznie.</div>
 
-        {{-- ========================= PANEL ========================= --}}
+        
         <h3 class="dc-sub" style="margin-top:2.4rem">Panel administracyjny — <code>/panel</code></h3>
         <div class="dc-note"><strong>Logowanie do panelu.</strong> Wejdź na <code>/panel/login</code>, podaj dane administratora i zaloguj się. Wszystkie poniższe moduły (15.6–15.15) wymagają zalogowania — bez sesji panel przekieruje na ekran logowania.</div>
 
-        {{-- 15.6 DASHBOARD --}}
+        
         <h3 class="dc-sub">15.6 Dashboard — <code>/panel</code></h3>
         <p>Pulpit startowy panelu. Po zalogowaniu pokazuje <strong>podsumowanie wpłat</strong> (łącznie i za ostatnie 30 dni) oraz <strong>wykres dziennych zakupów</strong> z ostatnich 30 dni. To szybki „rzut oka" na kondycję zbiórki przed wejściem w szczegóły.</p>
         <ol class="dc-steps">
@@ -975,11 +929,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Spójrz na wykres</strong> dziennych zakupów, by ocenić trend.</li>
             <li><strong>Stąd przechodź</strong> do szczegółowych modułów przez menu panelu.</li>
         </ol>
-        @php $f="modul-dashboard"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Dashboard panelu"><figcaption>Dashboard — podsumowanie wpłat i wykres 30 dni.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-dashboard"><img src="__FIG:modul-dashboard__" loading="lazy" alt="Dashboard panelu"><figcaption>Dashboard — podsumowanie wpłat i wykres 30 dni.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-dashboard.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.7 PARAFIE + CRM --}}
+        
         <h3 class="dc-sub">15.7 Parafie + CRM — <code>/panel/products</code></h3>
         <p>Centralny moduł sprzedażowy. „Produkty" to w praktyce <strong>parafie</strong> (cyfrowa taca) z pełnym CRM: filtrowanie po statusie lejka i wyszukiwanie po nazwie/mieście/województwie, edycja danych parafii (telefon, www, województwo, instrukcja odbioru, opis, zdjęcia, UID taga), przypisanie <strong>handlowca</strong>, szybka zmiana <strong>statusu</strong> oraz <strong>notatki CRM</strong>. Status steruje publikacją: parafia <em>aktywna</em> jest widoczna publicznie, pozostałe statusy traktowane są jak lead (ukryta).</p>
         <ol class="dc-steps">
@@ -991,13 +944,12 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Statystyki parafii</strong> (<code>/panel/products/{id}/stats</code>) pokazują wpłaty i otwarcia taga dla konkretnej parafii.</li>
         </ol>
         <div class="dc-note dc-note--warn"><strong>UID taga jest unikalny.</strong> Jeśli przy zapisie pojawi się błąd o zajętym UID, oznacza to, że tag jest już przypisany do innej parafii. Pamiętaj też: dopiero status <em>aktywna</em> czyni parafię widoczną dla darczyńców.</div>
-        @php $f="modul-parafie-crm"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Parafie + CRM"><figcaption>Lista parafii z CRM — statusy, notatki, przypisanie handlowca.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-parafie-crm"><img src="__FIG:modul-parafie-crm__" loading="lazy" alt="Parafie + CRM"><figcaption>Lista parafii z CRM — statusy, notatki, przypisanie handlowca.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-parafie-crm.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.8 (statystyki produktu jako podmoduł CRM — opisany powyżej; przechodzimy dalej) --}}
+        
 
-        {{-- 15.9 KATEGORIE --}}
+        
         <h3 class="dc-sub">15.8 Kategorie — <code>/panel/categories</code></h3>
         <p>Edytowalne <strong>drzewo kategorii</strong> zasilające sekcję „Kogo wspieramy?" na stronach publicznych. Kategorie mają hierarchię (rodzic → dzieci), własną kolejność, slug, opis (intro), ikonkę oraz <strong>źródło pozycji</strong> (np. „parafie" — wtedy kategoria listuje realne parafie z bazy). Możesz je dodawać, edytować, zmieniać kolejność i usuwać.</p>
         <ol class="dc-steps">
@@ -1007,11 +959,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Edytuj/usuń</strong> w razie potrzeby. Po usunięciu rodzica jego dzieci nie znikają — stają się kategoriami poziomu głównego.</li>
         </ol>
         <div class="dc-note">Slug i unikalność są pilnowane automatycznie; przy edycji nie wybierzesz jako rodzica samej kategorii ani jej potomka (ochrona przed zapętleniem drzewa).</div>
-        @php $f="modul-kategorie"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Kategorie"><figcaption>Drzewo kategorii „Kogo wspieramy?".</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-kategorie"><img src="__FIG:modul-kategorie__" loading="lazy" alt="Kategorie"><figcaption>Drzewo kategorii „Kogo wspieramy?".</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-kategorie.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.10 HANDLOWCY --}}
+        
         <h3 class="dc-sub">15.9 Handlowcy — <code>/panel/salespeople</code></h3>
         <p>Rejestr zespołu sprzedaży. Każdy handlowiec ma dane kontaktowe i przypisane <strong>województwa</strong>, w których działa. Handlowców przypisuje się do parafii (15.7) i do leadów na mapie/liście do obdzwonienia (15.10), dzięki czemu widać, kto za co odpowiada. Lista pokazuje też, ile parafii ma przypisany dany handlowiec.</p>
         <ol class="dc-steps">
@@ -1020,11 +971,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Edytuj</strong> dane lub zakres województw w dowolnym momencie.</li>
             <li><strong>Usuwanie</strong> jest bezpieczne: parafie nie znikają, tylko tracą przypisanie do tego handlowca.</li>
         </ol>
-        @php $f="modul-handlowcy"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Handlowcy"><figcaption>Zespół handlowców i przypisane województwa.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-handlowcy"><img src="__FIG:modul-handlowcy__" loading="lazy" alt="Handlowcy"><figcaption>Zespół handlowców i przypisane województwa.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-handlowcy.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.11 PARAFIE DO OBDZWONIENIA + MAPA --}}
+        
         <h3 class="dc-sub">15.10 Parafie do obdzwonienia + mapa pokrycia — <code>/panel/potential-parishes</code>, <code>/panel/coverage</code></h3>
         <p>Baza <strong>leadów</strong> (potencjalnych parafii, m.in. z OpenStreetMap) do telefonicznego pozyskania. Moduł ma dwa widoki: <strong>listę</strong> z filtrami (województwo, miasto, nazwa, status, handlowiec oraz filtr „ma numer telefonu" — domyślnie pokazywane są tylko parafie z numerem) i <strong>interaktywną mapę pokrycia</strong> (Leaflet z klastrowaniem markerów). Przy każdym leadzie zapisujesz status rozmowy, notatkę, telefon i przypisujesz handlowca; pierwsze przejście do statusu „zadzwoniono" stempluje datę pierwszego kontaktu.</p>
         <ol class="dc-steps">
@@ -1034,11 +984,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Otwórz mapę</strong> <code>/panel/coverage</code> — markery ładują się asynchronicznie; nad mapą widać liczniki per status oraz pokrycie per województwo. Markery można filtrować tak samo jak listę.</li>
         </ol>
         <div class="dc-note">Mapa nie wgrywa tysięcy punktów na sztywno do HTML — pobiera je lekkim zapytaniem JSON po starcie. Kolor markera odpowiada statusowi leada, więc od razu widać, gdzie jest robota do zrobienia.</div>
-        @php $f="modul-obdzwanianie-mapa"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Parafie do obdzwonienia i mapa pokrycia"><figcaption>Lista leadów + interaktywna mapa pokrycia.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-obdzwanianie-mapa"><img src="__FIG:modul-obdzwanianie-mapa__" loading="lazy" alt="Parafie do obdzwonienia i mapa pokrycia"><figcaption>Lista leadów + interaktywna mapa pokrycia.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-obdzwanianie-mapa.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.12 SKLEP (PRODUKTY NFC) --}}
+        
         <h3 class="dc-sub">15.11 Sklep — produkty NFC — <code>/panel/shop-items</code></h3>
         <p>Zarządzanie gadżetami <strong>sklepu donacyjnego</strong> (to one wyświetlają się na stronie <code>/</code>, moduł 15.1). Każdy produkt ma nazwę, <strong>minimalną kwotę</strong> (w zł, w bazie w groszach), opcjonalny <strong>tag NFC</strong>, grafikę, kolejność oraz flagę <strong>domyślny</strong> (tylko jeden produkt może być domyślny — to on otwiera się automatycznie w sklepie).</p>
         <ol class="dc-steps">
@@ -1048,11 +997,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Włączaj/wyłączaj</strong> produkt (toggle) — nieaktywne nie pokazują się w sklepie. Edytuj lub usuwaj wedle potrzeby.</li>
         </ol>
         <div class="dc-note dc-note--warn">Tag NFC produktu (jeśli ustawiony) musi być <strong>unikalny</strong> i nie może kolidować z tagiem innego produktu. To ten sam mechanizm, który obsługuje wejście <code>/t/{tag}</code> (15.2).</div>
-        @php $f="modul-sklep-panel"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Sklep — produkty NFC"><figcaption>Zarządzanie produktami sklepu donacyjnego.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-sklep-panel"><img src="__FIG:modul-sklep-panel__" loading="lazy" alt="Sklep — produkty NFC"><figcaption>Zarządzanie produktami sklepu donacyjnego.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-sklep-panel.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.13 PRACA (STANOWISKA) --}}
+        
         <h3 class="dc-sub">15.12 Praca — stanowiska — <code>/panel/positions</code></h3>
         <p>Treść ofert pracy publikowanych w sekcji <code>/praca</code> (15.4). Stanowisko ma tytuł, lokalizację, rodzaj zatrudnienia, opis (edytor), kolejność oraz przełącznik aktywności. Lista pokazuje też liczbę zgłoszeń na każdą ofertę.</p>
         <ol class="dc-steps">
@@ -1061,11 +1009,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Włącz/wyłącz</strong> ofertę (toggle) — tylko aktywne pokazują się publicznie w <code>/praca</code>.</li>
             <li><strong>Edytuj/usuń</strong> w razie potrzeby.</li>
         </ol>
-        @php $f="modul-praca-panel"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Praca — stanowiska"><figcaption>Zarządzanie ofertami pracy.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-praca-panel"><img src="__FIG:modul-praca-panel__" loading="lazy" alt="Praca — stanowiska"><figcaption>Zarządzanie ofertami pracy.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-praca-panel.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.14 APLIKACJE REKRUTACYJNE --}}
+        
         <h3 class="dc-sub">15.13 Aplikacje rekrutacyjne — <code>/panel/applications</code></h3>
         <p>Skrzynka zgłoszeń przesłanych przez kandydatów (15.4). Najnowsze na górze, z licznikiem nieprzeczytanych i filtrami (po ofercie i po statusie rekrutacji). Otwarcie zgłoszenia oznacza je jako przeczytane; CV pobierasz bezpiecznie (plik leży na prywatnym dysku, niedostępny publicznie). Status rekrutacji zmieniasz (np. do sprawdzenia / zaakceptowany / odrzucony).</p>
         <ol class="dc-steps">
@@ -1076,11 +1023,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Ustaw status</strong> rekrutacji; w razie potrzeby usuń zgłoszenie (kasuje też plik CV).</li>
         </ol>
         <div class="dc-note dc-note--warn">CV są <strong>danymi osobowymi</strong> — pobieranie jest ograniczone do zalogowanego administratora, a pliki nie są publicznie dostępne. Usunięcie zgłoszenia trwale kasuje również plik CV.</div>
-        @php $f="modul-aplikacje"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Aplikacje rekrutacyjne"><figcaption>Skrzynka zgłoszeń rekrutacyjnych z CV.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-aplikacje"><img src="__FIG:modul-aplikacje__" loading="lazy" alt="Aplikacje rekrutacyjne"><figcaption>Skrzynka zgłoszeń rekrutacyjnych z CV.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-aplikacje.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.15 WIADOMOŚCI --}}
+        
         <h3 class="dc-sub">15.14 Wiadomości — <code>/panel/messages</code></h3>
         <p>Skrzynka wiadomości z formularza kontaktowego (15.5). Najnowsze na górze, z licznikiem nieprzeczytanych. Otwarcie wiadomości oznacza ją jako przeczytaną; zbędne można usuwać.</p>
         <ol class="dc-steps">
@@ -1088,11 +1034,10 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Kliknij wiadomość</strong>, by zobaczyć pełną treść; otwarcie zdejmuje status „nieprzeczytana".</li>
             <li><strong>Usuń</strong> wiadomość, gdy jest już obsłużona.</li>
         </ol>
-        @php $f="modul-wiadomosci"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Wiadomości"><figcaption>Skrzynka wiadomości z formularza kontaktowego.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-wiadomosci"><img src="__FIG:modul-wiadomosci__" loading="lazy" alt="Wiadomości"><figcaption>Skrzynka wiadomości z formularza kontaktowego.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-wiadomosci.png</code> — pojawi się automatycznie.</div>
 
-        {{-- 15.16 EVENTY / ANALITYKA --}}
+        
         <h3 class="dc-sub">15.15 Eventy i analityka</h3>
         <p>To moduł „pod maską", który zasila statystyki. System zapisuje zdarzenia — przede wszystkim <strong>otwarcia tagów NFC</strong> (<code>tag_open</code>, generowane przy wejściu <code>/t/{tag}</code>, 15.2) oraz <strong>wpłaty</strong> potwierdzane przez bramkę. Na tej podstawie liczone są podsumowania na Dashboardzie (15.6) i statystyki pojedynczej parafii (w CRM, 15.7). Część zdarzeń wysyłana jest również asynchronicznie do bramki, by nie spowalniać przekierowania darczyńcy.</p>
         <ol class="dc-steps">
@@ -1102,8 +1047,7 @@ Na końcu sprawdź na telefonie.</pre>
             <li><strong>Podgląd dla parafii:</strong> statystyki produktu (<code>/panel/products/{id}/stats</code>).</li>
         </ol>
         <div class="dc-note">Jeśli statystyki „nie rosną", sprawdź najpierw, czy tagi są przypisane do <strong>aktywnych</strong> rekordów (15.2/15.7) oraz czy działają usługi w tle (kolejki/scheduler — sekcja 11), bo to one przetwarzają część zdarzeń.</div>
-        @php $f="modul-analityka"; $fp=null; foreach(['png','jpg','webp'] as $e){ if(is_file(public_path("img/docs/$f.$e"))){ $fp="img/docs/$f.$e"; break; } } @endphp
-        @if($fp)<figure class="dc-fig"><img src="{{ asset($fp) }}" loading="lazy" alt="Eventy i analityka"><figcaption>Statystyki wpłat i otwarć tagów.</figcaption></figure>@endif
+        <figure class="dc-fig" data-fig="modul-analityka"><img src="__FIG:modul-analityka__" loading="lazy" alt="Eventy i analityka"><figcaption>Statystyki wpłat i otwarć tagów.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-analityka.png</code> — pojawi się automatycznie.</div>
 
         <div class="dc-note" style="margin-top:2rem"><strong>Powiązania między modułami w skrócie.</strong> Sklep w panelu (15.11) → wyświetla się na <code>/</code> (15.1). Kategorie (15.8) → sekcja „Kogo wspieramy?" na <code>/main</code> (15.3). Praca w panelu (15.12) → oferty na <code>/praca</code> (15.4) → zgłoszenia w Aplikacjach (15.13). Kontakt (15.5) → Wiadomości (15.14). Tagi NFC (15.2) i wpłaty → Eventy/analityka (15.15) → Dashboard (15.6) i CRM parafii (15.7).</div>
@@ -1112,4 +1056,3 @@ Na końcu sprawdź na telefonie.</pre>
 </div>
 
 <a href="#gora" class="dc-top" aria-label="Do góry">↑</a>
-@endsection

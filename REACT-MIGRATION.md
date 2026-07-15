@@ -106,7 +106,7 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
   migracja przez `--path` (framework + `Modules/Gateway/database/migrations`),
   bo pełny `migrate` koliduje ze storefrontem na tabeli `events`.
 
-### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO — **PRAWIE UKOŃCZONE**
+### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO — **UKOŃCZONE**
 Wymaga SSR + weryfikacji OG/meta i zgodności PayU po każdej stronie.
 - [x] layouty: **`StorefrontLayout.jsx`** (landing) + **`StorefrontPublicLayout.jsx`** (public, tryb `bare`).
   OG/meta w `<Head>` z SSR; współdzielone `seo`+`routes` w `HandleInertiaRequests` (rola storefront).
@@ -120,9 +120,21 @@ Wymaga SSR + weryfikacji OG/meta i zgodności PayU po każdej stronie.
     **NATYWNY POST** (pełne przeładowanie → `redirect()->away(payment_url)` PayU działa), NIE router
     Inertia. CSRF przez ukryte `_token` (shared `csrf_token`). Akcje wewnętrzne (koszyk: add/update/
     remove/dostawa) idą przez `router.post` (redirect wewnętrzny + flash).
-- [ ] **DUŻE strony statyczne** (jedyne pozostałe): `docs` (~1431 linii), `samouczek` (~1115) —
-  czysta treść, zerowa interaktywność. Rekomendacja: **zostawić w Blade** (Blade+Inertia współistnieją)
-  albo migrować na końcu jako 1:1 przepis treści. Do decyzji.
+- [x] **DUŻE strony statyczne**: `docs` (~1431 linii) i `samouczek` (~1115) — **zrobione**.
+  Czysta treść, zerowa interaktywność, ale mnóstwo `<pre>`/`<code>` z nawiasami `{}` i `${VAR}`
+  (setki wystąpień) — ręczna transkrypcja na drzewo JSX byłaby skrajnie błędogenna. Dlatego:
+  treść trzymana **verbatim** w `resources/inertia-content/{docs,samouczek}.html`, renderowana
+  przez `Storefront/{Docs,Samouczek}.jsx` jednym `dangerouslySetInnerHTML` (treść zaufana, statyczna,
+  SSR działa → SEO/OG w `<Head>` przez `StorefrontLayout`). Figury (screeny) **rozstrzygane
+  serwerowo** w trasie (`$docHtml`): `<figure data-fig="slug">` z placeholderem `__FIG:slug__` →
+  jeśli `public/img/docs/{slug}.{png,jpg,webp}` istnieje, wstawiamy `<img src>`, inaczej całą figurę
+  usuwamy (obraz „pojawia się automatycznie" po wrzuceniu pliku — zachowane zachowanie Blade).
+  Placeholdery `__DATE__` (data aktualizacji) i `__ROUTE_DOCS__` (`route('docs')`) też serwerowo.
+  Konwersja Blade→verbatim była jednorazowym skryptem; TOC rozwinięty statycznie z `$toc`.
+  **Weryfikacja**: znormalizowany diff starego body Blade vs nowy `html`-prop = identyczny 1:1
+  (jedyna różnica: nieszkodliwy atrybut `data-fig` na obecnych figurach; liczba renderowanych
+  figur zgodna: docs 10/15, samouczek 15/18 — brakujące pliki obrazków pominięte jak wcześniej).
+  Legacy `docs.blade.php` i `samouczek.blade.php` usunięte.
 
 ### Faza 3 — Bramka publiczna + płatności 🔴 NAJOSTROŻNIEJ (żywe płatności PayU)
 - [ ] `gateway/landing`
