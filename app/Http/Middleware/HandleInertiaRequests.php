@@ -38,6 +38,10 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
 
+            // Token CSRF — dla ręcznych żądań fetch (auto-zapis, notatki CRM,
+            // upload obrazka w edytorze), które nie przechodzą przez router Inertia.
+            'csrf_token' => fn () => csrf_token(),
+
             // Komunikaty flash (redirecty kontrolerów -> Inertia).
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
