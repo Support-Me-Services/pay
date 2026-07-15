@@ -39,7 +39,11 @@ Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('b
 
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
-Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
+Route::get('/regulamin', fn () => Inertia::render('Storefront/Regulamin', [
+    'css' => $css('subpages.css'),
+    'pageTitle' => 'Regulamin sklepu — ' . config('shop.name'),
+    'pageDescription' => 'Regulamin sklepu internetowego SUPPORT ME — zasady sprzedazy, platnosci, dostawy, odstapienia od umowy, reklamacji i ochrony danych.',
+]))->name('regulamin');
 Route::get('/dziekujemy', fn () => Inertia::render('Storefront/Dziekujemy', [
     'css' => $css('subpages.css'),
     'pageTitle' => 'Dziękujemy — ' . config('shop.name'),

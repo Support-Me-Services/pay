@@ -106,23 +106,23 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
   migracja przez `--path` (framework + `Modules/Gateway/database/migrations`),
   bo pełny `migrate` koliduje ze storefrontem na tabeli `events`.
 
-### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO — **W TOKU**
+### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO — **PRAWIE UKOŃCZONE**
 Wymaga SSR + weryfikacji OG/meta i zgodności PayU po każdej stronie.
-- [x] layout `landing` → **`StorefrontLayout.jsx`** (OG/meta w `<Head>` z SSR; współdzielone
-  `seo`+`routes` w `HandleInertiaRequests`, tylko rola storefront). Layout `public` — TODO.
-- [x] statyczne marketingowe: **`inwestorzy`, `dziekujemy`, `parafie`, `mecenasi-lokalny-rolnik`**
-  (Route::view → Inertia::render; page-scoped CSS w `<style>`/prop `css` z hashem serwerowym).
-- [ ] **Dynamiczne / okołopłatnicze** (kontrolery + „Wesprzyj/Kup" → PayU): `home`, `storefront`
-  (`/` darowizna — paywin), `user-shop` (`/people/{handle}`), `category`, `product`, `koszyk`,
-  `index`, `kontakt`, `aplikuj`, `praca`, `beneficiaries`, `return-{success,pending,failure}`,
-  `tag-not-found` (2 ostatnie + `index` używają layoutu `public`).
-- [ ] pozostałe statyczne: `fundacje`, `szkoly`, `oferta`, `regulamin`.
-- [ ] **DUŻE strony statyczne**: `docs` (~1431 linii), `samouczek` (~1115) — czysta treść,
-  zerowa interaktywność; rekomendacja: **zostawić w Blade** lub migrować na końcu (wysoki koszt,
-  ryzyko regresji, znikoma korzyść). Blade i Inertia współistnieją — nie blokują siebie.
-- ⚠️ **PayU (potwierdzone na prod, do zachowania):** czas realizacji w `regulamin`,
-  administrator danych w polityce (PDF), produkty z opisem/ceną/koszykiem w `user-shop`.
-  OG/meta przenoszone do `<Head>` (Inertia) bez utraty podglądów linków — weryfikować per strona.
+- [x] layouty: **`StorefrontLayout.jsx`** (landing) + **`StorefrontPublicLayout.jsx`** (public, tryb `bare`).
+  OG/meta w `<Head>` z SSR; współdzielone `seo`+`routes` w `HandleInertiaRequests` (rola storefront).
+- [x] statyczne marketingowe: `inwestorzy`, `dziekujemy`, `parafie`, `mecenasi-lokalny-rolnik`,
+  `fundacje`, `szkoly` (Route::view → Inertia; page-scoped CSS w `<style>`/prop `css` z hashem serwerowym).
+- [x] `regulamin` (treść prawna/PayU — „czas realizacji", administrator danych — zachowane 1:1).
+- [x] **okołopłatnicze**: `home` (/main), `storefront` (`/` paywin), `user-shop` (/people/{handle}),
+  `category`, `product`, `koszyk`, `kontakt`, `praca`+`oferta`+`aplikuj` (careers), `beneficiaries`,
+  `return-{success,pending,failure}`, `tag-not-found` (404 zachowane). Legacy `index.blade` usunięty.
+  - ⚠️ **PayU**: formularze płatności (paywin `/`, `/p/{slug}` kup, koszyk „Kupuję i płacę") to
+    **NATYWNY POST** (pełne przeładowanie → `redirect()->away(payment_url)` PayU działa), NIE router
+    Inertia. CSRF przez ukryte `_token` (shared `csrf_token`). Akcje wewnętrzne (koszyk: add/update/
+    remove/dostawa) idą przez `router.post` (redirect wewnętrzny + flash).
+- [ ] **DUŻE strony statyczne** (jedyne pozostałe): `docs` (~1431 linii), `samouczek` (~1115) —
+  czysta treść, zerowa interaktywność. Rekomendacja: **zostawić w Blade** (Blade+Inertia współistnieją)
+  albo migrować na końcu jako 1:1 przepis treści. Do decyzji.
 
 ### Faza 3 — Bramka publiczna + płatności 🔴 NAJOSTROŻNIEJ (żywe płatności PayU)
 - [ ] `gateway/landing`
