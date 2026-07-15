@@ -59,12 +59,18 @@ Route::get('/react-pilot', function () {
 })->name('react.pilot');
 
 // Podstrony segmentów (treść z Figmy)
-Route::view('/fundacje', 'shop.fundacje')->name('fundacje');
+Route::get('/fundacje', fn () => Inertia::render('Storefront/Fundacje', [
+    'pageTitle' => 'Fundacje — SupportME',
+    'pageDescription' => 'Support Me pomaga fundacjom i organizacjom społecznym zwiększać skuteczność pozyskiwania darowizn dzięki tagom NFC i nowoczesnym płatnościom bezgotówkowym.',
+]))->name('fundacje');
 Route::get('/parafie', fn () => Inertia::render('Storefront/Parafie', [
     'pageTitle' => 'Parafie — SupportME',
     'pageDescription' => 'Support Me pomaga parafiom zwiększyć dostępność darowizn bezgotówkowych dzięki tagom NFC na tacach. Prosty, bezpieczny sposób na wsparcie kościoła telefonem.',
 ]))->name('parafie');
-Route::view('/szkoly', 'shop.szkoly')->name('szkoly');
+Route::get('/szkoly', fn () => Inertia::render('Storefront/Szkoly', [
+    'pageTitle' => 'Szkoły — SupportME',
+    'pageDescription' => 'SupportME rozwiązuje problem braku gotówki podczas szkolnych pikników i wydarzeń. Dzięki technologii NFC uczniowie i szkoły skutecznie zbierają środki bezgotówkowo.',
+]))->name('szkoly');
 Route::get('/mecenasi/lokalny-rolnik', fn () => Inertia::render('Storefront/MecenasiLokalnyRolnik', [
     'pageTitle' => 'Mecenas: LokalnyRolnik — SupportME',
     'pageDescription' => 'LokalnyRolnik — Mecenas SupportME. Polska platforma e-commerce łącząca klientów z lokalnymi rolnikami i producentami żywności wspiera, poprzez SupportME, cele fundacji.',
