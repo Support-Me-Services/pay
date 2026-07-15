@@ -7,6 +7,7 @@ use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 /**
  * Koszyk sklepu per‑konto (/user/{handle}). Osobny koszyk dla każdego sklepu:
@@ -22,17 +23,46 @@ class CartController extends Controller
         [$lines, $subtotal] = $this->resolve($owner, $handle);
         [$shipCode, $shipMethod, $shipPoint] = $this->shipping($handle);
         $shipCost = $lines->isEmpty() ? 0 : (int) $shipMethod['price'];
+        $methods = config('shipping.methods');
+        $enabledCount = collect($methods)->where('enabled', true)->count();
 
-        return view('shop.koszyk', [
+        return Inertia::render('Storefront/Koszyk', [
             'shopHandle' => $handle,
-            'owner' => $owner,
-            'lines' => $lines,
-            'subtotal' => $subtotal,
-            'methods' => config('shipping.methods'),
+            'ownerName' => $owner->name,
+            'cartCount' => array_sum((array) session("cart.$handle", [])),
+            'lines' => $lines->map(fn ($l) => [
+                'id' => $l['item']->id,
+                'name' => $l['item']->name,
+                'image' => asset($l['item']->image),
+                'unit_price' => $l['item']->pricePln(),
+                'qty' => $l['qty'],
+                'line_total' => number_format($l['lineGrosze'] / 100, 2, ',', ' '),
+                'update_url' => route('user.cart.update', [$handle, $l['item']->id]),
+                'remove_url' => route('user.cart.remove', [$handle, $l['item']->id]),
+            ])->values(),
+            'methods' => collect($methods)->map(fn ($m, $code) => [
+                'code' => $code,
+                'label' => $m['label'],
+                'price' => $m['price'] ? number_format($m['price'] / 100, 2, ',', ' ') . ' zł' : 'bez kosztów',
+                'enabled' => ! empty($m['enabled']),
+                'point' => (bool) $m['point'],
+            ])->values(),
             'shipCode' => $shipCode,
-            'shipCost' => $shipCost,
             'shipPoint' => $shipPoint,
-            'total' => $subtotal + $shipCost,
+            'shipHasPoint' => (bool) $methods[$shipCode]['point'],
+            'shipMultiple' => $enabledCount > 1,
+            'subtotal' => number_format($subtotal / 100, 2, ',', ' '),
+            'shipLabel' => $methods[$shipCode]['label'],
+            'shipCost' => $shipCost ? number_format($shipCost / 100, 2, ',', ' ') . ' zł' : 'bez kosztów',
+            'total' => number_format(($subtotal + $shipCost) / 100, 2, ',', ' '),
+            'urls' => [
+                'shop' => route('user.shop', $handle),
+                'shipping' => route('user.cart.shipping', $handle),
+                'checkout' => route('user.cart.checkout', $handle),
+                'regulamin' => route('regulamin'),
+            ],
+            'pageTitle' => 'Koszyk — ' . config('shop.name'),
+            'pageDescription' => 'Twój koszyk w sklepie SupportMe.',
         ]);
     }
 
