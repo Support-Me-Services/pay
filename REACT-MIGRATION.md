@@ -92,8 +92,8 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
 - [x] `potential-parishes` (index) 🟢 — **zrobione** (filtry GET + auto-zapis inline)
 - [x] `applications` (index + show, filtry + zmiana statusu + CV) 🟢 — **zrobione**
 - [x] `messages` (index + show) 🟢 — **zrobione**
-- [ ] `beneficiaries` (index — **edytor węzłów: Quill + SortableJS**) 🔴 złożony
-- [ ] `coverage/map` (**interaktywna mapa**, dane AJAX) 🔴 złożony
+- [x] `beneficiaries` (index — **edytor węzłów: Quill + drag&drop**) 🔴 — **zrobione** (natywny HTML5 DnD zamiast SortableJS, modal-kreator z kadrowaniem + live preview)
+- [x] `coverage/map` (**interaktywna mapa**, dane AJAX) 🔴 — **zrobione** (Leaflet+markercluster z CDN, dynamiczny import w useEffect, popupy z auto-zapisem)
 
 ### Faza 1b — Panel bramki (`resources/views/gateway/panel/`) 🟢
 - [ ] `login`, `dashboard`, `stats`, `antitheft`, `leads`

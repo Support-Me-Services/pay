@@ -145,9 +145,24 @@ Route::prefix('panel')->name('panel.')->group(function () {
             $statusCounts = \App\Modules\Storefront\Models\PotentialParish::query()
                 ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
             // Handlowcy do selecta w filtrach mapy i w popupie edycji markera.
-            $salespeople = \App\Modules\Storefront\Models\Salesperson::orderBy('name')->get();
+            $salespeople = \App\Modules\Storefront\Models\Salesperson::orderBy('name')->get(['id', 'name']);
 
-            return view('panel.coverage.map', compact('byVoivodeship', 'total', 'statusCounts', 'salespeople'));
+            $statuses = \App\Modules\Storefront\Models\PotentialParish::STATUSES;
+
+            return \Inertia\Inertia::render('Panel/Coverage/Map', [
+                // Województwa jako lista par (kolejność malejąco wg liczby) — do kafelków.
+                'byVoivodeship' => collect($byVoivodeship)->map(fn ($c, $w) => ['voivodeship' => $w, 'count' => (int) $c])->values(),
+                'total' => $total,
+                'statusCounts' => $statusCounts,
+                'statuses' => collect($statuses)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
+                'voivodeships' => \App\Modules\Storefront\Models\Salesperson::VOIVODESHIPS,
+                'salespeople' => $salespeople,
+                'urls' => [
+                    'data' => route('panel.coverage.data'),
+                    'listBase' => route('panel.potential-parishes.index'),
+                    'status' => route('panel.potential-parishes.status', ['potentialParish' => '__ID__']),
+                ],
+            ]);
         })->name('coverage.map');
 
         // Dane markerów do interaktywnej mapy (JSON, ładowane AJAX-em po starcie mapy).
