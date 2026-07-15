@@ -11,6 +11,11 @@ use App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\StorefrontController;
 use App\Modules\Storefront\Http\Controllers\UserShopController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+// Hashowany URL statycznego arkusza CSS z /public (cache-bust przeglądarki).
+// Migracja React/Inertia: strony statyczne dokładają własny CSS przez prop `css`.
+$css = fn (string $file) => asset("css/{$file}") . '?v=' . substr(md5_file(public_path("css/{$file}")), 0, 10);
 
 // Strona główna „/" — model darowiznowy (produkty konta głównego, kwota ≥ min).
 Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
@@ -35,7 +40,11 @@ Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('b
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
 Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
-Route::view('/dziekujemy', 'shop.dziekujemy')->name('thanks');
+Route::get('/dziekujemy', fn () => Inertia::render('Storefront/Dziekujemy', [
+    'css' => $css('subpages.css'),
+    'pageTitle' => 'Dziękujemy — ' . config('shop.name'),
+    'pageDescription' => 'Dziękujemy za Twoje wsparcie i zaufanie. Twoja wiadomość do nas dotarła — odezwiemy się najszybciej, jak to możliwe.',
+]))->name('thanks');
 
 // [Pilotaż migracji na React/Inertia] — strona dowodowa, nie rusza istniejących widoków.
 Route::get('/react-pilot', function () {
@@ -55,7 +64,11 @@ Route::view('/parafie', 'shop.parafie')->name('parafie');
 Route::view('/szkoly', 'shop.szkoly')->name('szkoly');
 Route::view('/mecenasi/lokalny-rolnik', 'shop.mecenasi-lokalny-rolnik')->name('mecenasi.lokalnyrolnik');
 // Inwestorzy i akcjonariusze (statyczna strona marketingowa wg Figmy „Inwestorzy")
-Route::view('/inwestorzy', 'shop.inwestorzy')->name('investors');
+Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
+    'css' => $css('inwestorzy.css'),
+    'pageTitle' => 'Inwestorzy i akcjonariusze — ' . config('shop.name'),
+    'pageDescription' => 'Inwestorzy i akcjonariusze SupportMe — wierzymy, że kapitał może służyć dobru.',
+]))->name('investors');
 
 // Dokumentacja projektu — przegląd wszystkich modułów i funkcji
 Route::view('/docs', 'shop.docs')->name('docs');

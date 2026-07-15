@@ -56,6 +56,29 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
 
+            // SEO/OG dla publicznego storefrontu — obraz OG z hashem (cache-bust
+            // crawlera) i bieżący URL liczone serwerowo (potrzebne do <Head> w SSR).
+            'seo' => fn () => config('platform.role') === 'storefront' ? [
+                'ogImage' => asset('img/og-supportme.png') . '?v=' . substr(md5_file(public_path('img/og-supportme.png')), 0, 8),
+                'url' => url()->current(),
+                'siteName' => 'SupportME',
+                'shopName' => config('shop.name', 'SupportME'),
+            ] : null,
+
+            // Trasy publiczne storefrontu — używane przez StorefrontLayout i strony
+            // (Inertia nie ma Ziggy; udostępniamy potrzebne URL-e bezparametrowe).
+            'routes' => fn () => config('platform.role') === 'storefront' ? [
+                'main' => route('main'),
+                'home' => route('home'),
+                'beneficiaries' => route('beneficiaries'),
+                'careers' => route('careers'),
+                'investors' => route('investors'),
+                'contact' => route('contact.show'),
+                'regulamin' => route('regulamin'),
+                'thanks' => route('thanks'),
+                'docs' => route('docs'),
+            ] : null,
+
             // Nawigacja panelu + liczniki — tylko na trasach panelu (lazy).
             // Rola (storefront|gateway) rozstrzyga zestaw tras: na hoście bramki
             // trasy storefrontu NIE istnieją, więc nie wolno ich tu wołać.
