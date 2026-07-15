@@ -4,15 +4,28 @@ namespace App\Modules\Gateway\Http\Controllers\Panel;
 
 use App\Modules\Gateway\Http\Controllers\Controller;
 use App\Modules\Gateway\Models\Lead;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LeadController extends Controller
 {
     public function index()
     {
-        $leads = Lead::orderByDesc('created_at')->paginate(50);
+        $leads = Lead::orderByDesc('created_at')->paginate(50)
+            ->through(fn (Lead $lead) => [
+                'id' => $lead->id,
+                'created_at' => $lead->created_at?->format('d.m.Y H:i'),
+                'name' => $lead->name,
+                'email' => $lead->email,
+                'phone' => $lead->phone,
+                'company' => $lead->company,
+                'message' => $lead->message,
+            ]);
 
-        return view('panel.leads', compact('leads'));
+        return Inertia::render('Gateway/Leads', [
+            'leads' => $leads,
+            'exportUrl' => route('panel.leads.export'),
+        ]);
     }
 
     public function exportCsv(): StreamedResponse

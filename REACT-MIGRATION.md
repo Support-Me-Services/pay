@@ -95,10 +95,16 @@ Wzorzec CRUD jak `shop-items` (część już przeanalizowana — kontrolery niem
 - [x] `beneficiaries` (index — **edytor węzłów: Quill + drag&drop**) 🔴 — **zrobione** (natywny HTML5 DnD zamiast SortableJS, modal-kreator z kadrowaniem + live preview)
 - [x] `coverage/map` (**interaktywna mapa**, dane AJAX) 🔴 — **zrobione** (Leaflet+markercluster z CDN, dynamiczny import w useEffect, popupy z auto-zapisem)
 
-### Faza 1b — Panel bramki (`resources/views/gateway/panel/`) 🟢
-- [ ] `login`, `dashboard`, `stats`, `antitheft`, `leads`
-- [ ] `shops` (index + form), `tags` (index + form)
-- [ ] layout: `gateway/layouts/panel.blade.php` → komponent `GatewayPanelLayout.jsx`
+### Faza 1b — Panel bramki (`resources/views/gateway/panel/`) 🟢 — **ZROBIONE**
+- [x] `login`, `dashboard`, `stats`, `antitheft`, `leads`
+- [x] `shops` (index + form), `tags` (index + form)
+- [x] layout: `gateway/layouts/panel.blade.php` → komponent `GatewayPanelLayout.jsx`
+- ⚠️ `HandleInertiaRequests` jest teraz **świadomy roli**: `panel` buduje nawigację
+  storefrontu **lub** bramki wg `config('platform.role')` — na hoście bramki trasy
+  storefrontu nie istnieją, więc nie wolno ich tam wołać (i odwrotnie).
+- Weryfikacja bramki lokalnie: host `pay.please-support-me.com` (baza `nfc_pay`) —
+  migracja przez `--path` (framework + `Modules/Gateway/database/migrations`),
+  bo pełny `migrate` koliduje ze storefrontem na tabeli `events`.
 
 ### Faza 2 — Publiczny storefront (`resources/views/storefront/church/shop/`) 🟡 SEO
 Wymaga SSR + weryfikacji OG/meta i zgodności PayU po każdej stronie.

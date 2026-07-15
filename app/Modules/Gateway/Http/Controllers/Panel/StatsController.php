@@ -7,12 +7,13 @@ use App\Modules\Gateway\Models\Shop;
 use App\Modules\Gateway\Models\Tag;
 use App\Modules\Gateway\Services\StatsService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class StatsController extends Controller
 {
     public function index(Request $request, StatsService $stats)
     {
-        $shops = Shop::orderBy('name')->get();
+        $shops = Shop::orderBy('name')->get(['id', 'name']);
 
         $shopId = $request->integer('shop_id') ?: null;
         $tagId = $request->integer('tag_id') ?: null;
@@ -20,12 +21,18 @@ class StatsController extends Controller
         $shop = $shopId ? Shop::find($shopId) : null;
         $tag = ($tagId && $shop) ? Tag::where('shop_id', $shop->id)->find($tagId) : null;
 
-        $total = $stats->summary(shopId: $shop?->id, tagId: $tag?->id);
-        $last30 = $stats->summary(shopId: $shop?->id, tagId: $tag?->id, days: 30);
-        $series = $stats->dailyPaidSeries(shopId: $shop?->id, tagId: $tag?->id, days: 30);
+        $fmt = fn (array $s) => [...$s, 'revenue' => StatsService::formatPln($s['revenue'])];
+        $tags = $shop ? $shop->tags()->orderBy('tag_uid')->get(['id', 'tag_uid', 'label']) : collect();
 
-        $tags = $shop ? $shop->tags()->orderBy('tag_uid')->get() : collect();
-
-        return view('panel.stats', compact('shops', 'shop', 'tag', 'tags', 'total', 'last30', 'series'));
+        return Inertia::render('Gateway/Stats', [
+            'shops' => $shops,
+            'tags' => $tags->map(fn (Tag $t) => ['id' => $t->id, 'tag_uid' => $t->tag_uid, 'label' => $t->label])->values(),
+            'shop' => $shop ? ['id' => $shop->id, 'name' => $shop->name] : null,
+            'tag' => $tag ? ['id' => $tag->id, 'tag_uid' => $tag->tag_uid] : null,
+            'total' => $fmt($stats->summary(shopId: $shop?->id, tagId: $tag?->id)),
+            'last30' => $fmt($stats->summary(shopId: $shop?->id, tagId: $tag?->id, days: 30)),
+            'series' => $stats->dailyPaidSeries(shopId: $shop?->id, tagId: $tag?->id, days: 30),
+            'statsUrl' => route('panel.stats'),
+        ]);
     }
 }

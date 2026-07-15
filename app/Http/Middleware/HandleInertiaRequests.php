@@ -57,24 +57,52 @@ class HandleInertiaRequests extends Middleware
             ],
 
             // Nawigacja panelu + liczniki — tylko na trasach panelu (lazy).
-            'panel' => fn () => $request->routeIs('panel.*') ? [
-                'brand' => config('shop.name', 'SupportME'),
-                'nav' => [
-                    ['label' => 'Dashboard', 'href' => route('panel.dashboard'), 'active' => $request->routeIs('panel.dashboard')],
-                    ['label' => 'Parafie', 'href' => route('panel.products.index'), 'active' => $request->routeIs('panel.products.*') || $request->routeIs('panel.parishes.*')],
-                    ['label' => 'Kategorie', 'href' => route('panel.categories.index'), 'active' => $request->routeIs('panel.categories.*')],
-                    ['label' => 'Wspieramy', 'href' => route('panel.beneficiaries.index'), 'active' => $request->routeIs('panel.beneficiaries.*')],
-                    ['label' => 'Handlowcy', 'href' => route('panel.salespeople.index'), 'active' => $request->routeIs('panel.salespeople.*')],
-                    ['label' => 'Parafie do obdzwonienia', 'href' => route('panel.potential-parishes.index'), 'active' => $request->routeIs('panel.potential-parishes.*')],
-                    ['label' => 'Mapa pokrycia', 'href' => route('panel.coverage.map'), 'active' => $request->routeIs('panel.coverage.*')],
-                    ['label' => 'Sklep', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')],
-                    ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')],
-                    ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*'), 'badge' => \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count() ?: null],
-                    ['label' => 'Wiadomości', 'href' => route('panel.messages.index'), 'active' => $request->routeIs('panel.messages.*'), 'badge' => \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count() ?: null],
-                ],
-                'shopUrl' => $request->user()?->handle ? route('user.shop', $request->user()->handle) : null,
-                'logoutUrl' => route('panel.logout'),
-            ] : null,
+            // Rola (storefront|gateway) rozstrzyga zestaw tras: na hoście bramki
+            // trasy storefrontu NIE istnieją, więc nie wolno ich tu wołać.
+            'panel' => fn () => $request->routeIs('panel.*')
+                ? (config('platform.role') === 'gateway'
+                    ? $this->gatewayPanel($request)
+                    : $this->storefrontPanel($request))
+                : null,
+        ];
+    }
+
+    /** Nawigacja panelu sklepu (storefront). */
+    private function storefrontPanel(Request $request): array
+    {
+        return [
+            'brand' => config('shop.name', 'SupportME'),
+            'nav' => [
+                ['label' => 'Dashboard', 'href' => route('panel.dashboard'), 'active' => $request->routeIs('panel.dashboard')],
+                ['label' => 'Parafie', 'href' => route('panel.products.index'), 'active' => $request->routeIs('panel.products.*') || $request->routeIs('panel.parishes.*')],
+                ['label' => 'Kategorie', 'href' => route('panel.categories.index'), 'active' => $request->routeIs('panel.categories.*')],
+                ['label' => 'Wspieramy', 'href' => route('panel.beneficiaries.index'), 'active' => $request->routeIs('panel.beneficiaries.*')],
+                ['label' => 'Handlowcy', 'href' => route('panel.salespeople.index'), 'active' => $request->routeIs('panel.salespeople.*')],
+                ['label' => 'Parafie do obdzwonienia', 'href' => route('panel.potential-parishes.index'), 'active' => $request->routeIs('panel.potential-parishes.*')],
+                ['label' => 'Mapa pokrycia', 'href' => route('panel.coverage.map'), 'active' => $request->routeIs('panel.coverage.*')],
+                ['label' => 'Sklep', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')],
+                ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')],
+                ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*'), 'badge' => \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count() ?: null],
+                ['label' => 'Wiadomości', 'href' => route('panel.messages.index'), 'active' => $request->routeIs('panel.messages.*'), 'badge' => \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count() ?: null],
+            ],
+            'shopUrl' => $request->user()?->handle ? route('user.shop', $request->user()->handle) : null,
+            'logoutUrl' => route('panel.logout'),
+        ];
+    }
+
+    /** Nawigacja panelu bramki płatności (gateway). */
+    private function gatewayPanel(Request $request): array
+    {
+        return [
+            'brand' => 'SupportME',
+            'nav' => [
+                ['label' => 'Dashboard', 'href' => route('panel.dashboard'), 'active' => $request->routeIs('panel.dashboard')],
+                ['label' => 'Sklepy', 'href' => route('panel.shops.index'), 'active' => $request->routeIs('panel.shops.*') || $request->routeIs('panel.tags.*')],
+                ['label' => 'Statystyki', 'href' => route('panel.stats'), 'active' => $request->routeIs('panel.stats')],
+                ['label' => 'Leady', 'href' => route('panel.leads'), 'active' => $request->routeIs('panel.leads')],
+                ['label' => 'AntiTheft', 'href' => route('panel.antitheft'), 'active' => $request->routeIs('panel.antitheft')],
+            ],
+            'logoutUrl' => route('panel.logout'),
         ];
     }
 }
