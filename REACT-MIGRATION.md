@@ -136,12 +136,28 @@ Wymaga SSR + weryfikacji OG/meta i zgodności PayU po każdej stronie.
   figur zgodna: docs 10/15, samouczek 15/18 — brakujące pliki obrazków pominięte jak wcześniej).
   Legacy `docs.blade.php` i `samouczek.blade.php` usunięte.
 
-### Faza 3 — Bramka publiczna + płatności 🔴 NAJOSTROŻNIEJ (żywe płatności PayU)
-- [ ] `gateway/landing`
-- [ ] `gateway/payment/{app2app,blik,error,transition}`
-- [ ] `gateway/mockpay/{app2app,classic}`
-- [ ] layout `gateway/layouts/public.blade.php`
-- ⚠️ Ruch płatniczy — migrować pojedynczo, z testem pełnego flow (mockpay) przed produkcją.
+### Faza 3 — Bramka publiczna + płatności 🔴 — **UKOŃCZONE** (zweryfikowane flow mockpay)
+- [x] layout `gateway/layouts/public.blade.php` → **`GatewayPublicLayout.jsx`** (tryb `bare` dla
+  ekranów płatności; rola gateway nie ma współdzielonych `seo`/`routes` — linki względne).
+- [x] `gateway/landing` → `Gateway/Landing.jsx` (marketing + formularz lead przez `useForm`,
+  honeypot `website`, flash `leadOk`). `LandingController::index` → `Inertia::render`.
+- [x] `gateway/payment/{app2app,transition,error}` → `Gateway/Payment/{App2App,Transition,Error}.jsx`.
+  `PaymentController` renderuje przez Inertia; **ekran błędu zwraca status 502** (`->toResponse()->setStatusCode(502)`).
+  `payment/blik.blade` był martwy (nieużywany) — usunięty bez migracji.
+- [x] `gateway/mockpay/{app2app,classic}` → `Gateway/MockPay/{App2App,Classic}.jsx`.
+  `MockPaymentController::show` → Inertia.
+- ⚠️ **PayU/AJAX**: akcje BLIK/PBL (`/pay/{uuid}/{blik,bank}`) i mock (`confirm/fail`) idą **fetch-em**
+  (JSON + `X-CSRF-TOKEN` z shared `csrf_token`); „Inny bank/karta" to **NATYWNY POST** do
+  `/pay/{uuid}/online` (pełne przeładowanie → `redirect()->away()` na PayU), nie router Inertia.
+  Status pollowany z `/pay/{uuid}/status`. Endpointy JSON/redirect kontrolerów bez zmian.
+- ⚠️ Pułapka SSR: w callbacku `.layout = (page) => ...` **`page.props` jest `undefined` podczas SSR** —
+  tytuł zależny od danych trzeba przekazać propsem `pageTitle` (layout czyta `page.pageTitle` przez
+  `usePage`), nie `page.props.transaction.*`.
+- **Weryfikacja (Host `pay.please-support-me.com`, provider=mock)**: pełny flow classic
+  (`/pay`→302→`/mockpay/classic`→confirm→**paid**→`pay.return`→return_url) i app2app
+  (`/pay`→transition→`/mockpay/app2app`→fail→**failed**→return). `payment/App2App` (PayU BLIK)
+  render-test przy chwilowym `PAYMENT_PROVIDER=payu` (banks=[] gdy brak creds) — SSR bez błędów.
+  Wszystkie widoki Blade bramki (7) + `layouts/public.blade` usunięte (`welcome.blade` = martwy, poza zakresem).
 
 ### Zostaje w Blade (NIE migrować)
 - [x] `emails/job-application.blade.php` — szablon maila (renderowany serwerowo do HTML).
