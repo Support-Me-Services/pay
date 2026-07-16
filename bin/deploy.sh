@@ -28,9 +28,9 @@ PHP="${PHP:-php8.2}"
 WEB_USER="${WEB_USER:-www-data}"
 # Host tenanta storefront (baza nfc_shop1) — do migracji modułu sklepu.
 TENANT_STOREFRONT="${TENANT_STOREFRONT:-please-support-me.com}"
-# Komenda restartu procesu SSR — USTAW pod swój supervisor, np.:
-#   'systemctl restart pay-ssr'  albo  'supervisorctl restart pay-ssr'  albo  'pm2 restart pay-ssr'
-SSR_RESTART_CMD="${SSR_RESTART_CMD:-}"
+# Komenda restartu procesu SSR. Domyślnie usługa systemd `pay-ssr`
+# (patrz bin/pay-ssr.service). Nadpisz zmienną, jeśli używasz supervisor/pm2.
+SSR_RESTART_CMD="${SSR_RESTART_CMD:-systemctl restart pay-ssr}"
 
 DO_MIGRATE=0
 DO_BUILD=1

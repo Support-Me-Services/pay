@@ -112,6 +112,33 @@ jeden `.env`.
   **MUSI być zrestartowany**, inaczej serwuje stary bundle mimo świeżego `public/build`.
 - Wymóg: na serwerze musi być zainstalowany **Node/npm**.
 
+## Pierwsze wdrożenie React/Inertia na serwer (provisioning — JEDNORAZOWO)
+
+Serwer z czasów Blade **nie ma Node ani usługi SSR** — trzeba go doposażyć raz,
+zanim `main` (React/Inertia) ruszy. Kroki (jako sudo, na serwerze):
+
+```bash
+# 1. Node.js 20 LTS (NodeSource) + npm
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+node -v && npm -v                       # sanity check
+
+# 2. Kod (pull najnowszego main z React/Inertia)
+cd /var/www/support-me
+sudo git pull --ff-only origin main
+
+# 3. Usługa SSR (systemd) — proces Node na 127.0.0.1:13714
+sudo cp bin/pay-ssr.service /etc/systemd/system/pay-ssr.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now pay-ssr
+sudo systemctl status pay-ssr --no-pager
+
+# 4. Pierwszy build + migracje nowego schematu (po backupie bazy!)
+SSR_RESTART_CMD='systemctl restart pay-ssr' sudo -E bash bin/deploy.sh --migrate
+```
+
+Od tej pory kolejne wdrożenia to już tylko `bin/deploy.sh` (sekcja niżej).
+
 ## Deploy w skrócie — skrypt `bin/deploy.sh`
 
 Rutynowy deploy zamknięty jest w skrypcie (pull + composer/npm gdy trzeba + build +

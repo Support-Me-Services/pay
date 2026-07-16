@@ -1,0 +1,24 @@
+[Unit]
+# Proces SSR Inertia (Node) dla SupportME — renderuje strony React po stronie
+# serwera i nasłuchuje na 127.0.0.1:13714 (config/inertia.php -> ssr.url).
+# Instalacja:
+#   sudo cp /var/www/support-me/bin/pay-ssr.service /etc/systemd/system/pay-ssr.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now pay-ssr
+# Restart po buildzie robi bin/deploy.sh (systemctl restart pay-ssr).
+Description=SupportME Inertia SSR (Node)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/support-me
+# `inertia:start-ssr` uruchamia i dogląda proces Node z bootstrap/ssr/ssr.js,
+# czytając port z config/inertia.php. Wymaga zainstalowanego Node w PATH.
+ExecStart=/usr/bin/php8.2 artisan inertia:start-ssr
+Restart=always
+RestartSec=2
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
