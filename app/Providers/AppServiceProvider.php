@@ -54,8 +54,8 @@ class AppServiceProvider extends ServiceProvider
         // Limit per IP: krótkofalowy (burst) + dzienny.
         RateLimiter::for('careers-apply', function (Request $request) {
             return [
-                Limit::perMinute(2)->by($request->ip()),
-                Limit::perDay(10)->by($request->ip()),
+                Limit::perMinute(10)->by($request->ip()),
+                Limit::perDay(20)->by($request->ip()),
             ];
         });
     }
