@@ -6,6 +6,7 @@ use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\PotentialParish;
 use App\Modules\Storefront\Models\Salesperson;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PotentialParishController extends Controller
 {
@@ -59,19 +60,75 @@ class PotentialParishController extends Controller
 
         $parishes = $query->orderBy('voivodeship')->orderBy('city')->orderBy('name')
             ->paginate(50)
-            ->withQueryString();
+            ->withQueryString()
+            ->through(fn (PotentialParish $p) => $this->present($p));
 
         // Liczniki globalne (niezależne od filtrów) — łączny i per status.
         $total = PotentialParish::count();
         $statusCounts = PotentialParish::query()
             ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
 
-        $salespeople = Salesperson::orderBy('name')->get();
+        $salespeople = Salesperson::orderBy('name')->get(['id', 'name']);
 
-        return view('panel.potential-parishes.index', compact(
-            'parishes', 'total', 'statusCounts', 'salespeople',
-            'voivodeship', 'status', 'salespersonId', 'name', 'city', 'hasPhone'
-        ));
+        // Mapa kolorów per status — do przekolorowania selecta po auto-zapisie (bez refetcha).
+        $statusColors = collect(PotentialParish::STATUSES)->keys()
+            ->mapWithKeys(fn ($k) => [$k => (new PotentialParish(['status' => $k]))->statusColors()]);
+
+        // Zakładki-liczniki (klikalne jako filtr statusu), zachowując pozostałe filtry.
+        $base = array_filter([
+            'voivodeship' => $voivodeship, 'city' => $city, 'name' => $name,
+            'salesperson_id' => $salespersonId,
+        ]) + ['has_phone' => $hasPhone];
+        $statusTabs = [[
+            'key' => null, 'label' => 'Wszystkie', 'count' => $total,
+            'url' => route('panel.potential-parishes.index', $base), 'active' => ! $status,
+        ]];
+        foreach (PotentialParish::STATUSES as $key => $label) {
+            $statusTabs[] = [
+                'key' => $key, 'label' => $label, 'count' => (int) ($statusCounts[$key] ?? 0),
+                'url' => route('panel.potential-parishes.index', ['status' => $key] + $base),
+                'active' => $status === $key,
+            ];
+        }
+
+        return Inertia::render('Panel/PotentialParishes/Index', [
+            'parishes' => $parishes,
+            'statusTabs' => $statusTabs,
+            'statuses' => collect(PotentialParish::STATUSES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
+            'statusColors' => $statusColors,
+            'voivodeships' => Salesperson::VOIVODESHIPS,
+            'salespeople' => $salespeople,
+            'filters' => [
+                'name' => $name, 'city' => $city, 'voivodeship' => $voivodeship,
+                'status' => $status, 'salesperson_id' => $salespersonId, 'has_phone' => $hasPhone,
+            ],
+            'indexUrl' => route('panel.potential-parishes.index'),
+            'coverageMapUrl' => route('panel.coverage.map'),
+        ]);
+    }
+
+    /** Serializacja parafii dla React (Inertia) — wiersz listy z auto-zapisem. */
+    private function present(PotentialParish $p): array
+    {
+        [$bg, $fg] = $p->statusColors();
+        // Link do Google Maps: nazwa + miasto (fallback: województwo).
+        $gmQuery = trim($p->name . ' ' . ($p->city ?: $p->voivodeship));
+
+        return [
+            'id' => $p->id,
+            'name' => $p->name,
+            'city' => $p->city,
+            'voivodeship' => $p->voivodeship,
+            'phone' => $p->phone,
+            'note' => $p->note,
+            'status' => $p->status,
+            'status_bg' => $bg,
+            'status_fg' => $fg,
+            'salesperson_id' => $p->salesperson_id,
+            'called_at' => $p->called_at?->format('d.m.Y'),
+            'gm_url' => 'https://www.google.com/maps/search/?api=1&query=' . urlencode($gmQuery),
+            'status_url' => route('panel.potential-parishes.status', $p),
+        ];
     }
 
     /**

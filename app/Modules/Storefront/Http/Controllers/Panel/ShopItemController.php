@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 /**
  * Panel: produkty sklepu (NFC). Zarządzanie listą, ceną, opisem,
@@ -19,12 +20,19 @@ class ShopItemController extends Controller
     {
         $items = ShopItem::forUser(Auth::id())->ordered()->get();
 
-        return view('panel.shop-items.index', compact('items'));
+        return Inertia::render('Panel/ShopItems/Index', [
+            'items' => $items->map(fn (ShopItem $i) => $this->present($i))->values(),
+            'createUrl' => route('panel.shop-items.create'),
+        ]);
     }
 
     public function create()
     {
-        return view('panel.shop-items.form', ['item' => new ShopItem(['min_amount' => 100, 'price' => 100, 'active' => true])]);
+        return Inertia::render('Panel/ShopItems/Form', [
+            'item' => null,
+            'storeUrl' => route('panel.shop-items.store'),
+            'indexUrl' => route('panel.shop-items.index'),
+        ]);
     }
 
     public function store(Request $request)
@@ -39,7 +47,11 @@ class ShopItemController extends Controller
     {
         $this->guard($shopItem);
 
-        return view('panel.shop-items.form', ['item' => $shopItem]);
+        return Inertia::render('Panel/ShopItems/Form', [
+            'item' => $this->present($shopItem),
+            'storeUrl' => route('panel.shop-items.store'),
+            'indexUrl' => route('panel.shop-items.index'),
+        ]);
     }
 
     public function update(Request $request, ShopItem $shopItem)
@@ -71,6 +83,28 @@ class ShopItemController extends Controller
     private function guard(ShopItem $item): void
     {
         abort_unless((int) $item->user_id === (int) Auth::id(), 403);
+    }
+
+    /** Serializacja produktu dla warstwy React (Inertia). */
+    private function present(ShopItem $item): array
+    {
+        return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'slug' => $item->slug,
+            'description' => $item->description,
+            'price_pln' => $item->pricePln(),
+            'min_amount_pln' => $item->minAmountPln(),
+            'tag_uid' => $item->tag_uid,
+            'sort' => (int) $item->sort,
+            'is_default' => (bool) $item->is_default,
+            'active' => (bool) $item->active,
+            'image' => $item->image ? asset($item->image) : null,
+            'update_url' => route('panel.shop-items.update', $item),
+            'edit_url' => route('panel.shop-items.edit', $item),
+            'toggle_url' => route('panel.shop-items.toggle', $item),
+            'destroy_url' => route('panel.shop-items.destroy', $item),
+        ];
     }
 
     /** Walidacja + normalizacja (zł→grosze, slug, upload grafiki). */

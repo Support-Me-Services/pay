@@ -6,6 +6,7 @@ use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\BeneficiaryNode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 /**
  * Panel: edytor podstrony „Wspieramy" — węzły (nagłówek + grafika + tekst).
@@ -18,7 +19,35 @@ class BeneficiaryNodeController extends Controller
     {
         $nodes = BeneficiaryNode::ordered()->get();
 
-        return view('panel.beneficiaries.index', compact('nodes'));
+        return Inertia::render('Panel/Beneficiaries/Index', [
+            'nodes' => $nodes->map(fn (BeneficiaryNode $n) => $this->present($n))->values(),
+            'urls' => [
+                'store' => route('panel.beneficiaries.store'),
+                'reorder' => route('panel.beneficiaries.reorder'),
+                'editorUpload' => route('panel.products.editor-upload'),
+                'public' => route('beneficiaries'),
+                // Szablony (podmiana __ID__ po stronie React).
+                'update' => route('panel.beneficiaries.update', '__ID__'),
+                'destroy' => route('panel.beneficiaries.destroy', '__ID__'),
+            ],
+        ]);
+    }
+
+    /** Serializacja węzła „Wspieramy" dla React. */
+    private function present(BeneficiaryNode $n): array
+    {
+        return [
+            'id' => $n->id,
+            'heading' => $n->heading,
+            'image_side' => $n->image_side,
+            'text_align' => $n->text_align,
+            'image' => $n->image ? asset('storage/' . $n->image) : null,
+            'image_scale' => $n->image_scale,
+            'image_x' => $n->image_x,
+            'image_y' => $n->image_y,
+            'image_right' => $n->imageRight(),
+            'body_html' => $n->body_html ?? '',
+        ];
     }
 
     public function store(Request $request)

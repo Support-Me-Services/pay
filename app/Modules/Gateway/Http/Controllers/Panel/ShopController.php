@@ -7,22 +7,57 @@ use App\Modules\Gateway\Models\Shop;
 use App\Modules\Gateway\Services\StatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class ShopController extends Controller
 {
     public function index(StatsService $stats)
     {
-        $shops = Shop::withCount('tags')->get()->map(fn (Shop $shop) => [
-            'shop' => $shop,
-            'stats' => $stats->summary(shopId: $shop->id),
-        ]);
+        $shops = Shop::withCount('tags')->get()->map(function (Shop $shop) use ($stats) {
+            $s = $stats->summary(shopId: $shop->id);
 
-        return view('panel.shops.index', compact('shops'));
+            return [
+                'id' => $shop->id,
+                'name' => $shop->name,
+                'base_url' => $shop->base_url,
+                'payment_mode' => $shop->payment_mode,
+                'tags_count' => $shop->tags_count,
+                'revenue' => StatsService::formatPln($s['revenue']),
+                'conversion' => $s['conversion'],
+                'tags_url' => route('panel.tags.index', $shop),
+                'edit_url' => route('panel.shops.edit', $shop),
+            ];
+        })->values();
+
+        return Inertia::render('Gateway/Shops/Index', [
+            'shops' => $shops,
+            'createUrl' => route('panel.shops.create'),
+            // Klucz API nowego sklepu — pokazywany jednorazowo (flash z store()).
+            'newApiKey' => session('new_api_key'),
+        ]);
     }
 
     public function create()
     {
-        return view('panel.shops.form', ['shop' => new Shop()]);
+        return $this->form(new Shop());
+    }
+
+    /** Wspólny render formularza sklepu (Inertia). */
+    private function form(Shop $shop)
+    {
+        return Inertia::render('Gateway/Shops/Form', [
+            'shop' => [
+                'exists' => $shop->exists,
+                'name' => $shop->name,
+                'base_url' => $shop->base_url,
+                'payment_mode' => $shop->payment_mode ?? 'classic',
+            ],
+            'urls' => [
+                'store' => route('panel.shops.store'),
+                'update' => $shop->exists ? route('panel.shops.update', $shop) : null,
+                'index' => route('panel.shops.index'),
+            ],
+        ]);
     }
 
     public function store(Request $request)
@@ -49,7 +84,7 @@ class ShopController extends Controller
 
     public function edit(Shop $shop)
     {
-        return view('panel.shops.form', compact('shop'));
+        return $this->form($shop);
     }
 
     public function update(Request $request, Shop $shop)

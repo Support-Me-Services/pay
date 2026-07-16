@@ -9,20 +9,53 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CareersController extends Controller
 {
+    /** Hashowany URL wspólnego arkusza podstron (cache-bust). */
+    private function subpagesCss(): string
+    {
+        return asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10);
+    }
+
+    /** Czy oferta jest zdalna/hybrydowa (model nie ma pola — wykrywamy z tekstu). */
+    private function isRemote(JobPosition $p): bool
+    {
+        $haystack = mb_strtolower(trim(($p->location ?? '') . ' ' . ($p->employment_type ?? '')));
+
+        return $haystack !== '' && Str::contains($haystack, ['zdaln', 'remote', 'hybryd']);
+    }
+
     /**
      * GET /praca — lista aktywnych stanowisk pracy.
      */
     public function index()
     {
         $positions = JobPosition::where('active', true)
-            ->orderBy('sort')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('sort')->orderBy('id')->get();
 
-        return view('shop.praca', compact('positions'));
+        $fallback = 'Dołącz do zespołu, który tworzy płatności NFC dla dobra wspólnego — technologię wspierającą parafie, fundacje i lokalne inicjatywy. Szukamy osób, które chcą łączyć nowoczesne rozwiązania z realnym wpływem na ludzi.';
+
+        return Inertia::render('Storefront/Praca', [
+            'positions' => $positions->map(function (JobPosition $p) use ($fallback) {
+                $plain = trim(preg_replace('/\s+/', ' ', strip_tags($p->description_html ?? '')));
+
+                return [
+                    'id' => $p->id,
+                    'title' => $p->title,
+                    'employment_type' => $p->employment_type,
+                    'location' => $p->location,
+                    'is_remote' => $this->isRemote($p),
+                    'excerpt' => mb_strlen($plain) >= 40 ? Str::limit($plain, 180) : $fallback,
+                    'show_url' => route('careers.show', $p),
+                ];
+            })->values(),
+            'css' => $this->subpagesCss(),
+            'pageTitle' => 'Praca — ' . config('shop.name'),
+            'pageDescription' => 'Dołącz do zespołu — aktualne oferty pracy i wolontariatu.',
+        ]);
     }
 
     /**
@@ -34,11 +67,29 @@ class CareersController extends Controller
 
         $others = JobPosition::where('active', true)
             ->where('id', '!=', $position->id)
-            ->orderBy('sort')->orderBy('id')
-            ->limit(3)
-            ->get();
+            ->orderBy('sort')->orderBy('id')->limit(3)->get();
 
-        return view('shop.oferta', compact('position', 'others'));
+        $plain = trim(strip_tags($position->description_html ?? ''));
+
+        return Inertia::render('Storefront/Oferta', [
+            'position' => [
+                'title' => $position->title,
+                'employment_type' => trim((string) $position->employment_type),
+                'location' => trim((string) $position->location),
+                'is_remote' => $this->isRemote($position),
+                'description_html' => $plain !== '' ? $position->description_html : null,
+                'apply_url' => route('careers.apply', $position),
+            ],
+            'others' => $others->map(fn (JobPosition $o) => [
+                'title' => $o->title,
+                'meta' => collect([$o->employment_type, $o->location])->filter()->implode(' · ') ?: 'Zobacz szczegóły',
+                'show_url' => route('careers.show', $o),
+            ])->values(),
+            'careersUrl' => route('careers'),
+            'css' => $this->subpagesCss(),
+            'pageTitle' => $position->title . ' — Praca — SupportME',
+            'pageDescription' => Str::limit($plain, 150) ?: 'Dołącz do zespołu SupportME — technologia, która pomaga czynić dobro.',
+        ]);
     }
 
     /**
@@ -47,7 +98,16 @@ class CareersController extends Controller
      */
     public function applyForm(?JobPosition $position = null)
     {
-        return view('shop.aplikuj', compact('position'));
+        $hasPosition = $position && $position->exists;
+
+        return Inertia::render('Storefront/Aplikuj', [
+            'position' => $hasPosition ? ['title' => $position->title] : null,
+            'storeUrl' => $hasPosition ? route('careers.apply.store', $position) : route('careers.apply.general.store'),
+            'careersUrl' => route('careers'),
+            'css' => $this->subpagesCss(),
+            'pageTitle' => ($hasPosition ? 'Aplikuj: ' . $position->title : 'Aplikacja spontaniczna') . ' — ' . config('shop.name'),
+            'pageDescription' => 'Wyślij swoje zgłoszenie rekrutacyjne wraz z CV.',
+        ]);
     }
 
     /**

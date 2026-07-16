@@ -11,6 +11,36 @@ use App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\StorefrontController;
 use App\Modules\Storefront\Http\Controllers\UserShopController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+// Hashowany URL statycznego arkusza CSS z /public (cache-bust przeglądarki).
+// Migracja React/Inertia: strony statyczne dokładają własny CSS przez prop `css`.
+$css = fn (string $file) => asset("css/{$file}") . '?v=' . substr(md5_file(public_path("css/{$file}")), 0, 10);
+
+// Treść dużych stron statycznych (docs/samouczek) trzymana verbatim w
+// resources/inertia-content/*.html (renderowana w React przez dangerouslySetInnerHTML).
+// Figury (screeny) rozstrzygane serwerowo: gdy public/img/docs/{slug}.{png,jpg,webp}
+// istnieje — wstawiamy <img src>, w przeciwnym razie usuwamy całą <figure> (obraz
+// „pojawia się automatycznie" po wrzuceniu pliku). Placeholdery __DATE__/__ROUTE_DOCS__.
+$docHtml = function (string $name): string {
+    $html = file_get_contents(resource_path("inertia-content/{$name}.html"));
+    $html = preg_replace_callback('/<figure\b[^>]*\bdata-fig="([^"]+)"[^>]*>.*?<\/figure>/s', function ($m) {
+        $slug = $m[1];
+        foreach (['png', 'jpg', 'webp'] as $e) {
+            if (is_file(public_path("img/docs/{$slug}.{$e}"))) {
+                return str_replace("__FIG:{$slug}__", asset("img/docs/{$slug}.{$e}"), $m[0]);
+            }
+        }
+
+        return '';
+    }, $html);
+
+    return str_replace(
+        ['__DATE__', '__ROUTE_DOCS__'],
+        [now()->translatedFormat('j F Y'), route('docs')],
+        $html
+    );
+};
 
 // Strona główna „/" — model darowiznowy (produkty konta głównego, kwota ≥ min).
 Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
@@ -34,22 +64,68 @@ Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('b
 
 // Parafie (cyfrowa taca) — kategorie i strony produktów
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
-Route::view('/regulamin', 'shop.regulamin')->name('regulamin');
-Route::view('/dziekujemy', 'shop.dziekujemy')->name('thanks');
+Route::get('/regulamin', fn () => Inertia::render('Storefront/Regulamin', [
+    'css' => $css('subpages.css'),
+    'pageTitle' => 'Regulamin sklepu — ' . config('shop.name'),
+    'pageDescription' => 'Regulamin sklepu internetowego SUPPORT ME — zasady sprzedazy, platnosci, dostawy, odstapienia od umowy, reklamacji i ochrony danych.',
+]))->name('regulamin');
+Route::get('/dziekujemy', fn () => Inertia::render('Storefront/Dziekujemy', [
+    'css' => $css('subpages.css'),
+    'pageTitle' => 'Dziękujemy — ' . config('shop.name'),
+    'pageDescription' => 'Dziękujemy za Twoje wsparcie i zaufanie. Twoja wiadomość do nas dotarła — odezwiemy się najszybciej, jak to możliwe.',
+]))->name('thanks');
+
+// [Pilotaż migracji na React/Inertia] — strona dowodowa, nie rusza istniejących widoków.
+Route::get('/react-pilot', function () {
+    return inertia('Pilot', [
+        'message' => 'Ta strona jest renderowana przez React (Inertia), a dane przychodzą z kontrolera Laravel.',
+        'tenant' => config('tenants.default') ?: request()->getHost(),
+        'items' => \App\Modules\Storefront\Models\ShopItem::query()
+            ->orderBy('sort')->orderBy('id')->limit(5)->get()
+            ->map(fn ($i) => ['id' => $i->id, 'name' => $i->name, 'price' => $i->pricePln().' zł'])
+            ->values(),
+    ]);
+})->name('react.pilot');
 
 // Podstrony segmentów (treść z Figmy)
-Route::view('/fundacje', 'shop.fundacje')->name('fundacje');
-Route::view('/parafie', 'shop.parafie')->name('parafie');
-Route::view('/szkoly', 'shop.szkoly')->name('szkoly');
-Route::view('/mecenasi/lokalny-rolnik', 'shop.mecenasi-lokalny-rolnik')->name('mecenasi.lokalnyrolnik');
+Route::get('/fundacje', fn () => Inertia::render('Storefront/Fundacje', [
+    'pageTitle' => 'Fundacje — SupportME',
+    'pageDescription' => 'Support Me pomaga fundacjom i organizacjom społecznym zwiększać skuteczność pozyskiwania darowizn dzięki tagom NFC i nowoczesnym płatnościom bezgotówkowym.',
+]))->name('fundacje');
+Route::get('/parafie', fn () => Inertia::render('Storefront/Parafie', [
+    'pageTitle' => 'Parafie — SupportME',
+    'pageDescription' => 'Support Me pomaga parafiom zwiększyć dostępność darowizn bezgotówkowych dzięki tagom NFC na tacach. Prosty, bezpieczny sposób na wsparcie kościoła telefonem.',
+]))->name('parafie');
+Route::get('/szkoly', fn () => Inertia::render('Storefront/Szkoly', [
+    'pageTitle' => 'Szkoły — SupportME',
+    'pageDescription' => 'SupportME rozwiązuje problem braku gotówki podczas szkolnych pikników i wydarzeń. Dzięki technologii NFC uczniowie i szkoły skutecznie zbierają środki bezgotówkowo.',
+]))->name('szkoly');
+Route::get('/mecenasi/lokalny-rolnik', fn () => Inertia::render('Storefront/MecenasiLokalnyRolnik', [
+    'pageTitle' => 'Mecenas: LokalnyRolnik — SupportME',
+    'pageDescription' => 'LokalnyRolnik — Mecenas SupportME. Polska platforma e-commerce łącząca klientów z lokalnymi rolnikami i producentami żywności wspiera, poprzez SupportME, cele fundacji.',
+]))->name('mecenasi.lokalnyrolnik');
 // Inwestorzy i akcjonariusze (statyczna strona marketingowa wg Figmy „Inwestorzy")
-Route::view('/inwestorzy', 'shop.inwestorzy')->name('investors');
+Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
+    'css' => $css('inwestorzy.css'),
+    'pageTitle' => 'Inwestorzy i akcjonariusze — ' . config('shop.name'),
+    'pageDescription' => 'Inwestorzy i akcjonariusze SupportMe — wierzymy, że kapitał może służyć dobru.',
+]))->name('investors');
 
 // Dokumentacja projektu — przegląd wszystkich modułów i funkcji
-Route::view('/docs', 'shop.docs')->name('docs');
+Route::get('/docs', fn () => Inertia::render('Storefront/Docs', [
+    'css' => $css('docs.css'),
+    'html' => $docHtml('docs'),
+    'pageTitle' => 'Dokumentacja techniczna — SupportME',
+    'pageDescription' => 'Pełna dokumentacja techniczna platformy SupportME — moduł po module: trasy, metody, pola, tabele i przepływy.',
+]))->name('docs');
 
 // Samouczek — jak modyfikować podstrony z Claude (dostęp, Figma, prompty)
-Route::view('/samouczek', 'shop.samouczek')->name('samouczek');
+Route::get('/samouczek', fn () => Inertia::render('Storefront/Samouczek', [
+    'css' => $css('docs.css'),
+    'html' => $docHtml('samouczek'),
+    'pageTitle' => 'Samouczek — modyfikacja stron z Claude · SupportME',
+    'pageDescription' => 'Jak modyfikować podstrony SupportME z pomocą Claude: dostęp do serwera (SSH/Google Cloud), konfiguracja Figmy (Dev Mode + MCP) i pisanie promptów.',
+]))->name('samouczek');
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
 Route::get('/p/{slug}', [StorefrontController::class, 'show'])->name('product.show');
 Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('product.buy');
@@ -133,9 +209,24 @@ Route::prefix('panel')->name('panel.')->group(function () {
             $statusCounts = \App\Modules\Storefront\Models\PotentialParish::query()
                 ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
             // Handlowcy do selecta w filtrach mapy i w popupie edycji markera.
-            $salespeople = \App\Modules\Storefront\Models\Salesperson::orderBy('name')->get();
+            $salespeople = \App\Modules\Storefront\Models\Salesperson::orderBy('name')->get(['id', 'name']);
 
-            return view('panel.coverage.map', compact('byVoivodeship', 'total', 'statusCounts', 'salespeople'));
+            $statuses = \App\Modules\Storefront\Models\PotentialParish::STATUSES;
+
+            return \Inertia\Inertia::render('Panel/Coverage/Map', [
+                // Województwa jako lista par (kolejność malejąco wg liczby) — do kafelków.
+                'byVoivodeship' => collect($byVoivodeship)->map(fn ($c, $w) => ['voivodeship' => $w, 'count' => (int) $c])->values(),
+                'total' => $total,
+                'statusCounts' => $statusCounts,
+                'statuses' => collect($statuses)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
+                'voivodeships' => \App\Modules\Storefront\Models\Salesperson::VOIVODESHIPS,
+                'salespeople' => $salespeople,
+                'urls' => [
+                    'data' => route('panel.coverage.data'),
+                    'listBase' => route('panel.potential-parishes.index'),
+                    'status' => route('panel.potential-parishes.status', ['potentialParish' => '__ID__']),
+                ],
+            ]);
         })->name('coverage.map');
 
         // Dane markerów do interaktywnej mapy (JSON, ładowane AJAX-em po starcie mapy).

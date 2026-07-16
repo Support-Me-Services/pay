@@ -10,6 +10,7 @@ use App\Modules\Storefront\Models\Product;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class StorefrontController extends Controller
 {
@@ -38,7 +39,23 @@ class StorefrontController extends Controller
             ])
             ->all();
 
-        return view('shop.home', ['categories' => $categories]);
+        // Logo mecenasa (LokalnyRolnik) do modala podziękowania — pierwszy istniejący format.
+        $mecenasLogo = null;
+        foreach (['svg', 'png', 'webp', 'jpg'] as $ext) {
+            if (is_file(public_path("img/mecenasi/lokalnyrolnik.$ext"))) {
+                $mecenasLogo = asset("img/mecenasi/lokalnyrolnik.$ext");
+                break;
+            }
+        }
+
+        return Inertia::render('Storefront/Home', [
+            'categories' => $categories,
+            // Modal „Dziękujemy" po powrocie z płatności (redirect ...?dzieki=1).
+            'showThanks' => (bool) request('dzieki'),
+            'mecenasLogo' => $mecenasLogo,
+            'mecenasUrl' => route('mecenasi.lokalnyrolnik'),
+            'mainUrl' => route('main'),
+        ]);
     }
 
     /**
@@ -55,14 +72,66 @@ class StorefrontController extends Controller
             ? Product::where('active', true)->orderBy('id')->get()
             : collect();
 
-        $category = [
-            'label_text' => $model->label_text,
-            'intro' => $model->intro,
-            'slug' => $model->slug,
-            'source' => $model->source,
+        // 16 województw RP + mapa wybranych miast → województwo (fallback, gdy
+        // products.voivodeship puste). Filtr wyszukiwarki działa po stronie React.
+        $voivodeships = [
+            'dolnośląskie', 'kujawsko-pomorskie', 'lubelskie', 'lubuskie',
+            'łódzkie', 'małopolskie', 'mazowieckie', 'opolskie',
+            'podkarpackie', 'podlaskie', 'pomorskie', 'śląskie',
+            'świętokrzyskie', 'warmińsko-mazurskie', 'wielkopolskie', 'zachodniopomorskie',
         ];
+        $cityToVoiv = [
+            'kraków' => 'małopolskie', 'tarnów' => 'małopolskie', 'nowy sącz' => 'małopolskie',
+            'warszawa' => 'mazowieckie', 'radom' => 'mazowieckie', 'płock' => 'mazowieckie',
+            'wrocław' => 'dolnośląskie', 'świdnica' => 'dolnośląskie', 'wałbrzych' => 'dolnośląskie', 'legnica' => 'dolnośląskie', 'jelenia góra' => 'dolnośląskie',
+            'poznań' => 'wielkopolskie', 'kalisz' => 'wielkopolskie', 'konin' => 'wielkopolskie', 'licheń stary' => 'wielkopolskie', 'gniezno' => 'wielkopolskie',
+            'gdańsk' => 'pomorskie', 'gdynia' => 'pomorskie', 'sopot' => 'pomorskie', 'słupsk' => 'pomorskie',
+            'katowice' => 'śląskie', 'częstochowa' => 'śląskie', 'gliwice' => 'śląskie', 'sosnowiec' => 'śląskie', 'bielsko-biała' => 'śląskie',
+            'łódź' => 'łódzkie', 'piotrków trybunalski' => 'łódzkie',
+            'lublin' => 'lubelskie', 'zamość' => 'lubelskie', 'chełm' => 'lubelskie',
+            'szczecin' => 'zachodniopomorskie', 'koszalin' => 'zachodniopomorskie',
+            'bydgoszcz' => 'kujawsko-pomorskie', 'toruń' => 'kujawsko-pomorskie', 'włocławek' => 'kujawsko-pomorskie',
+            'białystok' => 'podlaskie', 'łomża' => 'podlaskie', 'suwałki' => 'podlaskie',
+            'rzeszów' => 'podkarpackie', 'przemyśl' => 'podkarpackie', 'krosno' => 'podkarpackie',
+            'kielce' => 'świętokrzyskie', 'ostrowiec świętokrzyski' => 'świętokrzyskie',
+            'olsztyn' => 'warmińsko-mazurskie', 'elbląg' => 'warmińsko-mazurskie',
+            'opole' => 'opolskie', 'nysa' => 'opolskie',
+            'gorzów wielkopolski' => 'lubuskie', 'zielona góra' => 'lubuskie',
+        ];
+        $voivFor = function (Product $p) use ($cityToVoiv) {
+            $v = trim((string) ($p->voivodeship ?? ''));
+            if ($v !== '') {
+                return mb_strtolower($v, 'UTF-8');
+            }
 
-        return view('shop.category', compact('category', 'products'));
+            return $cityToVoiv[mb_strtolower(trim((string) ($p->city ?? '')), 'UTF-8')] ?? '';
+        };
+
+        $items = $products->map(fn (Product $p) => [
+            'slug' => $p->slug,
+            'name' => $p->name,
+            'city' => $p->city,
+            'voiv' => $voivFor($p),
+            'purpose' => $p->purpose,
+            'price' => $p->pricePln(),
+            'image' => $p->main_image ? asset('storage/' . $p->main_image) : null,
+            'url' => route('product.show', $p->slug),
+        ])->values();
+
+        return Inertia::render('Storefront/Category', [
+            'category' => [
+                'label_text' => $model->label_text,
+                'intro' => $model->intro,
+                'slug' => $model->slug,
+                'source' => $model->source,
+            ],
+            'products' => $items,
+            'cities' => $products->pluck('city')->filter()->map(fn ($c) => trim((string) $c))->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values(),
+            'voivodeships' => $voivodeships,
+            'mainUrl' => route('main'),
+            'cultUrl' => route('category', 'miejsca-kultu'),
+            'pageTitle' => $model->label_text . ' — SupportME',
+        ]);
     }
 
     /**
@@ -90,7 +159,9 @@ class StorefrontController extends Controller
             return redirect()->route('home', ['produkt' => $item->slug], 302);
         }
 
-        return response()->view('shop.tag-not-found', [], 404);
+        return Inertia::render('Storefront/TagNotFound', [
+            'categoryUrl' => route('category', 'miejsca-kultu'),
+        ])->toResponse(request())->setStatusCode(404);
     }
 
     /**
@@ -102,7 +173,29 @@ class StorefrontController extends Controller
 
         Event::create(['product_id' => $product->id, 'type' => 'page_view']);
 
-        return view('shop.product', compact('product'));
+        // Sugerowane kwoty (zł); domyślna = cena bazowa parafii, fallback 20 zł.
+        $presets = [10, 20, 50, 100, 200];
+        $default = (int) round($product->price / 100);
+        if (! in_array($default, $presets, true)) {
+            $default = 20;
+        }
+
+        return Inertia::render('Storefront/Product', [
+            'product' => [
+                'name' => $product->name,
+                'city' => $product->city,
+                'purpose' => $product->purpose,
+                'image' => $product->main_image ? asset('storage/' . $product->main_image) : null,
+                'description_html' => $product->description_html,
+            ],
+            'presets' => $presets,
+            'default' => $default,
+            'buyUrl' => route('product.buy', $product->slug),
+            'categoryUrl' => route('category', 'miejsca-kultu'),
+            'css' => asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10),
+            'pageTitle' => 'Wesprzyj: ' . $product->name . ' — ' . config('shop.name'),
+            'pageDescription' => 'Złóż cyfrową tacę na rzecz parafii ' . $product->name . '. Szybka wpłata BLIK, bez gotówki.',
+        ]);
     }
 
     /**

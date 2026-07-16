@@ -7,6 +7,7 @@ use App\Modules\Gateway\Payments\PaymentProviderInterface;
 use App\Modules\Gateway\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 class PaymentController extends Controller
 {
@@ -44,12 +45,19 @@ class PaymentController extends Controller
                 }
             }
 
-            return view('payment.app2app', [
-                'transaction' => $transaction,
+            return Inertia::render('Gateway/Payment/App2App', [
+                'pageTitle' => 'Płatność — ' . $transaction->product_name,
+                'transaction' => $this->present($transaction),
                 'banks' => $banks,
                 // klient wrócił na stronę, mając już zamówienie u operatora —
                 // pozwól dokończyć w aplikacji banku
                 'continueUrl' => $transaction->status === 'pending' ? $transaction->provider_redirect_url : null,
+                'urls' => [
+                    'blik' => route('pay.blik', $transaction->id),
+                    'bank' => route('pay.bank', $transaction->id),
+                    'status' => route('pay.status', $transaction->id),
+                    'online' => route('pay.online', $transaction->id),
+                ],
             ]);
         }
 
@@ -62,7 +70,7 @@ class PaymentController extends Controller
                     'error' => $e->getMessage(),
                 ]);
 
-                return response()->view('payment.error', ['transaction' => $transaction], 502);
+                return $this->errorPage($request, $transaction);
             }
 
             $transaction->update([
@@ -77,8 +85,8 @@ class PaymentController extends Controller
         $redirectUrl = $this->provider->getRedirectUrl($transaction);
 
         if ($transaction->mode === 'app2app') {
-            return view('payment.transition', [
-                'transaction' => $transaction,
+            return Inertia::render('Gateway/Payment/Transition', [
+                'transaction' => $this->present($transaction),
                 'redirectUrl' => $redirectUrl,
             ]);
         }
@@ -210,7 +218,7 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            return response()->view('payment.error', ['transaction' => $transaction], 502);
+            return $this->errorPage($request, $transaction);
         }
 
         if ($transaction->status === 'created') {
@@ -224,6 +232,25 @@ class PaymentController extends Controller
         ]);
 
         return redirect()->away($dto->redirectUrl);
+    }
+
+    /** Serializacja transakcji dla ekranów płatności (React). */
+    private function present(Transaction $transaction): array
+    {
+        return [
+            'id' => $transaction->id,
+            'productName' => $transaction->product_name,
+            'amountPln' => $transaction->amountPln(),
+            'returnUrl' => $transaction->return_url,
+        ];
+    }
+
+    /** Ekran błędu płatności (Inertia) ze statusem 502 — jak dawny response()->view(...,502). */
+    private function errorPage(Request $request, Transaction $transaction)
+    {
+        return Inertia::render('Gateway/Payment/Error', [
+            'transaction' => $this->present($transaction),
+        ])->toResponse($request)->setStatusCode(502);
     }
 
     /**

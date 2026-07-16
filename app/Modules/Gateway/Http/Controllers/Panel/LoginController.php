@@ -5,6 +5,7 @@ namespace App\Modules\Gateway\Http\Controllers\Panel;
 use App\Modules\Gateway\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 
 class LoginController extends Controller
 {
@@ -14,7 +15,9 @@ class LoginController extends Controller
             return redirect()->route('panel.dashboard');
         }
 
-        return view('panel.login');
+        return Inertia::render('Gateway/Login', [
+            'postUrl' => route('panel.login.post'),
+        ]);
     }
 
     public function login(Request $request)

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
@@ -20,14 +21,20 @@ class CategoryController extends Controller
         $all = Category::ordered()->get();
         $tree = $this->buildTree($all);
 
-        return view('panel.categories.index', compact('tree'));
+        return Inertia::render('Panel/Categories/Index', [
+            'items' => collect($tree)->map(fn ($row) => $this->present($row['cat']) + ['depth' => $row['depth']])->values(),
+            'createUrl' => route('panel.categories.create'),
+        ]);
     }
 
     public function create()
     {
-        return view('panel.categories.form', [
-            'category' => new Category(),
-            'parents' => $this->parentOptions(),
+        return Inertia::render('Panel/Categories/Form', [
+            'item' => null,
+            'parentOptions' => $this->parentOptionsList(),
+            'sourceOptions' => $this->sourceOptions(),
+            'storeUrl' => route('panel.categories.store'),
+            'indexUrl' => route('panel.categories.index'),
         ]);
     }
 
@@ -44,10 +51,58 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        return view('panel.categories.form', [
-            'category' => $category,
-            'parents' => $this->parentOptions($category),
+        return Inertia::render('Panel/Categories/Form', [
+            'item' => $this->present($category),
+            'parentOptions' => $this->parentOptionsList($category),
+            'sourceOptions' => $this->sourceOptions(),
+            'storeUrl' => route('panel.categories.store'),
+            'indexUrl' => route('panel.categories.index'),
         ]);
+    }
+
+    /** Serializacja kategorii dla React (Inertia). */
+    private function present(Category $cat): array
+    {
+        return [
+            'id' => $cat->id,
+            'parent_id' => $cat->parent_id,
+            'label' => $cat->label,
+            'label_text' => $cat->label_text,
+            'label_html' => $cat->label_html,
+            'slug' => $cat->slug,
+            'intro' => $cat->intro,
+            'source' => $cat->source,
+            'source_label' => $cat->sourceLabel(),
+            'position' => (int) $cat->position,
+            'active' => (bool) $cat->active,
+            'icon' => $cat->icon ? asset('storage/'.$cat->icon) : null,
+            'edit_url' => route('panel.categories.edit', $cat),
+            'update_url' => route('panel.categories.update', $cat),
+            'destroy_url' => route('panel.categories.destroy', $cat),
+            'reorder_url' => route('panel.categories.reorder', $cat),
+        ];
+    }
+
+    /** Opcje rodzica jako lista {value,label} (z wcięciami). */
+    private function parentOptionsList(?Category $current = null): array
+    {
+        $out = [];
+        foreach ($this->parentOptions($current) as $id => $label) {
+            $out[] = ['value' => $id, 'label' => $label];
+        }
+
+        return $out;
+    }
+
+    /** Opcje źródła jako lista {value,label}. */
+    private function sourceOptions(): array
+    {
+        $out = [];
+        foreach (Category::SOURCES as $key => $label) {
+            $out[] = ['value' => $key, 'label' => $label];
+        }
+
+        return $out;
     }
 
     public function update(Request $request, Category $category)

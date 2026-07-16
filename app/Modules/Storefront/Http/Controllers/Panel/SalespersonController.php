@@ -5,6 +5,7 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\Salesperson;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class SalespersonController extends Controller
 {
@@ -12,12 +13,21 @@ class SalespersonController extends Controller
     {
         $salespeople = Salesperson::withCount('parishes')->orderBy('name')->get();
 
-        return view('panel.salespeople.index', compact('salespeople'));
+        return Inertia::render('Panel/Salespeople/Index', [
+            'items' => $salespeople->map(fn (Salesperson $sp) => $this->present($sp))->values(),
+            'createUrl' => route('panel.salespeople.create'),
+        ]);
     }
 
     public function create()
     {
-        return view('panel.salespeople.form', ['salesperson' => new Salesperson()]);
+        return Inertia::render('Panel/Salespeople/Form', [
+            'item' => null,
+            'parishes' => [],
+            'voivodeshipOptions' => Salesperson::VOIVODESHIPS,
+            'storeUrl' => route('panel.salespeople.store'),
+            'indexUrl' => route('panel.salespeople.index'),
+        ]);
     }
 
     public function store(Request $request)
@@ -31,7 +41,36 @@ class SalespersonController extends Controller
     {
         $salesperson->load('parishes');
 
-        return view('panel.salespeople.form', compact('salesperson'));
+        return Inertia::render('Panel/Salespeople/Form', [
+            'item' => $this->present($salesperson),
+            'parishes' => $salesperson->parishes->map(fn ($p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'city' => $p->city,
+                'edit_url' => route('panel.products.edit', $p),
+            ])->values(),
+            'voivodeshipOptions' => Salesperson::VOIVODESHIPS,
+            'storeUrl' => route('panel.salespeople.store'),
+            'indexUrl' => route('panel.salespeople.index'),
+        ]);
+    }
+
+    /** Serializacja handlowca dla React (Inertia). */
+    private function present(Salesperson $sp): array
+    {
+        return [
+            'id' => $sp->id,
+            'name' => $sp->name,
+            'email' => $sp->email,
+            'phone' => $sp->phone,
+            'voivodeships' => $sp->voivodeships ?? [],
+            'active' => (bool) $sp->active,
+            'parishes_count' => (int) ($sp->parishes_count ?? 0),
+            'parishes_url' => route('panel.products.index', ['q' => $sp->name]),
+            'edit_url' => route('panel.salespeople.edit', $sp),
+            'update_url' => route('panel.salespeople.update', $sp),
+            'destroy_url' => route('panel.salespeople.destroy', $sp),
+        ];
     }
 
     public function update(Request $request, Salesperson $salesperson)

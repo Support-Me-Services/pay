@@ -4,6 +4,7 @@ namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Models\User;
 use App\Modules\Storefront\Models\ShopItem;
+use Inertia\Inertia;
 
 /**
  * Sklep per‑konto pod /user/{handle} — model SKLEPOWY (siatka, stała cena,
@@ -16,10 +17,21 @@ class UserShopController extends Controller
         $owner = User::where('handle', $handle)->firstOrFail();
         $items = ShopItem::forUser($owner->id)->where('active', true)->ordered()->get();
 
-        return view('shop.user-shop', [
-            'owner' => $owner,
+        return Inertia::render('Storefront/UserShop', [
+            'items' => $items->map(fn (ShopItem $i) => [
+                'id' => $i->id,
+                'name' => $i->name,
+                'description' => $i->description,
+                'image' => asset($i->image),
+                'is_svg' => $i->isSvg(),
+                'price' => $i->pricePln(),
+                'add_url' => route('user.cart.add', [$handle, $i->id]),
+            ])->values(),
+            'ownerName' => $owner->name,
             'shopHandle' => $handle,
-            'items' => $items,
+            'cartCount' => array_sum((array) session("cart.$handle", [])),
+            'pageTitle' => 'Sklep — ' . $owner->name,
+            'pageDescription' => 'Sklep ' . $owner->name . ' — gadżety i tagi NFC. Dodaj do koszyka i zapłać online.',
         ]);
     }
 }

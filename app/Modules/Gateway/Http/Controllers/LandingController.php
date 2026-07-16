@@ -4,12 +4,15 @@ namespace App\Modules\Gateway\Http\Controllers;
 
 use App\Modules\Gateway\Models\Lead;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class LandingController extends Controller
 {
     public function index()
     {
-        return view('landing');
+        return Inertia::render('Gateway/Landing', [
+            'leadOk' => (bool) session('lead_ok', false),
+        ]);
     }
 
     public function storeLead(Request $request)
