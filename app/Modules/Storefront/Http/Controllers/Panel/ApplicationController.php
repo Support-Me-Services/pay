@@ -75,7 +75,31 @@ class ApplicationController extends Controller
             'show_url' => route('panel.applications.show', $a),
             'status_url' => route('panel.applications.status', $a),
             'destroy_url' => route('panel.applications.destroy', $a),
+            // Zgoda na przyszłe rekrutacje (24 mies. od dnia udzielenia).
+            'future_consent' => (bool) $a->future_recruitment_consent,
+            'future_consent_at' => $a->future_recruitment_consent_at?->format('Y-m-d'),
+            'future_consent_until' => $a->futureConsentExpiresAt()?->format('Y-m-d'),
+            'future_consent_active' => $a->futureConsentActive(),
         ];
+    }
+
+    /**
+     * Baza kandydatów z AKTYWNĄ zgodą na przyszłe procesy rekrutacyjne.
+     * Pokazujemy tylko zgody wciąż ważne (w okresie 24 miesięcy), najświeższe
+     * u góry — wraz z danymi kontaktowymi i CV (jak w skrzynce „Aplikacje").
+     */
+    public function consents()
+    {
+        $items = JobApplication::with('position')
+            ->activeFutureConsent()
+            ->orderByDesc('future_recruitment_consent_at')
+            ->get();
+
+        return Inertia::render('Panel/Applications/Consents', [
+            'items' => $items->map(fn (JobApplication $a) => $this->present($a))->values(),
+            'consentMonths' => JobApplication::FUTURE_CONSENT_MONTHS,
+            'indexUrl' => route('panel.applications.index'),
+        ]);
     }
 
     /**

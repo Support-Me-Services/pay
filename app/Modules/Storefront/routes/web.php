@@ -265,6 +265,9 @@ Route::prefix('panel')->name('panel.')->group(function () {
 
         // Skrzynka zgłoszeń rekrutacyjnych (aplikacje na oferty pracy)
         Route::get('/applications', [Panel\ApplicationController::class, 'index'])->name('applications.index');
+        // Baza kandydatów z AKTYWNĄ zgodą na przyszłe rekrutacje.
+        // MUSI być przed /applications/{application}, inaczej „consents" trafi jako {application}.
+        Route::get('/applications/consents', [Panel\ApplicationController::class, 'consents'])->name('applications.consents');
         Route::get('/applications/{application}', [Panel\ApplicationController::class, 'show'])->name('applications.show');
         Route::get('/applications/{application}/cv', [Panel\ApplicationController::class, 'cv'])->name('applications.cv');
         Route::post('/applications/{application}/status', [Panel\ApplicationController::class, 'updateStatus'])->name('applications.status');

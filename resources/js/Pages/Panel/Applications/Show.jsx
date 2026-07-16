@@ -23,6 +23,16 @@ export default function Show({ application: a, statusOptions, indexUrl }) {
                         <tr><th>Telefon</th><td>{a.phone || '—'}</td></tr>
                         <tr><th>Oferta</th><td>{a.position_title || 'aplikacja spontaniczna'}</td></tr>
                         <tr><th>CV</th><td>{a.cv_url ? <a href={a.cv_url}>{a.cv_name || 'Pobierz CV'}</a> : <span className="text-muted">brak załączonego CV</span>}</td></tr>
+                        <tr>
+                            <th>Przyszłe rekrutacje</th>
+                            <td>
+                                {a.future_consent ? (
+                                    a.future_consent_active
+                                        ? <>Zgoda aktywna <span className="text-muted">(udzielona {a.future_consent_at}, ważna do {a.future_consent_until})</span></>
+                                        : <span className="text-muted">Zgoda wygasła (udzielona {a.future_consent_at}, ważna do {a.future_consent_until})</span>
+                                ) : <span className="text-muted">brak zgody</span>}
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
 

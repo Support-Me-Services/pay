@@ -141,6 +141,8 @@ class CareersController extends Controller
                 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             ],
             'rodo' => ['accepted'],
+            // Nieobowiązkowa zgoda na przyszłe rekrutacje (checkbox — 0/1).
+            'future_consent' => ['nullable', 'boolean'],
         ], [
             'cv.required' => 'Załącz plik CV (PDF, DOC lub DOCX).',
             'cv.mimes' => 'Dozwolone formaty CV to PDF, DOC i DOCX.',
@@ -160,6 +162,10 @@ class CareersController extends Controller
         $cvPath = Storage::disk('local')->putFile('cv', $file);
         $cvOriginalName = $file->getClientOriginalName();
 
+        // Nieobowiązkowa zgoda na przyszłe rekrutacje — zapisujemy fakt zgody
+        // wraz z datą jej udzielenia (potrzebna do liczenia okresu 24 mies.).
+        $futureConsent = $request->boolean('future_consent');
+
         JobApplication::create([
             'job_position_id' => $position && $position->exists ? $position->id : null,
             'name' => $data['name'],
@@ -168,6 +174,8 @@ class CareersController extends Controller
             'message' => $data['message'] ?? null,
             'cv_path' => $cvPath,
             'cv_original_name' => $cvOriginalName,
+            'future_recruitment_consent' => $futureConsent,
+            'future_recruitment_consent_at' => $futureConsent ? now() : null,
         ]);
 
         // Wyślij zgłoszenie z CV w załączniku na skonfigurowany adres rekrutacji.

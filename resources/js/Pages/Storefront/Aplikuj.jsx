@@ -12,7 +12,7 @@ const CSS = `
 /** Formularz aplikacji rekrutacyjnej (spontanicznej lub na ofertę). */
 export default function Aplikuj({ position, storeUrl, careersUrl }) {
     const flash = usePage().props.flash || {}
-    const form = useForm({ name: '', email: '', phone: '', message: '', cv: null, rodo: false, website: '' })
+    const form = useForm({ name: '', email: '', phone: '', message: '', cv: null, rodo: false, future_consent: false, website: '' })
     const err = form.errors
 
     const submit = (e) => {
@@ -93,9 +93,15 @@ export default function Aplikuj({ position, storeUrl, careersUrl }) {
 
                                         <div className="sp-consent">
                                             <input type="checkbox" id="rodo" checked={form.data.rodo} onChange={(e) => form.setData('rodo', e.target.checked)} required />
-                                            <label htmlFor="rodo">Wyrażam zgodę na przetwarzanie moich danych osobowych w celu prowadzenia rekrutacji (RODO). *</label>
+                                            <label htmlFor="rodo">Zapoznałem/am się z <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityką Prywatności</a> i wyrażam zgodę na przetwarzanie moich danych osobowych przez Support Me Services Marcin Lula w celu przeprowadzenia procesu rekrutacyjnego. *</label>
                                         </div>
                                         {err.rodo && <div className="sp-form-error" style={{ marginTop: -6 }}>{err.rodo}</div>}
+
+                                        <div className="sp-consent">
+                                            <input type="checkbox" id="future_consent" checked={form.data.future_consent} onChange={(e) => form.setData('future_consent', e.target.checked)} />
+                                            <label htmlFor="future_consent">Wyrażam zgodę na przetwarzanie moich danych osobowych na potrzeby przyszłych procesów rekrutacyjnych prowadzonych przez Support Me Services Marcin Lula przez okres 24 miesięcy.</label>
+                                        </div>
+                                        {err.future_consent && <div className="sp-form-error" style={{ marginTop: -6 }}>{err.future_consent}</div>}
 
                                         <button type="submit" className="sp-btn sp-btn--block" disabled={form.processing}>Wyślij zgłoszenie</button>
                                     </form>
