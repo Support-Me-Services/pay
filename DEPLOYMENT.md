@@ -100,7 +100,40 @@ PHP-FPM przekazuje nagłówek Host, więc `request()->getHost()` zwraca właści
 domenę i `ResolveTenant` dobiera moduł/motyw/bazę. Jeden docroot, jeden deploy,
 jeden `.env`.
 
-## Deploy w skrócie
+## Frontend: React/Inertia + SSR (WAŻNE od migracji z Blade)
+
+`main` renderuje strony przez **Inertia/React** (Vite), nie Blade. To zmienia deploy:
+
+- Assety klienta (`public/build`) są w `.gitignore` → **NIE przychodzą z `git pull`**.
+  Trzeba je **zbudować na serwerze**: `npm ci` (gdy zmienił się `package-lock.json`)
+  + `npm run build` (buduje klienta **i** paczkę SSR). Bez tego widać stary bundle.
+- **SSR** to osobny proces Node: `node bootstrap/ssr/ssr.js` na `127.0.0.1:13714`
+  (`config/inertia.php` → `ssr.enabled = true`). Po każdym buildzie proces SSR
+  **MUSI być zrestartowany**, inaczej serwuje stary bundle mimo świeżego `public/build`.
+- Wymóg: na serwerze musi być zainstalowany **Node/npm**.
+
+## Deploy w skrócie — skrypt `bin/deploy.sh`
+
+Rutynowy deploy zamknięty jest w skrypcie (pull + composer/npm gdy trzeba + build +
+restart SSR + czyszczenie cache). Migracje są **jednorazowe** (tylko przy zmianie
+schematu) i uruchamiane osobną flagą `--migrate`:
+
+```bash
+cd /var/www/support-me
+# Ustaw komendę restartu SSR pod swój supervisor (systemd/supervisor/pm2) — RAZ, np.:
+SSR_RESTART_CMD='systemctl restart pay-ssr' sudo -E bash bin/deploy.sh
+
+# Deploy zawierający NOWE migracje (po backupie bazy — patrz sekcja wyżej):
+SSR_RESTART_CMD='systemctl restart pay-ssr' sudo -E bash bin/deploy.sh --migrate
+```
+
+Skrypt sam wykrywa, czy pull przyniósł nowe migracje/zależności i:
+- ostrzega, gdy są nowe migracje, a nie podano `--migrate` (nie rusza schematu),
+- odpala `composer install` tylko gdy zmienił się `composer.lock`,
+- odpala `npm ci` tylko gdy zmienił się `package-lock.json`, a `npm run build` zawsze,
+- trzyma aplikację w trybie serwisowym na czas deployu i przywraca ją także po błędzie.
+
+Ręczny odpowiednik (gdyby bez skryptu):
 
 ```bash
 cd /var/www/support-me            # prod to checkout git (repo jest własnością root → sudo)
@@ -108,7 +141,9 @@ sudo git pull --ff-only origin main
 # UWAGA: jeśli pull przyniósł nowe pliki migracji → NIE wystarczy ten skrót;
 #        wykonaj procedurę z sekcji „Migracje / zmiany schematu" (backup + scoped migrate).
 composer install --no-dev --optimize-autoloader   # tylko gdy zmieniły się zależności
+npm ci && npm run build                            # frontend (klient + SSR) — WYMAGANE
 sudo -u www-data php8.2 artisan config:clear && sudo -u www-data php8.2 artisan view:clear && sudo -u www-data php8.2 artisan route:clear
+systemctl restart pay-ssr                          # restart SSR (nazwa usługi wg serwera)
 # config:cache / route:cache są bezpieczne — ResolveTenant nadpisuje config()
 # w runtime, a TENANT przy buforowaniu trafia do domyślnego tenanta CLI.
 # (opcjonalnie) restart php-fpm / kolejek
