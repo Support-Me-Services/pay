@@ -7,7 +7,7 @@
     @vite('resources/js/app.jsx')
     @inertiaHead
 </head>
-<body>
+<body @class(['lp' => config('platform.role') === 'storefront'])>
     @inertia
 </body>
 </html>
