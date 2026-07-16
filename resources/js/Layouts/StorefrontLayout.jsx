@@ -27,6 +27,9 @@ export default function StorefrontLayout({ children, ...overrides }) {
 
     const cartUrl = shopHandle ? `/people/${shopHandle}/koszyk` : null
     const shopUrl = shopHandle ? `/people/${shopHandle}` : null
+    // QR sklepu koduje ABSOLUTNY URL sklepu (jak w Blade: route('user.shop')),
+    // nie bieżącą podstronę — inaczej kod QR np. w koszyku prowadzi w złe miejsce.
+    const shopQrData = shopUrl && seo.url ? new URL(shopUrl, seo.url).href : (seo.url || '')
     const shopName = ownerName || shopHandle
 
     return (
@@ -106,7 +109,7 @@ export default function StorefrontLayout({ children, ...overrides }) {
                     {shopHandle ? (
                         <div className="lp-footer__qr">
                             <a className="lp-footer__qr-card" href={shopUrl} aria-label={`Przejdź do sklepu ${shopName}`}>
-                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=216x216&margin=0&data=${encodeURIComponent(seo.url || '')}`} alt={`Kod QR do sklepu ${shopName}`} width="108" height="108" />
+                                <img src={`https://api.qrserver.com/v1/create-qr-code/?size=216x216&margin=0&data=${encodeURIComponent(shopQrData)}`} alt={`Kod QR do sklepu ${shopName}`} width="108" height="108" />
                             </a>
                             <div className="lp-footer__qr-caption"><strong>Zeskanuj — sklep</strong>{shopName}</div>
                         </div>
