@@ -174,7 +174,7 @@ export default function Form({ product, images, notes: initialNotes, salespeople
                             </div>
                         )}
                         <input id="gallery" type="file" accept="image/*" multiple onChange={(e) => form.setData('gallery', Array.from(e.target.files))} />
-                        {err['gallery.0'] && <div className="form-error">{err['gallery.0']}</div>}
+                        {Object.entries(err).filter(([k]) => k === 'gallery' || k.startsWith('gallery.')).map(([k, v]) => <div key={k} className="form-error">{v}</div>)}
                     </div>
 
                     <div className="d-flex gap-1">

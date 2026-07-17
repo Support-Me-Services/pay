@@ -7,7 +7,7 @@ use App\Modules\Storefront\Models\ShopItem;
 use Inertia\Inertia;
 
 /**
- * Sklep per‑konto pod /user/{handle} — model SKLEPOWY (siatka, stała cena,
+ * Sklep per‑konto pod /people/{handle} — model SKLEPOWY (siatka, stała cena,
  * koszyk). Produkty należą do właściciela wskazanego przez handle.
  */
 class UserShopController extends Controller

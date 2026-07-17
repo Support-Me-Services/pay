@@ -11,7 +11,7 @@ const DEFAULT_DESC = 'Łączymy ludzi, wartości i nowoczesne płatności, aby w
  * Reużywa landing.css; strona może dołożyć własny arkusz przez `css`.
  */
 export default function StorefrontLayout({ children, ...overrides }) {
-    const page = usePage().props
+    const { props: page, url: currentUrl } = usePage()
     const seo = page.seo || {}
     const r = page.routes || {}
     // Meta strony i CSS przychodzą jako propsy strony (z kontrolera/trasy); można
@@ -31,6 +31,10 @@ export default function StorefrontLayout({ children, ...overrides }) {
     // nie bieżącą podstronę — inaczej kod QR np. w koszyku prowadzi w złe miejsce.
     const shopQrData = shopUrl && seo.url ? new URL(shopUrl, seo.url).href : (seo.url || '')
     const shopName = ownerName || shopHandle
+    // aria-current na aktywnym linku nav (odpowiednik request()->routeIs() z Blade).
+    const curPath = (currentUrl || '').split('?')[0]
+    const navPath = (href) => { try { return new URL(href, 'http://x').pathname } catch { return href || '' } }
+    const isNavActive = (href) => !!href && navPath(href) === curPath
 
     return (
         <div className="lp-page">
@@ -65,10 +69,10 @@ export default function StorefrontLayout({ children, ...overrides }) {
                     <img className="lp-logo" src="/img/landing/logo.svg" alt="SupportME" />
                 </a>
                 <nav className="lp-nav">
-                    <a href={r.main}>Strona główna</a>
-                    <a href={r.beneficiaries}>Wspieramy</a>
-                    <a href={r.careers}>Rekrutacja</a>
-                    <a href={r.investors}>Inwestorzy i akcjonariusze</a>
+                    <a href={r.main} aria-current={isNavActive(r.main) ? 'page' : undefined}>Strona główna</a>
+                    <a href={r.beneficiaries} aria-current={isNavActive(r.beneficiaries) ? 'page' : undefined}>Wspieramy</a>
+                    <a href={r.careers} aria-current={isNavActive(r.careers) ? 'page' : undefined}>Rekrutacja</a>
+                    <a href={r.investors} aria-current={isNavActive(r.investors) ? 'page' : undefined}>Inwestorzy i akcjonariusze</a>
                     {shopHandle ? (
                         <a className="lp-nav__support" href={cartUrl}>Koszyk
                             {cartCount > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 20, height: 20, marginLeft: 7, padding: '0 5px', borderRadius: 10, background: '#fff', color: '#2563eb', fontSize: 12, fontWeight: 800, lineHeight: 1, verticalAlign: 'middle' }}>{cartCount}</span>}

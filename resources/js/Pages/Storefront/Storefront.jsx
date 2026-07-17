@@ -123,7 +123,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
                 <div className="paywin__support">
                     <p className="paywin__support-label">Dochód przeznaczamy na wsparcie:</p>
-                    <div className="fnd">
+                    <div className="fnd" onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
                         <button className="fnd__nav fnd__nav--prev" type="button" aria-label="Poprzednia fundacja" onClick={() => setFIdx((i) => Math.max(0, i - 1))}>&lsaquo;</button>
                         <div className="fnd__viewport" ref={fndVpRef}>
                             <div className="fnd__track" style={{ transform: `translateX(${fndShift}px)` }}>
