@@ -93,15 +93,19 @@ export default function Aplikuj({ position, storeUrl, careersUrl }) {
 
                                         <div className="sp-consent">
                                             <input type="checkbox" id="rodo" checked={form.data.rodo} onChange={(e) => form.setData('rodo', e.target.checked)} required />
-                                            <label htmlFor="rodo">Zapoznałem/am się z <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityką Prywatności</a> i wyrażam zgodę na przetwarzanie moich danych osobowych przez Support Me Services Marcin Lula w celu przeprowadzenia procesu rekrutacyjnego. *</label>
+                                            <label htmlFor="rodo">Zapoznałem/am się z <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityką Prywatności</a> i wyrażam zgodę na przetwarzanie moich danych osobowych przez Support Me Services Marcin Lula w celu przeprowadzenia obecnego procesu rekrutacyjnego, w tym na udostępnienie moich danych potencjalnemu pracodawcy (klientowi Support Me Services Marcin Lula) będącemu odbiorcą tego procesu. *</label>
                                         </div>
                                         {err.rodo && <div className="sp-form-error" style={{ marginTop: -6 }}>{err.rodo}</div>}
 
                                         <div className="sp-consent">
                                             <input type="checkbox" id="future_consent" checked={form.data.future_consent} onChange={(e) => form.setData('future_consent', e.target.checked)} />
-                                            <label htmlFor="future_consent">Wyrażam zgodę na przetwarzanie moich danych osobowych na potrzeby przyszłych procesów rekrutacyjnych prowadzonych przez Support Me Services Marcin Lula przez okres 24 miesięcy.</label>
+                                            <label htmlFor="future_consent">Wyrażam zgodę na przetwarzanie moich danych osobowych przez Support Me Services Marcin Lula na potrzeby przyszłych procesów rekrutacyjnych, w tym na udostępnianie moich danych innym potencjalnym pracodawcom (klientom Support Me Services Marcin Lula) w celu przedstawiania mi nowych ofert zatrudnienia.</label>
                                         </div>
                                         {err.future_consent && <div className="sp-form-error" style={{ marginTop: -6 }}>{err.future_consent}</div>}
+
+                                        <div className="sp-field" style={{ marginTop: 0, marginBottom: 10 }}>
+                                            <div className="sp-hint" style={{ marginTop: 0, lineHeight: 1.35 }}>Administratorem Twoich danych jest Support Me Services Marcin Lula z siedzibą ul. dr Izabeli Wolfram 11, 05-800 Pruszków, NIP: 8741624637. Dane przetwarzamy w celu rekrutacji i realizacji procesów rekrutacyjnych. Odbiorcami Twoich danych mogą być nasi klienci – firmy z sektora IT, których tożsamość ujawnimy Ci przed przekazaniem dokumentów. Dane przechowujemy do momentu zakończenia procesu lub wycofania zgody. Pełną informację o Twoich prawach i sposobie przetwarzania danych znajdziesz w naszej <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityce Prywatności</a>.</div>
+                                        </div>
 
                                         <button type="submit" className="sp-btn sp-btn--block" disabled={form.processing}>Wyślij zgłoszenie</button>
                                     </form>
