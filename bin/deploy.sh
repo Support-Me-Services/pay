@@ -100,10 +100,14 @@ elif [ -n "$NEW_MIGRATIONS" ]; then
   echo "    Po backupie uruchom świadomie: sudo bash bin/deploy.sh --migrate"
 fi
 
-echo "==> Czyszczenie cache (config/view/route)"
+echo "==> Czyszczenie cache (config/view/route) + odświeżenie manifestu pakietów"
 run_www "$PHP" artisan config:clear
 run_www "$PHP" artisan view:clear
 run_www "$PHP" artisan route:clear
+# package:discover regeneruje bootstrap/cache/packages.php — KONIECZNE, jeśli vendor
+# był aktualizowany bez skryptów composera (np. rsync). Bez tego provider Inertii
+# bywa niezarejestrowany → „Target [Inertia\Ssr\Gateway] is not instantiable" (500).
+run_www "$PHP" artisan package:discover
 
 echo "==> Restart SSR"
 if [ -n "$SSR_RESTART_CMD" ]; then
