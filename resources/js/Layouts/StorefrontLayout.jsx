@@ -3,6 +3,8 @@ import { Head, usePage } from '@inertiajs/react'
 
 const DEFAULT_TITLE = 'SupportME — technologia, która pomaga czynić dobro'
 const DEFAULT_DESC = 'Łączymy ludzi, wartości i nowoczesne płatności, aby wspieranie ważnych inicjatyw było prostsze niż kiedykolwiek wcześniej.'
+// Zakładka czasowo ukryta na życzenie — ustaw na true, aby przywrócić link w nav/stopce.
+const SHOW_INVESTORS_LINK = false
 
 /**
  * Layout publicznego storefrontu (marketing) — odwzorowuje church/layouts/landing.blade.php.
@@ -72,7 +74,9 @@ export default function StorefrontLayout({ children, ...overrides }) {
                     <a href={r.main} aria-current={isNavActive(r.main) ? 'page' : undefined}>Strona główna</a>
                     <a href={r.beneficiaries} aria-current={isNavActive(r.beneficiaries) ? 'page' : undefined}>Wspieramy</a>
                     <a href={r.careers} aria-current={isNavActive(r.careers) ? 'page' : undefined}>Rekrutacja</a>
-                    <a href={r.investors} aria-current={isNavActive(r.investors) ? 'page' : undefined}>Inwestorzy i akcjonariusze</a>
+                    {SHOW_INVESTORS_LINK && (
+                        <a href={r.investors} aria-current={isNavActive(r.investors) ? 'page' : undefined}>Inwestorzy i akcjonariusze</a>
+                    )}
                     {shopHandle ? (
                         <a className="lp-nav__support" href={cartUrl}>Koszyk
                             {cartCount > 0 && <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 20, height: 20, marginLeft: 7, padding: '0 5px', borderRadius: 10, background: '#fff', color: '#2563eb', fontSize: 12, fontWeight: 800, lineHeight: 1, verticalAlign: 'middle' }}>{cartCount}</span>}
@@ -94,7 +98,7 @@ export default function StorefrontLayout({ children, ...overrides }) {
                     <img className="lp-footer__logo" src="/img/landing/logo-footer.svg" alt="SupportME" />
                     <div className="lp-footer__links">
                         <a href={r.careers}>Rekrutacja</a>
-                        <a href={r.investors}>Inwestorzy i akcjonariusze</a>
+                        {SHOW_INVESTORS_LINK && <a href={r.investors}>Inwestorzy i akcjonariusze</a>}
                         <a href={r.regulamin}>Regulamin</a>
                         <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityka prywatności</a>
                         <a href={r.docs}>Dokumentacja</a>
