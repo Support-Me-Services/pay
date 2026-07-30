@@ -109,7 +109,6 @@ export default function StorefrontLayout({ children, ...overrides }) {
                     </a>
                     <div className="lp-footer__legal">
                         FUNDACJA SUPPORT ME HAVEN &amp; HEAVEN<br />
-                        <br />
                         NIP: 5342715041<br />
                         REGON: 545334957<br />
                         <a href="mailto:marcin.lula@please-support-me.com" aria-label="E-mail"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ width: '1em', height: '1em', verticalAlign: '-.12em', marginRight: '.45em' }}><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" /></svg>marcin.lula@please-support-me.com</a><br />
