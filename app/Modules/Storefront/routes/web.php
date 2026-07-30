@@ -164,6 +164,10 @@ Route::prefix('panel')->name('panel.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/', [Panel\DashboardController::class, 'index'])->name('dashboard');
 
+        // Zmiana hasła zalogowanego konta.
+        Route::get('/password', [Panel\PasswordController::class, 'edit'])->name('password.edit');
+        Route::put('/password', [Panel\PasswordController::class, 'update'])->name('password.update');
+
         Route::get('/products', [Panel\ProductController::class, 'index'])->name('products.index');
         Route::get('/products/create', [Panel\ProductController::class, 'create'])->name('products.create');
         Route::post('/products', [Panel\ProductController::class, 'store'])->name('products.store');

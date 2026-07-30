@@ -108,6 +108,7 @@ class HandleInertiaRequests extends Middleware
                 ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*') && ! $request->routeIs('panel.applications.consents'), 'badge' => \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count() ?: null],
                 ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')],
                 ['label' => 'Wiadomości', 'href' => route('panel.messages.index'), 'active' => $request->routeIs('panel.messages.*'), 'badge' => \App\Modules\Storefront\Models\ContactMessage::where('is_read', false)->count() ?: null],
+                ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')],
             ],
             'shopUrl' => $request->user()?->handle ? route('user.shop', $request->user()->handle) : null,
             'logoutUrl' => route('panel.logout'),
@@ -125,6 +126,7 @@ class HandleInertiaRequests extends Middleware
                 ['label' => 'Statystyki', 'href' => route('panel.stats'), 'active' => $request->routeIs('panel.stats')],
                 ['label' => 'Leady', 'href' => route('panel.leads'), 'active' => $request->routeIs('panel.leads')],
                 ['label' => 'AntiTheft', 'href' => route('panel.antitheft'), 'active' => $request->routeIs('panel.antitheft')],
+                ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')],
             ],
             'logoutUrl' => route('panel.logout'),
         ];
