@@ -66,8 +66,8 @@ Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('b
 Route::get('/kategoria/{slug}', [StorefrontController::class, 'category'])->name('category');
 Route::get('/regulamin', fn () => Inertia::render('Storefront/Regulamin', [
     'css' => $css('subpages.css'),
-    'pageTitle' => 'Regulamin sklepu — ' . config('shop.name'),
-    'pageDescription' => 'Regulamin sklepu internetowego SUPPORT ME — zasady sprzedazy, platnosci, dostawy, odstapienia od umowy, reklamacji i ochrony danych.',
+    'pageTitle' => 'Regulamin — ' . config('shop.name'),
+    'pageDescription' => 'Regulamin serwisu internetowego i przekazywania darowizn Fundacji Support Me Haven & Heaven — zasady, platnosci, reklamacje i ochrona danych.',
 ]))->name('regulamin');
 Route::get('/dziekujemy', fn () => Inertia::render('Storefront/Dziekujemy', [
     'css' => $css('subpages.css'),
