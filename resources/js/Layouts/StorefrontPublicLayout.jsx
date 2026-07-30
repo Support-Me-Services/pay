@@ -65,7 +65,7 @@ export default function StorefrontPublicLayout({ children, bare = false, bodyCla
                     <strong>{seo.shopName || 'SupportME'}</strong> — wpłaty obsługuje <span className="brand">PayU</span>.<br />
                     Twoje wsparcie trafia w całości do wybranej parafii.
                     <div className="fine">
-                        Operator płatności: Support Me Services Marcin Lula · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 8741624637<br />
+                        Operator płatności: Fundacja Support Me Haven &amp; Heaven · ul. dr Izabeli Wolfram 11, 05-800 Pruszków · NIP 5342715041<br />
                         <a href={r.careers}>Praca</a> · <a href={r.contact}>Kontakt</a> · <a href={r.regulamin}>Regulamin</a> · <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityka prywatności</a> · kontakt: kontakt@please-support-me.com · &copy; {new Date().getFullYear()}
                     </div>
                 </div>
