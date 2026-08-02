@@ -67,7 +67,9 @@ docker restart pay-ssr            # po rebuildzie
 docker exec scratchpad-app-1 php artisan optimize:clear
 ```
 
-Podgląd: `http://localhost:8000` (app), panel: `/panel/login` (`admin@local` / `admin123`).
+Podgląd: `http://localhost:8000` (app), panel: `/panel/login` (`admin@local` / `admin123` —
+konto tworzone automatycznie przez `DatabaseSeeder` przy `php artisan migrate --seed`,
+TYLKO gdy `APP_ENV=local`; nigdy nie powstaje na staging/prod).
 Weryfikacja strony za auth: logowanie curl‑em **wewnątrz kontenera** (cookie jar w `/tmp`;
 curl Windows nie rozumie ścieżek `/c/...`).
 
