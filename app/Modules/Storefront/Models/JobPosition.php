@@ -10,7 +10,7 @@ class JobPosition extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'title', 'location', 'employment_type', 'description_html', 'active', 'sort',
+        'title', 'location', 'employment_type', 'description_html', 'short_description', 'active', 'sort',
     ];
 
     protected $casts = [

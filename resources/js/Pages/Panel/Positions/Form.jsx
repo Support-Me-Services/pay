@@ -10,6 +10,7 @@ export default function Form({ item, storeUrl, indexUrl }) {
         location: item?.location ?? '',
         employment_type: item?.employment_type ?? '',
         description_html: item?.description_html ?? '',
+        short_description: item?.short_description ?? '',
         sort: item?.sort ?? 0,
         active: item?.active ?? true,
     })
@@ -50,6 +51,20 @@ export default function Form({ item, storeUrl, indexUrl }) {
                             <input id="sort" type="number" min={0} max={65535} value={form.data.sort} onChange={(e) => form.setData('sort', e.target.value)} />
                             {err.sort && <div className="form-error">{err.sort}</div>}
                         </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="short_description">Krótki opis</label>
+                        <textarea
+                            id="short_description"
+                            rows={3}
+                            maxLength={500}
+                            value={form.data.short_description}
+                            onChange={(e) => form.setData('short_description', e.target.value)}
+                            placeholder="Kilka zdań widocznych na liście ofert (/praca) zamiast pełnego opisu."
+                        />
+                        <div className="form-hint">Wyświetlany na liście ofert pracy zamiast pełnego opisu.</div>
+                        {err.short_description && <div className="form-error">{err.short_description}</div>}
                     </div>
 
                     <div className="form-group">

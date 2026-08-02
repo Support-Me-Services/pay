@@ -283,7 +283,8 @@
                     <tr><td data-label="Pole"><code>title</code></td><td data-label="Typ">string</td><td data-label="Opis">Nazwa stanowiska</td></tr>
                     <tr><td data-label="Pole"><code>location</code></td><td data-label="Typ">string</td><td data-label="Opis">Lokalizacja</td></tr>
                     <tr><td data-label="Pole"><code>employment_type</code></td><td data-label="Typ">string</td><td data-label="Opis">Rodzaj zatrudnienia</td></tr>
-                    <tr><td data-label="Pole"><code>description_html</code></td><td data-label="Typ">text</td><td data-label="Opis">Opis (WYSIWYG)</td></tr>
+                    <tr><td data-label="Pole"><code>short_description</code></td><td data-label="Typ">text, nullable</td><td data-label="Opis">Krótki opis wyświetlany na liście /praca (zamiast fragmentu description_html); gdy pusty — pokazuje się ogólny opis firmy</td></tr>
+                    <tr><td data-label="Pole"><code>description_html</code></td><td data-label="Typ">text</td><td data-label="Opis">Pełny opis (WYSIWYG), widoczny na podstronie pojedynczej oferty</td></tr>
                     <tr><td data-label="Pole"><code>active</code></td><td data-label="Typ">bool</td><td data-label="Opis">Widoczność publiczna</td></tr>
                     <tr><td data-label="Pole"><code>sort</code></td><td data-label="Typ">int</td><td data-label="Opis">Kolejność</td></tr>
                 </tbody>
@@ -1070,7 +1071,8 @@ if ($request-&gt;boolean('is_default')) {
                 <tr><td data-label="Pole"><code>title</code></td><td data-label="Za co odpowiada">Tytuł stanowiska</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.title</code></td><td data-label="Walidacja">required · string · max:255</td></tr>
                 <tr><td data-label="Pole"><code>location</code></td><td data-label="Za co odpowiada">Lokalizacja</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.location</code></td><td data-label="Walidacja">nullable · string · max:255</td></tr>
                 <tr><td data-label="Pole"><code>employment_type</code></td><td data-label="Za co odpowiada">Rodzaj zatrudnienia (np. etat, wolontariat)</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.employment_type</code></td><td data-label="Walidacja">nullable · string · max:255</td></tr>
-                <tr><td data-label="Pole"><code>description_html</code></td><td data-label="Za co odpowiada">Opis WYSIWYG</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.description_html</code> (text)</td><td data-label="Walidacja">nullable · string</td></tr>
+                <tr><td data-label="Pole"><code>short_description</code></td><td data-label="Za co odpowiada">Krótki opis widoczny na liście <code>/praca</code> (bez tego pola lista pokazuje ogólny opis firmy zamiast fragmentu oferty)</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.short_description</code> (text)</td><td data-label="Walidacja">nullable · string · max:500</td></tr>
+                <tr><td data-label="Pole"><code>description_html</code></td><td data-label="Za co odpowiada">Opis WYSIWYG (pełna treść na podstronie oferty)</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.description_html</code> (text)</td><td data-label="Walidacja">nullable · string</td></tr>
                 <tr><td data-label="Pole"><code>sort</code></td><td data-label="Za co odpowiada">Kolejność na liście</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.sort</code></td><td data-label="Walidacja">nullable · integer · 0–65535</td></tr>
                 <tr><td data-label="Pole"><code>active</code></td><td data-label="Za co odpowiada">Czy oferta widoczna publicznie</td><td data-label="Kolumna (tabela.kolumna)"><code>job_positions.active</code></td><td data-label="Walidacja">nullable · boolean</td></tr>
             </tbody>
@@ -1257,7 +1259,7 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
                     <tr><td data-label="Tabela"><code>salespeople</code></td><td data-label="Kluczowe kolumny">name, email, phone, voivodeships (JSON), active</td></tr>
                     <tr><td data-label="Tabela"><code>potential_parishes</code></td><td data-label="Kluczowe kolumny">name, city, address, voivodeship, denomination, phone, lat, lon, status, salesperson_id, note, called_at</td></tr>
                     <tr><td data-label="Tabela"><code>parish_notes</code></td><td data-label="Kluczowe kolumny">product_id, type, body, author</td></tr>
-                    <tr><td data-label="Tabela"><code>job_positions</code></td><td data-label="Kluczowe kolumny">title, location, employment_type, description_html, active, sort</td></tr>
+                    <tr><td data-label="Tabela"><code>job_positions</code></td><td data-label="Kluczowe kolumny">title, location, employment_type, short_description, description_html, active, sort</td></tr>
                     <tr><td data-label="Tabela"><code>job_applications</code></td><td data-label="Kluczowe kolumny">job_position_id, name, email, phone, message, cv_path, cv_original_name, is_read, status</td></tr>
                     <tr><td data-label="Tabela"><code>contact_messages</code></td><td data-label="Kluczowe kolumny">name, email, phone, subject, message, is_read</td></tr>
                 </tbody>

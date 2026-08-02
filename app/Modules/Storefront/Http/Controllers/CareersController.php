@@ -40,7 +40,7 @@ class CareersController extends Controller
 
         return Inertia::render('Storefront/Praca', [
             'positions' => $positions->map(function (JobPosition $p) use ($fallback) {
-                $plain = trim(preg_replace('/\s+/', ' ', strip_tags($p->description_html ?? '')));
+                $short = trim((string) $p->short_description);
 
                 return [
                     'id' => $p->id,
@@ -48,7 +48,7 @@ class CareersController extends Controller
                     'employment_type' => $p->employment_type,
                     'location' => $p->location,
                     'is_remote' => $this->isRemote($p),
-                    'excerpt' => mb_strlen($plain) >= 40 ? Str::limit($plain, 180) : $fallback,
+                    'excerpt' => $short !== '' ? $short : $fallback,
                     'show_url' => route('careers.show', $p),
                 ];
             })->values(),

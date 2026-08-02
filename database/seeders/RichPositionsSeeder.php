@@ -33,11 +33,12 @@ class RichPositionsSeeder extends Seeder
             JobPosition::updateOrCreate(
                 ['title' => $data['title']],
                 [
-                    'location'         => $data['location'],
-                    'employment_type'  => $data['employment_type'],
-                    'description_html' => $data['description_html'],
-                    'active'           => 1,
-                    'sort'             => $data['sort'],
+                    'location'          => $data['location'],
+                    'employment_type'   => $data['employment_type'],
+                    'description_html'  => $data['description_html'],
+                    'short_description' => $data['short_description'],
+                    'active'            => 1,
+                    'sort'              => $data['sort'],
                 ]
             );
         }
@@ -54,6 +55,7 @@ class RichPositionsSeeder extends Seeder
                 'location'        => 'Zdalnie / Pruszków',
                 'employment_type' => 'Pełny etat',
                 'sort'            => 1,
+                'short_description' => 'Pierwszy kontakt dla parafii i fundacji korzystających z SupportME — onboarding, wsparcie darczyńców i codzienna pomoc, by cyfrowa taca i płatności NFC działały bez problemów.',
                 'description_html' => <<<'HTML'
 <h3>Twoja rola</h3>
 <p>Jesteś pierwszą osobą, z którą kontaktują się parafie, fundacje i organizatorzy zbiórek korzystający z SupportME. To Ty sprawiasz, że technologia NFC — cyfrowa taca, płatności zbliżeniowe, terminale i naklejki — staje się dla nich prosta i bezpieczna. Dbasz o to, by każdy darczyńca i każda wspierana organizacja czuli się zaopiekowani, a wsparcie trafiało tam, gdzie ma realnie pomagać.</p>
@@ -94,6 +96,7 @@ HTML,
                 'location'        => 'Zdalnie / Pruszków',
                 'employment_type' => 'Pełny etat',
                 'sort'            => 2,
+                'short_description' => 'Współtworzysz platformę SupportME w PHP/Laravel — panel organizacji, integracje płatnicze i obsługę transakcji NFC, z realnym wpływem na parafie i fundacje.',
                 'description_html' => <<<'HTML'
 <h3>Twoja rola</h3>
 <p>Współtworzysz platformę SupportME — system płatności NFC i cyfrowej tacy, z którego korzystają parafie, fundacje i lokalne inicjatywy. Piszesz kod, który dosłownie pomaga ludziom wspierać dobre sprawy: od panelu organizacji, przez integracje płatności, po doświadczenie darczyńcy w momencie zbliżenia telefonu do terminala. Pracujesz blisko produktu i widzisz efekt swojej pracy w realnym świecie.</p>
@@ -134,6 +137,7 @@ HTML,
                 'location'        => 'Zdalnie / Pruszków',
                 'employment_type' => 'Pełny etat',
                 'sort'            => 3,
+                'short_description' => 'Prowadzisz projekty i wdrożenia SupportME od pomysłu po uruchomienie u organizacji — pilnujesz terminów, jakości i komunikacji między zespołem, wsparciem i partnerami.',
                 'description_html' => <<<'HTML'
 <h3>Twoja rola</h3>
 <p>Spinasz w całość pracę zespołu SupportME — od pomysłu, przez wdrożenie, po uruchomienie u organizacji. Dbasz, by projekty wspierające parafie, fundacje i lokalne inicjatywy były dowożone na czas, w dobrej jakości i bez chaosu. Jesteś łącznikiem między produktem, technologią, wsparciem darczyńców i partnerami — tłumaczysz potrzeby na konkretne zadania i pilnujesz, żeby wszystko grało.</p>
@@ -174,6 +178,7 @@ HTML,
                 'location'        => 'Zdalnie / Pruszków',
                 'employment_type' => 'Pełny etat',
                 'sort'            => 4,
+                'short_description' => 'Docierasz do parafii, fundacji i diecezji, pokazując jak SupportME upraszcza zbieranie wsparcia — budujesz długofalowe partnerstwa oparte na zaufaniu, nie na sprzedaży.',
                 'description_html' => <<<'HTML'
 <h3>Twoja rola</h3>
 <p>Otwierasz SupportME na nowe organizacje — docierasz do parafii, fundacji, diecezji i lokalnych inicjatyw, pokazując im, jak technologia NFC może uprościć zbieranie wsparcia na dobre cele. Budujesz długofalowe relacje oparte na zaufaniu i realnej wartości, a nie na nachalnej sprzedaży. To dzięki Tobie coraz więcej dobrych spraw zyskuje nowoczesne narzędzie do działania.</p>

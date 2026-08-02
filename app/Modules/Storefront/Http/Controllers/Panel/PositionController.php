@@ -54,6 +54,7 @@ class PositionController extends Controller
             'location' => $p->location,
             'employment_type' => $p->employment_type,
             'description_html' => $p->description_html,
+            'short_description' => $p->short_description,
             'sort' => (int) $p->sort,
             'active' => (bool) $p->active,
             'applications_count' => (int) ($p->applications_count ?? 0),
@@ -93,6 +94,7 @@ class PositionController extends Controller
             'location' => ['nullable', 'string', 'max:255'],
             'employment_type' => ['nullable', 'string', 'max:255'],
             'description_html' => ['nullable', 'string'],
+            'short_description' => ['nullable', 'string', 'max:500'],
             'sort' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'active' => ['nullable', 'boolean'],
         ], [], [
@@ -100,6 +102,7 @@ class PositionController extends Controller
             'location' => 'lokalizacja',
             'employment_type' => 'rodzaj zatrudnienia',
             'description_html' => 'opis',
+            'short_description' => 'krótki opis',
             'sort' => 'kolejność',
         ]);
 
