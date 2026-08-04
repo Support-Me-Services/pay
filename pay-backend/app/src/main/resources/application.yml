@@ -1,0 +1,52 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: pay-backend
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  datasource:
+    host: ${DB_HOST:127.0.0.1}
+    port: ${DB_PORT:5432}
+    username: ${DB_USERNAME:nfc_pay}
+    password: ${DB_PASSWORD:secret}
+    gateway-database: ${DB_GATEWAY_DATABASE:nfc_pay}
+
+# Odpowiednik config/tenants.php — mapa host => tenant. Uzupełnić o kolejne
+# hosty church/products w miarę potrzeb; `default-host` = fallback CLI/scheduled
+# (odpowiednik `env('TENANT', ...)`).
+tenants:
+  default-host: pay.please-support-me.com
+  map:
+    localhost:
+      module: STOREFRONT
+      kind: church
+      db: nfc_shop1
+    please-support-me.com:
+      module: STOREFRONT
+      kind: church
+      db: nfc_shop1
+      gateway-api-key: ${GATEWAY_API_KEY_CHURCH:}
+    stage.please-support-me.com:
+      module: STOREFRONT
+      kind: church
+      db: nfc_shop1
+      gateway-api-key: ${GATEWAY_API_KEY_CHURCH:}
+    pay.please-support-me.com:
+      module: GATEWAY
+      db: nfc_pay
