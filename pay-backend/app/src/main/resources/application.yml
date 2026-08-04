@@ -24,6 +24,22 @@ app:
     password: ${DB_PASSWORD:secret}
     gateway-database: ${DB_GATEWAY_DATABASE:nfc_pay}
 
+# Odpowiednik config/payment.php.
+payment:
+  provider: ${PAYMENT_PROVIDER:mock}
+
+payu:
+  env: ${PAYU_ENV:sandbox}
+  merchant-id: ${PAYU_MERCHANT_ID:}
+  pos-id: ${PAYU_POS_ID:}
+  client-id: ${PAYU_CLIENT_ID:}
+  client-secret: ${PAYU_CLIENT_SECRET:}
+  second-key: ${PAYU_SECOND_KEY:}
+
+payu-newpos:
+  client-id: ${PAYU_NEWPOS_CLIENT_ID:}
+  client-secret: ${PAYU_NEWPOS_CLIENT_SECRET:}
+
 # Odpowiednik config/tenants.php — mapa host => tenant. Uzupełnić o kolejne
 # hosty church/products w miarę potrzeb; `default-host` = fallback CLI/scheduled
 # (odpowiednik `env('TENANT', ...)`).

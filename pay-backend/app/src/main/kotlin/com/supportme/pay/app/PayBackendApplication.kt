@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
 import org.springframework.boot.runApplication
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
+import org.springframework.scheduling.annotation.EnableScheduling
 
 /**
  * Root Spring Boot. DataSource'y i EntityManagerFactory dla obu persistence
@@ -22,6 +23,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan
     exclude = [DataSourceAutoConfiguration::class, HibernateJpaAutoConfiguration::class, FlywayAutoConfiguration::class],
 )
 @ConfigurationPropertiesScan("com.supportme.pay")
+@EnableScheduling
 class PayBackendApplication
 
 fun main(args: Array<String>) {

@@ -13,6 +13,8 @@ dependencies {
     implementation(project(":storefront-domain"))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 }
 
 dependencyManagement {
