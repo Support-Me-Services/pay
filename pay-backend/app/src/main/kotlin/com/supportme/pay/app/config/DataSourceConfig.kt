@@ -9,6 +9,9 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Primary
 import javax.sql.DataSource
 
+/** Jedna fizyczna baza danych, per nazwę — mapa używana zarówno przez routing datasource jak i migracje Flyway. */
+class TenantDataSourcePools(val byDatabase: Map<String, DataSource>)
+
 /**
  * Buduje wszystkie fizyczne pule połączeń (jedna per baza danych) oraz
  * datasource routujący między nimi po tenancie ([TenantRoutingDataSource]) i
@@ -34,14 +37,19 @@ class DataSourceConfig(
     }
 
     @Bean
-    @Primary
-    fun tenantRoutingDataSource(): DataSource {
+    fun tenantDataSourcePools(): TenantDataSourcePools {
         val physicalDatabases = tenantProperties.map.values.map { it.db }.toSet()
-        val pools: Map<String, DataSource> = physicalDatabases.associateWith { db -> buildPool(db) }
+        return TenantDataSourcePools(physicalDatabases.associateWith { db -> buildPool(db) })
+    }
 
+    @Bean
+    @Primary
+    fun tenantRoutingDataSource(tenantDataSourcePools: TenantDataSourcePools): DataSource {
+        val pools = tenantDataSourcePools.byDatabase
         val defaultDb = tenantProperties.map.getValue(tenantProperties.defaultHost).db
 
-        val routingDataSource = TenantRoutingDataSource()
+        val routingDataSource = TenantRoutingDataSource(defaultDb)
+        @Suppress("UNCHECKED_CAST")
         routingDataSource.setTargetDataSources(pools as Map<Any, Any>)
         routingDataSource.setDefaultTargetDataSource(pools.getValue(defaultDb))
         routingDataSource.afterPropertiesSet()

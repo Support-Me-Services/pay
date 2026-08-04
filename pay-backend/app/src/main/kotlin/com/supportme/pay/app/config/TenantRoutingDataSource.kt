@@ -10,7 +10,12 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource
  * PHP (`config(...); app('db')->purge($conn)` — fizyczny reconnect na
  * request) każda fizyczna baza ma tu WŁASNY, stale utrzymywany pool (HikariCP)
  * — routing tylko wybiera który pool użyć, bez kosztu rozłączania/łączenia.
+ *
+ * Poza żądaniem HTTP (start aplikacji, schema-validation Hibernate, health-check
+ * poolu) TenantContext nie jest ustawiony — [defaultDb] jest wtedy używany jako
+ * fallback, dokładny odpowiednik `ResolveTenant::applyTenant(null)` w Laravelu,
+ * które w kontekście CLI/scheduled command używa `config('tenants.default')`.
  */
-class TenantRoutingDataSource : AbstractRoutingDataSource() {
-    override fun determineCurrentLookupKey(): Any = TenantContext.current().db
+class TenantRoutingDataSource(private val defaultDb: String) : AbstractRoutingDataSource() {
+    override fun determineCurrentLookupKey(): Any = TenantContext.currentOrNull()?.db ?: defaultDb
 }
