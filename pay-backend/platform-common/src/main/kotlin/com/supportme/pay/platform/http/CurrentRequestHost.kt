@@ -17,5 +17,9 @@ fun currentRequestBaseUrl(fallback: String): String {
         ?: return fallback
     val request = attrs.request
     val scheme = request.getHeader("X-Forwarded-Proto") ?: request.scheme
-    return "$scheme://${request.serverName}"
+    val forwardedPort = request.getHeader("X-Forwarded-Port")?.toIntOrNull()
+    val port = forwardedPort ?: request.serverPort
+    val isDefaultPort = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
+    val portSuffix = if (isDefaultPort) "" else ":$port"
+    return "$scheme://${request.serverName}$portSuffix"
 }

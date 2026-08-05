@@ -55,6 +55,7 @@ tenants:
       module: STOREFRONT
       kind: church
       db: nfc_shop1
+      gateway-api-key: ${GATEWAY_API_KEY_CHURCH:}
     "[please-support-me.com]":
       module: STOREFRONT
       kind: church
