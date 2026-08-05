@@ -1,0 +1,13 @@
+{
+  "description": "PRZYKŁAD formatu nagrania — NIE prawdziwy golden-master z Laravela. Sprawdza tylko, że harness działa (health check zawsze zwraca to samo). Prawdziwe nagrania (płatności, panel, CRUD) trzeba dograć z żywego stage/PayU sandbox.",
+  "request": {
+    "method": "GET",
+    "path": "/actuator/health",
+    "headers": {}
+  },
+  "expectedResponse": {
+    "status": 200,
+    "body": "{\"status\":\"UP\"}"
+  },
+  "ignoredFields": []
+}

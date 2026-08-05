@@ -1,5 +1,7 @@
 dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework:spring-web")
+    testImplementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 }
 
 dependencyManagement {
