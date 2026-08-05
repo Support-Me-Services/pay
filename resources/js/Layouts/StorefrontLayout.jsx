@@ -72,7 +72,9 @@ export default function StorefrontLayout({ children, ...overrides }) {
                 </a>
                 <nav className="lp-nav">
                     <a href={r.main} aria-current={isNavActive(r.main) ? 'page' : undefined}>Strona główna</a>
-                    <a href={r.beneficiaries} aria-current={isNavActive(r.beneficiaries) ? 'page' : undefined}>Wspieramy</a>
+                    {/* Prowadzi do sekcji inline na /main (nie na osobną podstronę /beneficiaries,
+                        która zostaje aktywna jako furtka do przywrócenia poprzedniego układu). */}
+                    <a href={`${r.main}#kogo-wspieramy`}>Wspieramy</a>
                     <a href={r.careers} aria-current={isNavActive(r.careers) ? 'page' : undefined}>Rekrutacja</a>
                     {SHOW_INVESTORS_LINK && (
                         <a href={r.investors} aria-current={isNavActive(r.investors) ? 'page' : undefined}>Inwestorzy i akcjonariusze</a>

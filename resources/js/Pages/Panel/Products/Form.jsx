@@ -8,7 +8,7 @@ import RichEditor from '@/Components/RichEditor'
  * Opis: Quill z uploadem zdjęć. Główne zdjęcie + galeria (upload plików).
  * Dla istniejącej parafii: pipeline statusów + notatki CRM (AJAX).
  */
-export default function Form({ product, images, notes: initialNotes, salespeople, statuses, voivodeships, noteTypes, urls }) {
+export default function Form({ product, images, notes: initialNotes, statuses, voivodeships, noteTypes, urls }) {
     const csrf = usePage().props.csrf_token
     const editing = product.exists
 
@@ -19,7 +19,6 @@ export default function Form({ product, images, notes: initialNotes, salespeople
         phone: product.phone ?? '',
         website: product.website ?? '',
         status: product.status ?? 'kontakt',
-        salesperson_id: product.salesperson_id ?? '',
         price: product.price ?? '',
         tag_uid: product.tag_uid ?? '',
         pickup_instruction: product.pickup_instruction ?? '',
@@ -105,22 +104,12 @@ export default function Form({ product, images, notes: initialNotes, salespeople
                         </div>
                     </div>
 
-                    <div className="d-flex gap-2" style={{ flexWrap: 'wrap' }}>
-                        <div className="form-group" style={{ flex: 1, minWidth: 200 }}>
-                            <label htmlFor="status">Status *</label>
-                            <select id="status" value={form.data.status} onChange={(e) => form.setData('status', e.target.value)} required>
-                                {statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                            </select>
-                            {err.status && <div className="form-error">{err.status}</div>}
-                        </div>
-                        <div className="form-group" style={{ flex: 1, minWidth: 200 }}>
-                            <label htmlFor="salesperson_id">Handlowiec</label>
-                            <select id="salesperson_id" value={form.data.salesperson_id} onChange={(e) => form.setData('salesperson_id', e.target.value)}>
-                                <option value="">— brak —</option>
-                                {salespeople.map((sp) => <option key={sp.id} value={sp.id}>{sp.name}</option>)}
-                            </select>
-                            {err.salesperson_id && <div className="form-error">{err.salesperson_id}</div>}
-                        </div>
+                    <div className="form-group">
+                        <label htmlFor="status">Status *</label>
+                        <select id="status" value={form.data.status} onChange={(e) => form.setData('status', e.target.value)} required>
+                            {statuses.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                        </select>
+                        {err.status && <div className="form-error">{err.status}</div>}
                     </div>
 
                     <div className="d-flex gap-2" style={{ flexWrap: 'wrap' }}>

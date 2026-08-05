@@ -5,7 +5,6 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\ParishNote;
 use App\Modules\Storefront\Models\Product;
-use App\Modules\Storefront\Models\Salesperson;
 use App\Modules\Storefront\Services\ShopStatsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,7 +23,7 @@ class ProductController extends Controller
             ? $request->query('status') : null;
         $q = trim((string) $request->query('q', ''));
 
-        $query = Product::with('salesperson')->withCount('orders')->orderBy('id');
+        $query = Product::withCount('orders')->orderBy('id');
 
         if ($status) {
             $query->where('status', $status);
@@ -79,7 +78,6 @@ class ProductController extends Controller
             'status_label' => $p->statusLabel(),
             'status_bg' => $bg,
             'status_fg' => $fg,
-            'salesperson_name' => $p->salesperson?->name,
             'tag_uid' => $p->tag_uid,
             'orders_count' => $p->orders_count,
             'edit_url' => route('panel.products.edit', $p),
@@ -133,7 +131,6 @@ class ProductController extends Controller
                 'status_label' => $product->statusLabel(),
                 'status_bg' => $bg,
                 'status_fg' => $fg,
-                'salesperson_id' => $product->salesperson_id,
                 // Cena w formularzu w złotówkach (kropka dziesiętna), pusta dla nowej.
                 'price' => $exists ? number_format($product->price / 100, 2, '.', '') : '',
                 'tag_uid' => $product->tag_uid,
@@ -145,9 +142,8 @@ class ProductController extends Controller
                 ? $product->images->map(fn ($img) => ['id' => $img->id, 'url' => asset('storage/' . $img->path)])->values()
                 : [],
             'notes' => $exists ? $product->notes->map(fn ($n) => $this->presentNote($n))->values() : [],
-            'salespeople' => Salesperson::orderBy('name')->get(['id', 'name']),
             'statuses' => collect(Product::STATUSES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
-            'voivodeships' => Salesperson::VOIVODESHIPS,
+            'voivodeships' => Product::VOIVODESHIPS,
             'noteTypes' => collect(ParishNote::TYPES)->map(fn ($l, $k) => ['value' => $k, 'label' => $l])->values(),
             'urls' => [
                 'store' => route('panel.products.store'),
@@ -313,19 +309,17 @@ class ProductController extends Controller
             'website' => ['nullable', 'string', 'max:255'],
             'voivodeship' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:' . implode(',', array_keys(Product::STATUSES))],
-            'salesperson_id' => ['nullable', 'integer', Rule::exists('salespeople', 'id')],
         ], [], [
             'name' => 'nazwa', 'price' => 'cena', 'tag_uid' => 'UID taga',
             'pickup_instruction' => 'instrukcja odbioru', 'description_html' => 'opis',
             'phone' => 'telefon', 'website' => 'strona www', 'voivodeship' => 'województwo',
-            'status' => 'status', 'salesperson_id' => 'handlowiec',
+            'status' => 'status',
         ]);
 
         // Cena wpisywana w złotówkach — w bazie trzymamy grosze.
         $data['price'] = (int) round(((float) str_replace(',', '.', (string) $data['price'])) * 100);
         // Status steruje publikacją: aktywna => publiczna, pozostałe => lead (ukryta).
         $data['active'] = $data['status'] === 'aktywna';
-        $data['salesperson_id'] = $data['salesperson_id'] ?: null;
 
         return $data;
     }
