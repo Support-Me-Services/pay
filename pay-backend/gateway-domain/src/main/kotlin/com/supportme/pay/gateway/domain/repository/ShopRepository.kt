@@ -8,4 +8,8 @@ interface ShopRepository : JpaRepository<Shop, Long> {
     fun findByApiKey(apiKey: String): Shop?
 
     fun findBySlug(slug: String): Shop?
+
+    fun existsBySlug(slug: String): Boolean
+
+    fun findAllByOrderById(): List<Shop>
 }

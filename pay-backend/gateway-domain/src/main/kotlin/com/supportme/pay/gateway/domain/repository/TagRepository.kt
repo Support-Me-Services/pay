@@ -9,4 +9,11 @@ interface TagRepository : JpaRepository<Tag, Long> {
     fun findByTagUidAndShop(tagUid: String, shop: Shop): Tag?
 
     fun findAllByShopOrderById(shop: Shop): List<Tag>
+
+    /** Ownership guard — odpowiednik `abort_unless($tag->shop_id === $shop->id, 404)`. */
+    fun findByIdAndShop(id: Long, shop: Shop): Tag?
+
+    fun countByShop(shop: Shop): Long
+
+    fun existsByTagUid(tagUid: String): Boolean
 }
