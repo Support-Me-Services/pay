@@ -100,24 +100,6 @@ img{ display:block; max-width:100%; }
 }
 .lp-head p{ margin:0; font-size:20px; line-height:33px; }
 
-.lp-cats{
-    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
-    max-width:1148px; margin:49px auto 0;
-}
-.lp-cat{
-    width:184px; display:flex; flex-direction:column; align-items:center; gap:27px;
-    text-align:center;
-}
-.lp-cat__disc{
-    width:87px; height:87px; border-radius:50%;
-    background:radial-gradient(circle at 50% 38%, #F8E9EE, #EFD6DE);
-    transition:transform .18s ease, box-shadow .18s ease;
-}
-.lp-cat__label{
-    font-family:var(--lp-display); font-weight:700; font-size:14px; line-height:21px; color:#000;
-}
-.lp-cat:hover .lp-cat__disc{ transform:translateY(-3px); box-shadow:0 10px 22px rgba(36,50,74,.14); }
-
 /* ---------- JAK TO DZIALA (+ wave bg) ---------- */
 .lp-how{ position:relative; padding:150px 0 171px; margin:96px 0 261px; }
 .lp-how::before{
@@ -158,41 +140,6 @@ img{ display:block; max-width:100%; }
 .lp-footer__social img{ width:24px; height:24px; }
 .lp-footer__legal{ font-size:20px; line-height:33px; }
 
-/* ---------- CATEGORY PAGE ---------- */
-.lp-catpage{ padding:56px 0 96px; min-height:48vh; }
-.lp-catpage .lp-head{ margin-bottom:8px; }
-.lp-back{ display:inline-block; font-size:14px; color:var(--lp-ink); opacity:.7; margin-bottom:24px; }
-.lp-back:hover{ opacity:1; }
-.lp-grid{
-    display:grid; grid-template-columns:repeat(3,1fr); gap:24px;
-    max-width:1142px; margin:48px auto 0;
-}
-.lp-pcard{
-    display:flex; flex-direction:column; border-radius:18px; overflow:hidden;
-    background:#fff; border:1px solid #E6EAF0; box-shadow:0 8px 30px rgba(36,50,74,.06);
-    transition:transform .18s ease, box-shadow .18s ease;
-}
-.lp-pcard:hover{ transform:translateY(-4px); box-shadow:0 18px 44px rgba(36,50,74,.14); }
-.lp-pcard__art{
-    aspect-ratio:3/2; background:linear-gradient(135deg,#EAF1F6,#D8E3EC);
-    position:relative; overflow:hidden;
-}
-.lp-pcard__art img{ width:100%; height:100%; object-fit:cover; }
-.lp-pcard__city{
-    position:absolute; left:14px; top:14px; background:rgba(36,50,74,.82); color:#fff;
-    font-size:13px; line-height:1; padding:7px 11px; border-radius:999px; font-weight:600;
-}
-.lp-pcard__body{ padding:20px 22px 24px; display:flex; flex-direction:column; gap:10px; }
-.lp-pcard__name{ font-family:var(--lp-display); font-weight:700; font-size:20px; line-height:1.25; color:var(--lp-ink); }
-.lp-pcard__purpose{ font-size:15px; line-height:22px; color:#5b6678; }
-.lp-pcard__cta{
-    margin-top:6px; display:flex; align-items:center; justify-content:space-between;
-    font-size:15px; color:var(--lp-ink);
-}
-.lp-pcard__cta b{ color:var(--lp-blue-b); }
-.lp-empty{ max-width:620px; margin:56px auto 0; text-align:center; color:#5b6678; font-size:18px; line-height:30px; }
-.lp-empty a{ color:var(--lp-blue-b); font-weight:600; }
-
 /* ---------- RESPONSIVE ---------- */
 @media (max-width:1200px){
     :root{ --lp-gutter:48px; }
@@ -207,8 +154,6 @@ img{ display:block; max-width:100%; }
     .lp-step__body{ width:100%; max-width:520px; transform:none; }
     .lp-step__art{ align-self:center; }
     .lp-circle--step{ width:280px; height:280px; font-size:32px; }
-    .lp-cats{ justify-content:center; }
-    .lp-grid{ grid-template-columns:repeat(2,1fr); }
 }
 /* MOBILE — wg ramki Figmy 1:5 (402px): te same fonty 40/20/25px co desktop,
    układ pionowy i wyśrodkowany. NIE zmniejszamy typografii. */
@@ -228,12 +173,6 @@ img{ display:block; max-width:100%; }
     .lp-circle--hero{ width:min(342px,86vw); height:min(342px,86vw); font-size:40px; }
     .lp-head h2{ font-size:40px; }
     .lp-support{ padding-top:44px; }   /* gap hero→„Kogo wspieramy" jak Figma (było +24px za dużo) */
-    .lp-cats{ flex-direction:column; align-items:center; gap:8px; margin-top:72px; }
-    .lp-grid{ grid-template-columns:1fr; padding:0 var(--lp-gutter); }
-    /* strona kategorii: gutter po bokach (section .lp-catpage ma poziomy padding 0 —
-       te elementy dotykały krawędzi ekranu) */
-    .lp-catpage > .lp-back,
-    .lp-catpage > .lp-head{ padding-left:var(--lp-gutter); padding-right:var(--lp-gutter); }
     /* mobile: brak nagłówka „Jak to działa?" (nie ma go w ramce mobilnej Figmy) */
     .lp-how .lp-head{ display:none; }
     .lp-how{ margin:14px 0 0; padding:137px 0 70px; background:var(--lp-wave); }
@@ -272,10 +211,6 @@ img{ display:block; max-width:100%; }
     }
     .lp-header.lp-open .lp-nav a:not(.lp-nav__shop){ display:block; }
 }
-
-/* === category icons (panel) === */
-.lp-cat__disc{ overflow:hidden; }
-.lp-cat__disc-img{ width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
 
 /* === Modal „WESPRZYJ" (szybkie wsparcie) — wg Figmy SKLEP 65:1616 === */
 .wesprzyj[hidden]{ display:none; }

@@ -4,7 +4,6 @@ use App\Modules\Storefront\Http\Controllers\BeneficiariesController;
 use App\Modules\Storefront\Http\Controllers\CareersController;
 use App\Modules\Storefront\Http\Controllers\CartController;
 use App\Modules\Storefront\Http\Controllers\CompanyStoreController;
-use App\Modules\Storefront\Http\Controllers\ContactController;
 use App\Modules\Storefront\Http\Controllers\GatewayWebhookController;
 use App\Modules\Storefront\Http\Controllers\OrderReturnController;
 use App\Modules\Storefront\Http\Controllers\Panel;
@@ -142,10 +141,6 @@ Route::post('/praca/aplikuj', [CareersController::class, 'applyStore'])->middlew
 Route::get('/praca/{position}/aplikuj', [CareersController::class, 'applyForm'])->name('careers.apply');
 Route::post('/praca/{position}/aplikuj', [CareersController::class, 'applyStore'])->middleware('throttle:careers-apply')->name('careers.apply.store');
 
-// Formularz kontaktowy
-Route::get('/kontakt', [ContactController::class, 'show'])->name('contact.show');
-Route::post('/kontakt', [ContactController::class, 'store'])->name('contact.store');
-
 // Powrót z płatności — ekran "Możesz zabrać towar"
 Route::get('/zwrot/{order}', [OrderReturnController::class, 'show'])->name('order.return');
 Route::get('/zwrot/{order}/status', [OrderReturnController::class, 'status'])->name('order.status');
@@ -206,11 +201,6 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::put('/positions/{position}', [Panel\PositionController::class, 'update'])->name('positions.update');
         Route::post('/positions/{position}/toggle', [Panel\PositionController::class, 'toggle'])->name('positions.toggle');
         Route::delete('/positions/{position}', [Panel\PositionController::class, 'destroy'])->name('positions.destroy');
-
-        // Skrzynka wiadomości z formularza kontaktowego
-        Route::get('/messages', [Panel\MessageController::class, 'index'])->name('messages.index');
-        Route::get('/messages/{message}', [Panel\MessageController::class, 'show'])->name('messages.show');
-        Route::delete('/messages/{message}', [Panel\MessageController::class, 'destroy'])->name('messages.destroy');
 
         // Skrzynka zgłoszeń rekrutacyjnych (aplikacje na oferty pracy)
         Route::get('/applications', [Panel\ApplicationController::class, 'index'])->name('applications.index');
