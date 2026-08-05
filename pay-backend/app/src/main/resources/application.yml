@@ -23,6 +23,11 @@ app:
     username: ${DB_USERNAME:nfc_pay}
     password: ${DB_PASSWORD:secret}
     gateway-database: ${DB_GATEWAY_DATABASE:nfc_pay}
+  # Pusta lista = same-origin (nginx serwuje front Next.js i /api/* z tego
+  # samego hosta w produkcji — bez CORS w ogóle). Wypełnij tylko dla dev,
+  # gdy front działa na innym originie (np. localhost:3000 -> localhost:8080).
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
 # Odpowiednik config/payment.php.
 payment:
