@@ -19,7 +19,7 @@ data class DashboardResponse(
 /** Odpowiednik `Panel\DashboardController`. */
 @RestController
 @RequestMapping("/api/gateway/panel/dashboard")
-class DashboardController(
+class GatewayDashboardController(
     private val shopRepository: ShopRepository,
     private val tagRepository: TagRepository,
     private val statsService: StatsService,

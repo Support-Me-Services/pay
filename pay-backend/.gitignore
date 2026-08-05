@@ -5,3 +5,7 @@ build/
 out/
 *.iml
 .idea/
+
+# Uploady lokalnego dev (FileStorageService, storage.private-root/public-root
+# domyślnie relatywne do katalogu roboczego modułu app) — nigdy nie commitować.
+app/storage/
