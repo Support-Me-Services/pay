@@ -1,5 +1,6 @@
 package com.supportme.pay.gateway.api.clientapi
 
+import com.supportme.pay.gateway.api.config.GatewayUrlProperties
 import com.supportme.pay.gateway.api.payment.TransactionService
 import com.supportme.pay.gateway.domain.entity.Shop
 import com.supportme.pay.gateway.domain.entity.Tag
@@ -9,6 +10,9 @@ import com.supportme.pay.gateway.domain.repository.TransactionRepository
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
+import org.hibernate.validator.constraints.URL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -22,13 +26,13 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 data class CreateTransactionRequest(
-    @field:NotBlank val productExternalId: String,
-    @field:NotBlank val productName: String,
+    @field:NotBlank @field:Size(max = 255) val productExternalId: String,
+    @field:NotBlank @field:Size(max = 255) val productName: String,
     @field:Min(1) val amount: Int,
-    val currency: String? = null,
-    @field:NotBlank val returnUrl: String,
-    val notifyUrl: String? = null,
-    val tagUid: String? = null,
+    @field:Pattern(regexp = "PLN") val currency: String? = null,
+    @field:NotBlank @field:Size(max = 500) @field:URL val returnUrl: String,
+    @field:Size(max = 500) @field:URL val notifyUrl: String? = null,
+    @field:Size(max = 255) val tagUid: String? = null,
 )
 
 data class CreateTransactionResponse(val uuid: String, val paymentUrl: String)
@@ -53,6 +57,7 @@ class TransactionController(
     private val transactionRepository: TransactionRepository,
     private val tagRepository: TagRepository,
     private val transactionService: TransactionService,
+    private val gatewayUrlProperties: GatewayUrlProperties,
 ) {
 
     @PostMapping
@@ -60,10 +65,6 @@ class TransactionController(
         @AuthenticationPrincipal shop: Shop,
         @Valid @RequestBody body: CreateTransactionRequest,
     ): ResponseEntity<CreateTransactionResponse> {
-        if (body.currency != null && body.currency != "PLN") {
-            return ResponseEntity.badRequest().build()
-        }
-
         // Lookup tagu SCOPED do sklepu — po cichu ignorowany jeśli nie istnieje (jak w oryginale).
         val tag: Tag? = body.tagUid?.let { tagRepository.findByTagUidAndShop(it, shop) }
 
@@ -82,7 +83,7 @@ class TransactionController(
         val saved = transactionRepository.save(transaction)
 
         return ResponseEntity.status(HttpStatus.CREATED).body(
-            CreateTransactionResponse(uuid = saved.id.toString(), paymentUrl = "/pay/${saved.id}"),
+            CreateTransactionResponse(uuid = saved.id.toString(), paymentUrl = "${gatewayUrlProperties.publicBaseUrl}/pay/${saved.id}"),
         )
     }
 

@@ -28,4 +28,6 @@ data class PayUNewPosConfigProperties(
 @ConfigurationProperties(prefix = "payment")
 data class PaymentConfigProperties(
     val provider: String = "mock",
+    /** Odpowiednik `config('payment.activation_check_token')` — token dostępowy do `ActivationStatusController`. */
+    val activationCheckToken: String = "",
 )

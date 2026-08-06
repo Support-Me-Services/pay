@@ -29,9 +29,16 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
 
+# Publiczny adres bramki (odpowiednik Laravel APP_URL użytego w
+# route('webhooks.payu')) — PayU wywołuje ten adres z zewnątrz, więc na
+# produkcji MUSI być nadpisany na https://pay.please-support-me.com.
+gateway:
+  public-base-url: ${GATEWAY_PUBLIC_BASE_URL:http://localhost:8080}
+
 # Odpowiednik config/payment.php.
 payment:
   provider: ${PAYMENT_PROVIDER:mock}
+  activation-check-token: ${ACTIVATION_CHECK_TOKEN:}
 
 payu:
   env: ${PAYU_ENV:sandbox}

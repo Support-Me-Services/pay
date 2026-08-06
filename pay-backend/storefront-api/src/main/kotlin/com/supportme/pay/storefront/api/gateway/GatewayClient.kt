@@ -114,7 +114,7 @@ class GatewayClient(
         val mac = Mac.getInstance("HmacSHA256")
         mac.init(SecretKeySpec(apiKey().toByteArray(Charsets.UTF_8), "HmacSHA256"))
         val expected = mac.doFinal(body.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
-        return MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8), signatureHeader.toByteArray(Charsets.UTF_8))
+        return MessageDigest.isEqual(expected.toByteArray(Charsets.UTF_8), signatureHeader.lowercase().toByteArray(Charsets.UTF_8))
     }
 }
 

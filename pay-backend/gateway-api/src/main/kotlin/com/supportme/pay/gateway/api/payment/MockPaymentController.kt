@@ -9,7 +9,16 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-data class MockPayResponse(val mode: String, val redirectUrl: String)
+data class MockPayResponse(
+    /** "final" = transakcja już rozstrzygnięta, klient powinien iść na `redirectUrl`; "open" = pokaż UI mocka. */
+    val status: String,
+    val mode: String? = null,
+    val redirectUrl: String? = null,
+    val productName: String? = null,
+    val amountPln: String? = null,
+    val confirmUrl: String? = null,
+    val failUrl: String? = null,
+)
 data class MockActionResponse(val redirect: String)
 
 /**
@@ -27,8 +36,24 @@ class MockPaymentController(
     @GetMapping("/{uuid}")
     fun show(@PathVariable uuid: UUID): ResponseEntity<MockPayResponse> {
         val transaction = transactionRepository.findById(uuid).orElse(null) ?: return ResponseEntity.notFound().build()
-        return ResponseEntity.ok(MockPayResponse(mode = transaction.mode.dbValue, redirectUrl = "/pay/$uuid/return"))
+
+        if (transaction.isFinal()) {
+            return ResponseEntity.ok(MockPayResponse(status = "final", redirectUrl = transaction.returnUrl))
+        }
+
+        return ResponseEntity.ok(
+            MockPayResponse(
+                status = "open",
+                mode = transaction.mode.dbValue,
+                productName = transaction.productName,
+                amountPln = formatPln(transaction.amount),
+                confirmUrl = "/mockpay/$uuid/confirm",
+                failUrl = "/mockpay/$uuid/fail",
+            ),
+        )
     }
+
+    private fun formatPln(grosze: Int): String = PLN_FORMAT.format(grosze / 100.0)
 
     @PostMapping("/{uuid}/confirm")
     fun confirm(@PathVariable uuid: UUID): ResponseEntity<MockActionResponse> {
@@ -42,5 +67,15 @@ class MockPaymentController(
         val transaction = transactionRepository.findById(uuid).orElse(null) ?: return ResponseEntity.notFound().build()
         transactionService.markFailed(transaction)
         return ResponseEntity.ok(MockActionResponse(redirect = "/pay/$uuid/return"))
+    }
+
+    companion object {
+        private val PLN_FORMAT = java.text.DecimalFormat(
+            "#,##0.00",
+            java.text.DecimalFormatSymbols(java.util.Locale.of("pl", "PL")).apply {
+                groupingSeparator = ' '
+                decimalSeparator = ','
+            },
+        )
     }
 }

@@ -7,6 +7,8 @@ import com.supportme.pay.gateway.domain.repository.GatewayEventRepository
 import com.supportme.pay.gateway.domain.repository.TagRepository
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -17,8 +19,8 @@ import org.springframework.web.bind.annotation.RestController
 
 data class CreateEventRequest(
     /** Dziś akceptowany wyłącznie `tag_open`, jak w oryginale. */
-    @field:NotBlank val type: String,
-    val tagUid: String? = null,
+    @field:NotBlank @field:Pattern(regexp = "tag_open") val type: String,
+    @field:Size(max = 255) val tagUid: String? = null,
 )
 
 /** Odpowiednik `Api\EventController` — `/api/gateway/v1/events`. */
@@ -31,10 +33,6 @@ class EventController(
 
     @PostMapping
     fun store(@AuthenticationPrincipal shop: Shop, @Valid @RequestBody body: CreateEventRequest): ResponseEntity<Map<String, Boolean>> {
-        if (body.type != "tag_open") {
-            return ResponseEntity.badRequest().body(mapOf("ok" to false))
-        }
-
         val tag = body.tagUid?.let { tagRepository.findByTagUidAndShop(it, shop) }
         gatewayEventRepository.save(Event(shop = shop, tag = tag, type = EventType.TAG_OPEN))
 

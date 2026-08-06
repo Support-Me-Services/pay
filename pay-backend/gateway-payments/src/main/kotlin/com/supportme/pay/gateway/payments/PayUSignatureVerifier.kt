@@ -20,11 +20,12 @@ object PayUSignatureVerifier {
             if (idx < 0) null else part.substring(0, idx).trim().lowercase() to part.substring(idx + 1).trim()
         }.toMap()
 
-        val signature = parts["signature"] ?: return false
-        val digestAlgorithm = when (parts["algorithm"]?.uppercase()) {
+        val signature = (parts["signature"] ?: return false).lowercase()
+        val digestAlgorithm = when ((parts["algorithm"] ?: "MD5").uppercase()) {
+            "MD5" -> "MD5"
             "SHA-256", "SHA256" -> "SHA-256"
             "SHA-1", "SHA1" -> "SHA-1"
-            else -> "MD5"
+            else -> return false // nieznany algorytm — jak PHP `default => null`, odrzucenie jawne
         }
 
         val digest = MessageDigest.getInstance(digestAlgorithm)

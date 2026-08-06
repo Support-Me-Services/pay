@@ -1,5 +1,6 @@
 package com.supportme.pay.gateway.api.payment
 
+import com.supportme.pay.gateway.api.config.GatewayUrlProperties
 import com.supportme.pay.gateway.api.config.PaymentConfigProperties
 import com.supportme.pay.gateway.domain.entity.EventType
 import com.supportme.pay.gateway.domain.entity.PaymentMode
@@ -52,6 +53,7 @@ class PaymentController(
     private val transactionService: TransactionService,
     private val paymentProvider: PaymentProvider,
     private val paymentConfig: PaymentConfigProperties,
+    private val gatewayUrlProperties: GatewayUrlProperties,
 ) {
     private val log = LoggerFactory.getLogger(PaymentController::class.java)
 
@@ -232,13 +234,19 @@ class PaymentController(
         return ResponseEntity.ok(mapOf("redirectUrl" to transaction.returnUrl))
     }
 
+    /**
+     * `notifyUrl` to zawsze webhook BRAMKI (`route('webhooks.payu')` w PHP —
+     * PayU woła TEN adres, niezależnie od `transaction.notifyUrl`, który jest
+     * OSOBNYM konceptem: callbackiem sklepu-klienta, używanym dalej przez
+     * `TransactionService.notifyShop`, nie tutaj).
+     */
     private fun toOrderRequest(transaction: Transaction) = PaymentOrderRequest(
         transactionId = transaction.id.toString(),
         productName = transaction.productName,
         amountGrosze = transaction.amount,
         currency = transaction.currency,
         returnUrl = transaction.returnUrl,
-        notifyUrl = transaction.notifyUrl,
+        notifyUrl = "${gatewayUrlProperties.publicBaseUrl}/webhooks/payu",
     )
 
     private fun summarize(transaction: Transaction) = TransactionSummary(

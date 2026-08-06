@@ -1,5 +1,6 @@
 package com.supportme.pay.app.config
 
+import com.fasterxml.jackson.core.JsonProcessingException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.multipart.support.MissingServletRequestPartException
 import org.springframework.web.servlet.resource.NoResourceFoundException
+import jakarta.validation.ConstraintViolationException
 import java.util.NoSuchElementException
 
 /**
@@ -28,6 +30,13 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<Map<String, Any>> {
         val fieldErrors = ex.bindingResult.fieldErrors.associate { it.field to (it.defaultMessage ?: "Nieprawidłowa wartość") }
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Błąd walidacji", "fields" to fieldErrors))
+    }
+
+    /** Ręczna walidacja poza `@Valid` (np. gdy trzeba sprawdzić coś PRZED walidacją, jak honeypot). */
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolation(ex: ConstraintViolationException): ResponseEntity<Map<String, Any>> {
+        val fieldErrors = ex.constraintViolations.associate { it.propertyPath.toString() to (it.message ?: "Nieprawidłowa wartość") }
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Błąd walidacji", "fields" to fieldErrors))
     }
 
@@ -50,8 +59,11 @@ class GlobalExceptionHandler {
      * do `handleValidation`). Spring domyślnie mapuje to na 400 — MUSI mieć
      * jawny handler tutaj, inaczej złapałby to zbyt szeroki `handleUnexpected`
      * i zwrócił błędne 500 (realny bug złapany przy weryfikacji).
+     * `JsonProcessingException` dodane dla kontrolerów, które ręcznie
+     * parsują body PRZED walidacją (np. `LandingController` — honeypot musi
+     * być sprawdzony przed deserializacją do docelowego DTO).
      */
-    @ExceptionHandler(HttpMessageNotReadableException::class, MissingServletRequestParameterException::class, MissingServletRequestPartException::class)
+    @ExceptionHandler(HttpMessageNotReadableException::class, MissingServletRequestParameterException::class, MissingServletRequestPartException::class, JsonProcessingException::class)
     fun handleBadRequest(ex: Exception): ResponseEntity<Map<String, String>> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("error" to "Nieprawidłowe żądanie."))
 

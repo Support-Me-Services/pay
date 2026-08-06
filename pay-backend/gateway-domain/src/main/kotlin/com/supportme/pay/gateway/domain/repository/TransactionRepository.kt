@@ -16,6 +16,12 @@ interface TransactionRepository : JpaRepository<Transaction, UUID> {
     /** Kandydaci do `payu:reconcile` — najstarsze pierwsze, jak w oryginalnym scheduled command. */
     fun findByStatusAndCreatedAtAfterOrderByCreatedAtAsc(status: TransactionStatus, createdAfter: Instant): List<Transaction>
 
+    /** Dla `ActivationStatusController::paid_last_24h`. */
+    fun countByStatusAndPaidAtAfter(status: TransactionStatus, paidAfter: Instant): Long
+
+    /** Dla `ActivationStatusController::pending_last_24h`. */
+    fun countByStatusAndCreatedAtAfter(status: TransactionStatus, createdAfter: Instant): Long
+
     /**
      * Odpowiednik `StatsService::summary()`. `shopId`/`tagId` = -1 i `since`
      * = `Instant.EPOCH` = "brak filtra" (sentinel, NIE `null` — patrz
