@@ -34,9 +34,6 @@ export default function PanelLayout({ title, children }) {
                             {it.badge ? <span className="badge badge-brand" style={{ marginLeft: 6 }}>{it.badge}</span> : null}
                         </a>
                     ))}
-                    {panel.shopUrl ? (
-                        <a href={panel.shopUrl} target="_blank" rel="noreferrer">Mój sklep ↗</a>
-                    ) : null}
                     <div className="nav-sep" />
                     <a href="#" onClick={logout}>Wyloguj</a>
                 </nav>

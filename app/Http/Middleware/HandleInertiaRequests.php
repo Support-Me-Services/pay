@@ -103,7 +103,6 @@ class HandleInertiaRequests extends Middleware
                 ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')],
                 ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')],
             ],
-            'shopUrl' => $request->user()?->handle ? route('user.shop', $request->user()->handle) : null,
             'logoutUrl' => route('panel.logout'),
         ];
     }
