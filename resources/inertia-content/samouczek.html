@@ -881,8 +881,8 @@ Na końcu sprawdź na telefonie.</pre>
         <h3 class="dc-sub">15.3 Strona główna (landing) — <code>/main</code></h3>
         <p>Marketingowy landing „Technologia, która pomaga czynić dobro" — opowiada o idei SupportME, prezentuje sekcję „Kogo wspieramy?" i kieruje dalej. To dobra strona „o nas/jak to działa", oddzielona od sklepu, który zajmuje adres główny <code>/</code>.</p>
         <ol class="dc-steps">
-            <li><strong>Wejdź na</strong> <code>/main</code> — landing renderuje się z aktualną treścią „Wspieramy".</li>
-            <li><strong>Sekcja „Kogo wspieramy?"</strong> renderuje inline tę samą treść co osobna podstrona <code>/beneficiaries</code> (nagłówek, grafika, opis) — bez pośredniej warstwy kategorii. Link „Wspieramy” w nawigacji przenosi do tej sekcji na tej samej stronie.</li>
+            <li><strong>Wejdź na</strong> <code>/main</code> — landing renderuje się z sekcją "Kogo wspieramy?".</li>
+            <li><strong>Sekcja „Kogo wspieramy?"</strong> to statyczne kafelki (ikona + etykieta) zaszyte w kodzie strony (tablica <code>CATEGORIES</code> w <code>Storefront/Home.jsx</code>) — nieedytowalne z panelu. Każdy kafelek i link „Wspieramy” w nawigacji prowadzą na osobną podstronę <code>/beneficiaries</code>.</li>
             <li><strong>Treść/wygląd</strong> zmieniasz w komponencie React (Inertia) — to typowa robota „pod Figmę" (patrz sekcje 4 i 14).</li>
         </ol>
         <figure class="dc-fig" data-fig="modul-main"><img src="__FIG:modul-main__" loading="lazy" alt="Strona główna /main"><figcaption>Landing /main — „Technologia, która pomaga czynić dobro".</figcaption></figure>
@@ -971,7 +971,7 @@ Na końcu sprawdź na telefonie.</pre>
         <figure class="dc-fig" data-fig="modul-analityka"><img src="__FIG:modul-analityka__" loading="lazy" alt="Eventy i analityka"><figcaption>Statystyki wpłat i otwarć tagów.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-analityka.png</code> — pojawi się automatycznie.</div>
 
-        <div class="dc-note" style="margin-top:2rem"><strong>Powiązania między modułami w skrócie.</strong> Sklep w panelu (15.6) → wyświetla się na <code>/</code> (15.1). Sekcja „Kogo wspieramy?" na <code>/main</code> (15.3) renderuje treść „Wspieramy" inline. Praca w panelu (15.7) → oferty na <code>/praca</code> (15.4) → zgłoszenia w Aplikacjach (15.8). Tagi NFC (15.2) i wpłaty → Eventy/analityka (15.9) → CRM parafii (15.5).</div>
+        <div class="dc-note" style="margin-top:2rem"><strong>Powiązania między modułami w skrócie.</strong> Sklep w panelu (15.6) → wyświetla się na <code>/</code> (15.1). Sekcja „Kogo wspieramy?" na <code>/main</code> (15.3) — kafelki statyczne, wszystkie linkujące do podstrony „Wspieramy" (<code>/beneficiaries</code>). Praca w panelu (15.7) → oferty na <code>/praca</code> (15.4) → zgłoszenia w Aplikacjach (15.8). Tagi NFC (15.2) i wpłaty → Eventy/analityka (15.9) → CRM parafii (15.5).</div>
     </section>
 
 </div>

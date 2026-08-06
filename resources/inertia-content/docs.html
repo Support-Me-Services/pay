@@ -169,7 +169,7 @@
 
         <div class="dc-block"><span class="dc-block__label">Metody kontrolera</span>
             <ul class="dc-fns">
-                <li><code>index()</code><span>Renderuje landing: sekcja „Kogo wspieramy?” inline z treści podstrony Wspieramy (zob. sekcja 5).</span></li>
+                <li><code>index()</code><span>Renderuje landing: sekcja „Kogo wspieramy?” — statyczne kafelki (zob. sekcja 5).</span></li>
                 <li><code>tag($tagUid)</code><span>Szuka parafii po <code>tag_uid</code> → przekierowuje na jej stronę i loguje <code>tag_open</code>. Jeśli to tag produktu sklepu → przekierowuje na sklep z modalem produktu. Nieznany tag → strona 404 „tabliczka nieprzypisana”.</span></li>
                 <li><code>show($slug)</code><span>Strona parafii; loguje <code>page_view</code>; renderuje formularz wyboru kwoty z presetami.</span></li>
                 <li><code>buy($slug)</code><span>Waliduje kwotę (2–5000 zł), loguje <code>buy_click</code>, tworzy <code>Order</code> powiązany z parafią i transakcję w bramce, przekierowuje do płatności.</span></li>
@@ -218,11 +218,11 @@
     
     <section class="dc-module" id="main">
         <div class="dc-module__head"><span class="dc-module__num">5.</span><h2>Strona główna /main</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Landing „Technologia, która pomaga czynić dobro” — zbudowany pixel-perfect z makiet Figmy (desktop i mobile). Sekcja „Kogo wspieramy?” renderuje inline tę samą treść co podstrona <code>/beneficiaries</code> (sekcja „Wspieramy” zarządzana z panelu) — bez osobnego systemu kategorii między nimi.</p>
+        <p class="dc-lead">Landing „Technologia, która pomaga czynić dobro” — zbudowany pixel-perfect z makiet Figmy (desktop i mobile). Sekcja „Kogo wspieramy?” to statyczne kafelki (ikona + etykieta) zaszyte w kodzie strony — system Kategorie został usunięty, kafelki nie są już edytowalne z panelu.</p>
         <div class="dc-block"><span class="dc-block__label">Sekcje</span>
             <ul>
                 <li><strong>Hero</strong> — nagłówek z misją platformy.</li>
-                <li><strong>Kogo wspieramy?</strong> — treść węzłów „Wspieramy" (nagłówek, grafika, opis WYSIWYG) renderowana inline, ten sam model danych co <code>/beneficiaries</code>. Link „Wspieramy” w nawigacji przenosi do tej sekcji (<code>#kogo-wspieramy</code>) na tej samej stronie, zamiast na osobną podstronę.</li>
+                <li><strong>Kogo wspieramy?</strong> — 6 kafelków (ikona + etykieta) ze stałej tablicy <code>CATEGORIES</code> w <code>Storefront/Home.jsx</code>; każdy kafelek linkuje do podstrony „Wspieramy" (<code>/beneficiaries</code>), tak samo jak link „Wspieramy” w nawigacji.</li>
                 <li><strong>Jak to działa?</strong> — 4 kroki: zbliż telefon do NFC → wybierz wsparcie → zapłać → otrzymaj podziękowanie.</li>
                 <li><strong>Tekst zamykający</strong> + stopka z danymi firmy i linkami.</li>
             </ul>
@@ -230,8 +230,7 @@
         <div class="dc-block"><span class="dc-block__label">Modal „Wesprzyj” i podgląd linku (OG)</span>
             <p>Przycisk „Wesprzyj” w nagłówku otwiera modal domyślnego produktu (<code>/?produkt=serduszko</code>). W <code>&lt;head&gt;</code> ustawione są tagi Open Graph i Twitter z grafiką serca z logo — przy udostępnianiu linku na WhatsApp / Facebook pojawia się ładny podgląd z serduszkiem.</p>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>beneficiary_nodes</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">StorefrontController::index() · Models/BeneficiaryNode.php · Components/BeneficiaryNodes.jsx (współdzielony z /beneficiaries) · public/css/landing.css · public/img/og-supportme.png</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">StorefrontController::index() · resources/js/Pages/Storefront/Home.jsx (tablica CATEGORIES) · public/css/landing.css (.lp-cats/.lp-cat*) · public/img/og-supportme.png</div></div>
     </section>
 
     
