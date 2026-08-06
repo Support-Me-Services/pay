@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.multipart.support.MissingServletRequestPartException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.util.NoSuchElementException
 
 /**
@@ -33,6 +34,15 @@ class GlobalExceptionHandler {
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFound(ex: NoSuchElementException): ResponseEntity<Map<String, String>> =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Nie znaleziono zasobu"))
+
+    /**
+     * Żaden kontroler/statyczny zasób nie dopasował ścieżki (np. usunięta trasa
+     * jak `/kategoria/{slug}`) — Spring domyślnie mapuje to na 404, MUSI mieć
+     * jawny handler tutaj z tego samego powodu co `handleBadRequest`.
+     */
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResource(ex: NoResourceFoundException): ResponseEntity<Map<String, String>> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Nie znaleziono"))
 
     /**
      * JSON niepoprawny/niekompletny (w tym brakujące pole non-nullable Kotlin

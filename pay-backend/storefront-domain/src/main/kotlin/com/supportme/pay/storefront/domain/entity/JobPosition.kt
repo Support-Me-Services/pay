@@ -28,6 +28,9 @@ class JobPosition(
     @Column(name = "description_html", columnDefinition = "text")
     var descriptionHtml: String? = null,
 
+    @Column(name = "short_description", columnDefinition = "text")
+    var shortDescription: String? = null,
+
     @Column(nullable = false)
     var active: Boolean = true,
 

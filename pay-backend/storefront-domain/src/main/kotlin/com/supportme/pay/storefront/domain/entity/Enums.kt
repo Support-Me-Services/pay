@@ -79,35 +79,6 @@ class ParishNoteTypeConverter : AttributeConverter<ParishNoteType, String> {
         dbData?.let { value -> ParishNoteType.entries.first { it.dbValue == value } }
 }
 
-enum class CategorySource(val dbValue: String) {
-    NONE("none"),
-    PARISHES("parishes"),
-    BENEFICIARIES("beneficiaries"),
-}
-
-@Converter(autoApply = true)
-class CategorySourceConverter : AttributeConverter<CategorySource, String> {
-    override fun convertToDatabaseColumn(attribute: CategorySource?): String? = attribute?.dbValue
-    override fun convertToEntityAttribute(dbData: String?): CategorySource? =
-        dbData?.let { value -> CategorySource.entries.first { it.dbValue == value } }
-}
-
-enum class PotentialParishStatus(val dbValue: String) {
-    NOWA("nowa"),
-    DO_OBDZWONIENIA("do_obdzwonienia"),
-    ZADZWONIONO("zadzwoniono"),
-    ZAINTERESOWANA("zainteresowana"),
-    ODRZUCONA("odrzucona"),
-    DODANA("dodana"),
-}
-
-@Converter(autoApply = true)
-class PotentialParishStatusConverter : AttributeConverter<PotentialParishStatus, String> {
-    override fun convertToDatabaseColumn(attribute: PotentialParishStatus?): String? = attribute?.dbValue
-    override fun convertToEntityAttribute(dbData: String?): PotentialParishStatus? =
-        dbData?.let { value -> PotentialParishStatus.entries.first { it.dbValue == value } }
-}
-
 /** `image_side`/`text_align` w BeneficiaryNode — proste dwuwartościowe pola, bez osobnego typu w PHP. */
 enum class Side(val dbValue: String) {
     LEFT("left"),

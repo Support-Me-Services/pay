@@ -10,7 +10,6 @@ import com.supportme.pay.storefront.domain.entity.StorefrontEventType
 import com.supportme.pay.storefront.domain.repository.ParishNoteRepository
 import com.supportme.pay.storefront.domain.repository.ProductImageRepository
 import com.supportme.pay.storefront.domain.repository.ProductRepository
-import com.supportme.pay.storefront.domain.repository.SalespersonRepository
 import com.supportme.pay.storefront.domain.repository.StorefrontEventRepository
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -25,11 +24,11 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
-data class ProductPanelSummary(val id: Long, val name: String, val city: String?, val slug: String, val status: String, val active: Boolean, val salespersonName: String?)
+data class ProductPanelSummary(val id: Long, val name: String, val city: String?, val slug: String, val status: String, val active: Boolean)
 data class ProductRequest(
     val name: String, val city: String? = null, val purpose: String? = null, val descriptionHtml: String? = null,
     val pickupInstruction: String? = null, val pricePln: Int, val tagUid: String, val phone: String? = null,
-    val website: String? = null, val voivodeship: String? = null, val salespersonId: Long? = null,
+    val website: String? = null, val voivodeship: String? = null,
 )
 data class ProductStatsResponse(val opens: Long, val buyClicks: Long, val purchases: Long)
 data class NoteRequest(val body: String, val type: String = "kontakt", val author: String? = null)
@@ -42,7 +41,6 @@ class ProductController(
     private val productRepository: ProductRepository,
     private val productImageRepository: ProductImageRepository,
     private val parishNoteRepository: ParishNoteRepository,
-    private val salespersonRepository: SalespersonRepository,
     private val eventRepository: StorefrontEventRepository,
     private val fileStorageService: FileStorageService,
 ) {
@@ -55,7 +53,7 @@ class ProductController(
             val needle = q.lowercase()
             products = products.filter { it.name.lowercase().contains(needle) || it.city?.lowercase()?.contains(needle) == true || it.voivodeship?.lowercase()?.contains(needle) == true }
         }
-        return products.map { ProductPanelSummary(it.id!!, it.name, it.city, it.slug, it.status.dbValue, it.active, it.salesperson?.name) }
+        return products.map { ProductPanelSummary(it.id!!, it.name, it.city, it.slug, it.status.dbValue, it.active) }
     }
 
     @PostMapping
@@ -63,12 +61,11 @@ class ProductController(
         if (productRepository.findByTagUid(body.tagUid) != null) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Tag NFC już przypisany do innej parafii."))
         }
-        val salesperson = body.salespersonId?.let { salespersonRepository.findById(it).orElse(null) }
         val product = productRepository.save(
             Product(
                 name = body.name, city = body.city, purpose = body.purpose, slug = generateUniqueSlug(body.name),
                 descriptionHtml = body.descriptionHtml, pickupInstruction = body.pickupInstruction, price = body.pricePln * 100,
-                tagUid = body.tagUid, phone = body.phone, website = body.website, voivodeship = body.voivodeship, salesperson = salesperson,
+                tagUid = body.tagUid, phone = body.phone, website = body.website, voivodeship = body.voivodeship,
             ),
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(mapOf("id" to product.id!!))
@@ -91,7 +88,6 @@ class ProductController(
         product.phone = body.phone
         product.website = body.website
         product.voivodeship = body.voivodeship
-        product.salesperson = body.salespersonId?.let { salespersonRepository.findById(it).orElse(null) }
         productRepository.save(product)
         return ResponseEntity.ok(mapOf("id" to product.id!!))
     }

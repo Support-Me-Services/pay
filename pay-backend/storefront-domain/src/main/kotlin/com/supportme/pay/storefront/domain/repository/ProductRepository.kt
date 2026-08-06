@@ -7,6 +7,4 @@ interface ProductRepository : JpaRepository<Product, Long> {
     fun findBySlug(slug: String): Product?
 
     fun findByTagUid(tagUid: String): Product?
-
-    fun findAllByActiveTrue(): List<Product>
 }

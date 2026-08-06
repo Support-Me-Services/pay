@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-data class PositionRequest(val title: String, val location: String? = null, val employmentType: String? = null, val descriptionHtml: String? = null, val sort: Int = 0, val active: Boolean = true)
+data class PositionRequest(val title: String, val location: String? = null, val employmentType: String? = null, val descriptionHtml: String? = null, val shortDescription: String? = null, val sort: Int = 0, val active: Boolean = true)
 data class PositionPanelSummary(val id: Long, val title: String, val location: String?, val employmentType: String?, val active: Boolean, val sort: Int, val applicationsCount: Long)
 
 /** Odpowiednik `Panel\PositionController` — CRUD + toggle, `withCount('applications')`. */
@@ -36,7 +36,7 @@ class PositionController(
 
     @PostMapping
     fun store(@RequestBody body: PositionRequest): ResponseEntity<Any> {
-        val position = jobPositionRepository.save(JobPosition(title = body.title, location = body.location, employmentType = body.employmentType, descriptionHtml = body.descriptionHtml, sort = body.sort, active = body.active))
+        val position = jobPositionRepository.save(JobPosition(title = body.title, location = body.location, employmentType = body.employmentType, descriptionHtml = body.descriptionHtml, shortDescription = body.shortDescription, sort = body.sort, active = body.active))
         return ResponseEntity.status(HttpStatus.CREATED).body(mapOf("id" to position.id!!))
     }
 
@@ -47,6 +47,7 @@ class PositionController(
         position.location = body.location
         position.employmentType = body.employmentType
         position.descriptionHtml = body.descriptionHtml
+        position.shortDescription = body.shortDescription
         position.sort = body.sort
         position.active = body.active
         jobPositionRepository.save(position)

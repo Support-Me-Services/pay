@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import java.time.Instant
 
-data class JobPositionSummary(val id: Long, val title: String, val location: String?, val employmentType: String?, val isRemote: Boolean)
+data class JobPositionSummary(val id: Long, val title: String, val location: String?, val employmentType: String?, val isRemote: Boolean, val excerpt: String)
 data class JobPositionDetail(val id: Long, val title: String, val location: String?, val employmentType: String?, val descriptionHtml: String?, val otherOpenings: List<JobPositionSummary>)
 
 /** Odpowiednik `CareersController` — `/praca`, honeypot antyspam w `applyStore`. */
@@ -28,13 +28,13 @@ class CareersController(
 ) {
 
     @GetMapping
-    fun index(): List<JobPositionSummary> = jobPositionRepository.findAllByActiveTrueOrderBySortAscIdAsc().map { summarize(it.id!!, it.title, it.location, it.employmentType) }
+    fun index(): List<JobPositionSummary> = jobPositionRepository.findAllByActiveTrueOrderBySortAscIdAsc().map { summarize(it.id!!, it.title, it.location, it.employmentType, it.shortDescription) }
 
     @GetMapping("/oferta/{id}")
     fun show(@PathVariable id: Long): ResponseEntity<JobPositionDetail> {
         val position = jobPositionRepository.findById(id).orElse(null)?.takeIf { it.active } ?: return ResponseEntity.notFound().build()
         val others = jobPositionRepository.findAllByActiveTrueOrderBySortAscIdAsc().filter { it.id != id }.take(3)
-            .map { summarize(it.id!!, it.title, it.location, it.employmentType) }
+            .map { summarize(it.id!!, it.title, it.location, it.employmentType, it.shortDescription) }
 
         return ResponseEntity.ok(JobPositionDetail(position.id!!, position.title, position.location, position.employmentType, position.descriptionHtml, others))
     }
@@ -86,14 +86,16 @@ class CareersController(
         return ResponseEntity.status(HttpStatus.CREATED).body(mapOf("ok" to true))
     }
 
-    private fun summarize(id: Long, title: String, location: String?, employmentType: String?): JobPositionSummary {
+    private fun summarize(id: Long, title: String, location: String?, employmentType: String?, shortDescription: String?): JobPositionSummary {
         val haystack = "${location.orEmpty()} ${employmentType.orEmpty()}".lowercase()
         val isRemote = REMOTE_KEYWORDS.any { haystack.contains(it) }
-        return JobPositionSummary(id, title, location, employmentType, isRemote)
+        val excerpt = shortDescription?.trim().takeUnless { it.isNullOrBlank() } ?: FALLBACK_EXCERPT
+        return JobPositionSummary(id, title, location, employmentType, isRemote, excerpt)
     }
 
     companion object {
         private const val MAX_CV_SIZE_BYTES = 5 * 1024 * 1024
         private val REMOTE_KEYWORDS = listOf("zdaln", "remote", "hybryd")
+        private const val FALLBACK_EXCERPT = "Dołącz do zespołu, który tworzy płatności NFC dla dobra wspólnego — technologię wspierającą parafie, fundacje i lokalne inicjatywy. Szukamy osób, które chcą łączyć nowoczesne rozwiązania z realnym wpływem na ludzi."
     }
 }

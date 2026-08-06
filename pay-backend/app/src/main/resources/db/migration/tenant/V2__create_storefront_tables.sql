@@ -1,19 +1,9 @@
 -- Port skonsolidowany (stan finalny) ze wszystkich migracji Laravela w
--- app/Modules/Storefront/database/migrations/, na branchu `main` (BEZ
--- short_description na job_positions — to pole istnieje tylko na
--- niepowiązanym branchu `kotlin-migration`, nie na `main`). Tabela `users`
--- jest we wspólnej migracji `common/V1` (potrzebna też na fizycznej bazie
--- Gateway — patrz FlywayMigrationConfig), NIE tutaj.
-
-CREATE TABLE salespeople (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    phone VARCHAR(255),
-    voivodeships TEXT, -- JSON (lista województw)
-    active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+-- app/Modules/Storefront/database/migrations/, na branchu `main` (PO PR
+-- „worktree-remove-panel-sections" — bez categories/potential_parishes/
+-- salespeople/contact_messages, z short_description na job_positions).
+-- Tabela `users` jest we wspólnej migracji `common/V1` (potrzebna też na
+-- fizycznej bazie Gateway — patrz FlywayMigrationConfig), NIE tutaj.
 
 CREATE TABLE products (
     id BIGSERIAL PRIMARY KEY,
@@ -31,7 +21,6 @@ CREATE TABLE products (
     website VARCHAR(255),
     voivodeship VARCHAR(255),
     status VARCHAR(20) NOT NULL DEFAULT 'kontakt',
-    salesperson_id BIGINT REFERENCES salespeople (id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -71,6 +60,7 @@ CREATE TABLE job_positions (
     location VARCHAR(255),
     employment_type VARCHAR(255),
     description_html TEXT,
+    short_description TEXT,
     active BOOLEAN NOT NULL DEFAULT true,
     sort INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -95,17 +85,6 @@ CREATE TABLE job_applications (
 CREATE INDEX idx_job_applications_status ON job_applications (status);
 CREATE INDEX idx_job_applications_future_consent ON job_applications (future_recruitment_consent);
 
-CREATE TABLE contact_messages (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(255),
-    subject VARCHAR(255),
-    message TEXT NOT NULL,
-    is_read BOOLEAN NOT NULL DEFAULT false,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
 CREATE TABLE parish_notes (
     id BIGSERIAL PRIMARY KEY,
     product_id BIGINT NOT NULL REFERENCES products (id) ON DELETE CASCADE,
@@ -116,47 +95,6 @@ CREATE TABLE parish_notes (
 );
 
 CREATE INDEX idx_parish_notes_product_id ON parish_notes (product_id);
-
-CREATE TABLE categories (
-    id BIGSERIAL PRIMARY KEY,
-    parent_id BIGINT REFERENCES categories (id) ON DELETE SET NULL,
-    slug VARCHAR(255) NOT NULL UNIQUE,
-    label VARCHAR(255) NOT NULL,
-    label_html TEXT,
-    label_text VARCHAR(255) NOT NULL,
-    intro TEXT,
-    icon VARCHAR(255),
-    source VARCHAR(20) NOT NULL DEFAULT 'none',
-    position INTEGER NOT NULL DEFAULT 0,
-    active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_categories_parent_id ON categories (parent_id);
-CREATE INDEX idx_categories_position ON categories (position);
-
-CREATE TABLE potential_parishes (
-    id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    city VARCHAR(255),
-    address VARCHAR(255),
-    voivodeship VARCHAR(255),
-    denomination VARCHAR(255),
-    phone VARCHAR(255),
-    lat NUMERIC(10, 7) NOT NULL,
-    lon NUMERIC(10, 7) NOT NULL,
-    status VARCHAR(255) NOT NULL DEFAULT 'nowa',
-    salesperson_id BIGINT REFERENCES salespeople (id) ON DELETE SET NULL,
-    note TEXT,
-    called_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_potential_parishes_voivodeship ON potential_parishes (voivodeship);
-CREATE INDEX idx_potential_parishes_city ON potential_parishes (city);
-CREATE INDEX idx_potential_parishes_status ON potential_parishes (status);
 
 CREATE TABLE shop_items (
     id BIGSERIAL PRIMARY KEY,
