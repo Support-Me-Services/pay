@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import StorefrontLayout from '@/Layouts/StorefrontLayout'
+import BeneficiaryNodes from '@/Components/BeneficiaryNodes'
 
 const CSS = `
 .ty-overlay{ position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(20,30,48,.55); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
@@ -25,8 +26,8 @@ const STEPS = [
     { num: 'KROK 4', g: 'g4', rev: true, body: <><p><b>Otrzymujesz podziękowanie</b><br />Po zakończonej wpłacie trafiasz na specjalnie przygotowaną stronę podziękowania.</p><p><br />Może tam na Ciebie czekać:<br />• wiadomość od organizacji<br />• podziękowanie od zespołu lub opiekuna projektu<br />• zdjęcie z realizowanej inicjatywy<br />• informacja o wykorzystaniu środków<br />• inspirujący cytat lub krótka historia związana z projektem</p></> },
 ]
 
-/** Strona główna marketingowa (/main) — kafelki kategorii + „Jak to działa" + modal podziękowania. */
-export default function Home({ categories, showThanks, mecenasLogo, mecenasUrl, mainUrl }) {
+/** Strona główna marketingowa (/main) — sekcja „Wspieramy" inline + „Jak to działa" + modal podziękowania. */
+export default function Home({ beneficiaries, showThanks, mecenasLogo, mecenasUrl, mainUrl }) {
     const [thanks, setThanks] = useState(showThanks)
 
     useEffect(() => {
@@ -68,14 +69,7 @@ export default function Home({ categories, showThanks, mecenasLogo, mecenasUrl, 
                     <h2>Kogo wspieramy?</h2>
                     <p>Każdego dnia tysiące osób chce pomagać, ale często brakuje prostych i wygodnych narzędzi do działania. Tworzymy rozwiązanie, które umożliwia wsparcie jednym zbliżeniem telefonu.</p>
                 </div>
-                <div className="lp-cats">
-                    {categories.map((cat) => (
-                        <a className="lp-cat" href={cat.url} key={cat.slug}>
-                            <span className="lp-cat__disc">{cat.icon && <img className="lp-cat__disc-img" src={`/storage/${cat.icon}`} alt="" />}</span>
-                            <span className="lp-cat__label" dangerouslySetInnerHTML={{ __html: cat.label_html }} />
-                        </a>
-                    ))}
-                </div>
+                <BeneficiaryNodes nodes={beneficiaries} />
             </section>
 
             <section className="lp-section lp-how">

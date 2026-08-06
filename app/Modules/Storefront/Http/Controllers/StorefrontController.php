@@ -3,7 +3,7 @@
 namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Jobs\SendGatewayEvent;
-use App\Modules\Storefront\Models\Category;
+use App\Modules\Storefront\Models\BeneficiaryNode;
 use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Product;
@@ -17,27 +17,26 @@ class StorefrontController extends Controller
     /**
      * GET / — strona główna (landing SupportME wg Figmy).
      *
-     * Kategorie wsparcia (sekcja „Kogo wspieramy?") czytane z bazy — drzewo
-     * edytowalne z panelu. Render zachowuje kontrakt widoku: slug, label_html,
-     * intro oraz opcjonalnie icon (ścieżka względem storage lub null).
+     * Sekcja „Kogo wspieramy?" renderuje treść podstrony „Wspieramy" (BeneficiaryNode)
+     * inline, zamiast osobnych kafelków kategorii (system Kategorie usunięty —
+     * zob. pamięć projektową „Wspieramy inline homepage"). Podstrona /beneficiaries
+     * zostaje nietknięta jako alternatywne wejście / możliwość odwrócenia zmiany.
      */
     public function index()
     {
-        $categories = Category::query()
-            ->active()->topLevel()->ordered()
-            ->get()
-            ->map(fn (Category $cat) => [
-                'slug' => $cat->slug,
-                'label_html' => $cat->label_html ?: e($cat->label_text),
-                'intro' => $cat->intro,
-                'icon' => $cat->icon,
-                // Link kafelka sterowany polem „źródło" (z panelu), nie na sztywno:
-                // 'beneficiaries' -> podstrona „Wspieramy", inaczej strona kategorii.
-                'url' => $cat->source === 'beneficiaries'
-                    ? route('beneficiaries')
-                    : route('category', $cat->slug),
+        $beneficiaries = BeneficiaryNode::active()->ordered()->get()
+            ->map(fn (BeneficiaryNode $n) => [
+                'id' => $n->id,
+                'heading' => $n->heading,
+                'text_align' => $n->text_align,
+                'image' => $n->image ? asset('storage/' . $n->image) : null,
+                'image_x' => $n->image_x,
+                'image_y' => $n->image_y,
+                'image_scale' => $n->image_scale,
+                'image_right' => $n->imageRight(),
+                'body_html' => $n->body_html ?? '',
             ])
-            ->all();
+            ->values();
 
         // Logo mecenasa (LokalnyRolnik) do modala podziękowania — pierwszy istniejący format.
         $mecenasLogo = null;
@@ -49,88 +48,12 @@ class StorefrontController extends Controller
         }
 
         return Inertia::render('Storefront/Home', [
-            'categories' => $categories,
+            'beneficiaries' => $beneficiaries,
             // Modal „Dziękujemy" po powrocie z płatności (redirect ...?dzieki=1).
             'showThanks' => (bool) request('dzieki'),
             'mecenasLogo' => $mecenasLogo,
             'mecenasUrl' => route('mecenasi.lokalnyrolnik'),
             'mainUrl' => route('main'),
-        ]);
-    }
-
-    /**
-     * GET /kategoria/{slug} — strona kategorii. Dla source=='parishes' listuje
-     * realne parafie z bazy; pozostałe kategorie mają pusty stan.
-     */
-    public function category(string $slug)
-    {
-        $model = Category::query()->active()->where('slug', $slug)->first();
-
-        abort_if($model === null, 404);
-
-        $products = $model->source === 'parishes'
-            ? Product::where('active', true)->orderBy('id')->get()
-            : collect();
-
-        // 16 województw RP + mapa wybranych miast → województwo (fallback, gdy
-        // products.voivodeship puste). Filtr wyszukiwarki działa po stronie React.
-        $voivodeships = [
-            'dolnośląskie', 'kujawsko-pomorskie', 'lubelskie', 'lubuskie',
-            'łódzkie', 'małopolskie', 'mazowieckie', 'opolskie',
-            'podkarpackie', 'podlaskie', 'pomorskie', 'śląskie',
-            'świętokrzyskie', 'warmińsko-mazurskie', 'wielkopolskie', 'zachodniopomorskie',
-        ];
-        $cityToVoiv = [
-            'kraków' => 'małopolskie', 'tarnów' => 'małopolskie', 'nowy sącz' => 'małopolskie',
-            'warszawa' => 'mazowieckie', 'radom' => 'mazowieckie', 'płock' => 'mazowieckie',
-            'wrocław' => 'dolnośląskie', 'świdnica' => 'dolnośląskie', 'wałbrzych' => 'dolnośląskie', 'legnica' => 'dolnośląskie', 'jelenia góra' => 'dolnośląskie',
-            'poznań' => 'wielkopolskie', 'kalisz' => 'wielkopolskie', 'konin' => 'wielkopolskie', 'licheń stary' => 'wielkopolskie', 'gniezno' => 'wielkopolskie',
-            'gdańsk' => 'pomorskie', 'gdynia' => 'pomorskie', 'sopot' => 'pomorskie', 'słupsk' => 'pomorskie',
-            'katowice' => 'śląskie', 'częstochowa' => 'śląskie', 'gliwice' => 'śląskie', 'sosnowiec' => 'śląskie', 'bielsko-biała' => 'śląskie',
-            'łódź' => 'łódzkie', 'piotrków trybunalski' => 'łódzkie',
-            'lublin' => 'lubelskie', 'zamość' => 'lubelskie', 'chełm' => 'lubelskie',
-            'szczecin' => 'zachodniopomorskie', 'koszalin' => 'zachodniopomorskie',
-            'bydgoszcz' => 'kujawsko-pomorskie', 'toruń' => 'kujawsko-pomorskie', 'włocławek' => 'kujawsko-pomorskie',
-            'białystok' => 'podlaskie', 'łomża' => 'podlaskie', 'suwałki' => 'podlaskie',
-            'rzeszów' => 'podkarpackie', 'przemyśl' => 'podkarpackie', 'krosno' => 'podkarpackie',
-            'kielce' => 'świętokrzyskie', 'ostrowiec świętokrzyski' => 'świętokrzyskie',
-            'olsztyn' => 'warmińsko-mazurskie', 'elbląg' => 'warmińsko-mazurskie',
-            'opole' => 'opolskie', 'nysa' => 'opolskie',
-            'gorzów wielkopolski' => 'lubuskie', 'zielona góra' => 'lubuskie',
-        ];
-        $voivFor = function (Product $p) use ($cityToVoiv) {
-            $v = trim((string) ($p->voivodeship ?? ''));
-            if ($v !== '') {
-                return mb_strtolower($v, 'UTF-8');
-            }
-
-            return $cityToVoiv[mb_strtolower(trim((string) ($p->city ?? '')), 'UTF-8')] ?? '';
-        };
-
-        $items = $products->map(fn (Product $p) => [
-            'slug' => $p->slug,
-            'name' => $p->name,
-            'city' => $p->city,
-            'voiv' => $voivFor($p),
-            'purpose' => $p->purpose,
-            'price' => $p->pricePln(),
-            'image' => $p->main_image ? asset('storage/' . $p->main_image) : null,
-            'url' => route('product.show', $p->slug),
-        ])->values();
-
-        return Inertia::render('Storefront/Category', [
-            'category' => [
-                'label_text' => $model->label_text,
-                'intro' => $model->intro,
-                'slug' => $model->slug,
-                'source' => $model->source,
-            ],
-            'products' => $items,
-            'cities' => $products->pluck('city')->filter()->map(fn ($c) => trim((string) $c))->unique()->sort(SORT_NATURAL | SORT_FLAG_CASE)->values(),
-            'voivodeships' => $voivodeships,
-            'mainUrl' => route('main'),
-            'cultUrl' => route('category', 'miejsca-kultu'),
-            'pageTitle' => $model->label_text . ' — SupportME',
         ]);
     }
 
@@ -160,7 +83,8 @@ class StorefrontController extends Controller
         }
 
         return Inertia::render('Storefront/TagNotFound', [
-            'categoryUrl' => route('category', 'miejsca-kultu'),
+            // Strona kategorii usunięta — powrót prowadzi do sekcji „Kogo wspieramy?" na /main.
+            'categoryUrl' => route('main') . '#kogo-wspieramy',
         ])->toResponse(request())->setStatusCode(404);
     }
 
@@ -191,7 +115,8 @@ class StorefrontController extends Controller
             'presets' => $presets,
             'default' => $default,
             'buyUrl' => route('product.buy', $product->slug),
-            'categoryUrl' => route('category', 'miejsca-kultu'),
+            // Strona kategorii usunięta — powrót prowadzi do sekcji „Kogo wspieramy?" na /main.
+            'categoryUrl' => route('main') . '#kogo-wspieramy',
             'css' => asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10),
             'pageTitle' => 'Wesprzyj: ' . $product->name . ' — ' . config('shop.name'),
             'pageDescription' => 'Złóż cyfrową tacę na rzecz parafii ' . $product->name . '. Szybka wpłata BLIK, bez gotówki.',

@@ -3,7 +3,6 @@
 namespace App\Modules\Storefront\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
@@ -18,12 +17,20 @@ class Product extends Model
         'aktywna'   => 'Aktywna',
     ];
 
+    /** Lista województw RP — do formularza CRM parafii. */
+    public const VOIVODESHIPS = [
+        'dolnośląskie', 'kujawsko-pomorskie', 'lubelskie', 'lubuskie',
+        'łódzkie', 'małopolskie', 'mazowieckie', 'opolskie',
+        'podkarpackie', 'podlaskie', 'pomorskie', 'śląskie',
+        'świętokrzyskie', 'warmińsko-mazurskie', 'wielkopolskie', 'zachodniopomorskie',
+    ];
+
     protected $fillable = [
         // 'city', 'purpose' używane w trybie church (Taca) — nieszkodliwe dla products.
         'name', 'city', 'purpose', 'slug', 'description_html', 'pickup_instruction',
         'price', 'tag_uid', 'main_image', 'active',
         // Pola CRM (parafie):
-        'phone', 'website', 'voivodeship', 'status', 'salesperson_id',
+        'phone', 'website', 'voivodeship', 'status',
     ];
 
     protected $casts = ['active' => 'boolean', 'price' => 'integer'];
@@ -43,12 +50,6 @@ class Product extends Model
             'aktywna'   => ['#def0e4', '#1f7a4d'], // zielony
             default     => ['#fdf3d7', '#9a7011'], // kontakt — amber
         };
-    }
-
-    /** Handlowiec opiekujący się parafią. */
-    public function salesperson(): BelongsTo
-    {
-        return $this->belongsTo(Salesperson::class, 'salesperson_id');
     }
 
     /** Notatki CRM — najnowsze na górze. */

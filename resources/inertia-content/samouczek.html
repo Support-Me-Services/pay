@@ -103,22 +103,25 @@
         <div class="dc-module__head"><span class="dc-module__num">3.</span><h2>Wdrażanie zmian — 2 warianty</h2></div>
         <p class="dc-lead">Zmiany możesz wprowadzać na dwa sposoby. <strong>Wariant 1</strong> — Claude pracuje na Twoim komputerze (lokalne repo) i wysyła gotowe pliki na serwer. <strong>Wariant 2</strong> — logujesz się na serwer i uruchamiasz Claude bezpośrednio tam, a on edytuje pliki od razu na miejscu. Oba prowadzą do tego samego efektu na produkcji.</p>
 
-        <h3 class="dc-sub">Część 1 — z lokalnego środowiska (deploy przez SSH)</h3>
-        <p>Claude edytuje pliki w lokalnym repo (<code>/var/www/pay/unified</code>), a potem wysyła je na serwer przez <strong>rsync po SSH</strong> i czyści cache. Potrzebny jest dostęp z sekcji 2. Schemat, który Claude wykonuje automatycznie:</p>
-        <pre class="dc-pre"><span class="c"># 1) wyślij zmienione pliki na serwer (przykład: jedna podstrona + jej CSS)</span>
-<span class="p">$</span> rsync -az resources/views/.../inwestorzy.blade.php public/css/inwestorzy.css \
-        root@<i>34.118.46.252</i>:<i>/var/www/support-me/</i>
+        <h3 class="dc-sub">Część 1 — z lokalnego środowiska (git push + <code>bin/deploy.sh</code>)</h3>
+        <p>Claude edytuje pliki w lokalnym repo, commituje i wypycha na GitHub, a na serwerze uruchamia skrypt <code>bin/deploy.sh</code>, który robi <code>git pull</code> + build frontendu (Vite: klient i SSR) + czyszczenie cache + restart procesu SSR. Frontend jest na <strong>React/Inertia</strong> — zbudowane assety (<code>public/build</code>) są w <code>.gitignore</code>, więc sam <code>git pull</code> NIE wystarcza po zmianie w <code>resources/js/**</code>; build i restart SSR są obowiązkowe. Potrzebny jest dostęp z sekcji 2. Schemat, który Claude wykonuje automatycznie:</p>
+        <pre class="dc-pre"><span class="c"># 1) lokalnie: commit + push (przykład: zmiana jednej podstrony)</span>
+<span class="p">$</span> git add resources/js/Pages/Storefront/Inwestorzy.jsx public/css/inwestorzy.css
+<span class="p">$</span> git commit -m "Inwestorzy: ..." &amp;&amp; git push
 
-<span class="c"># 2) wyczyść cache widoków/tras na serwerze</span>
-<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && php artisan view:clear && php artisan route:clear'
+<span class="c"># 2) na serwerze: pull + npm run build (klient+SSR) + cache + restart SSR</span>
+<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && sudo bash bin/deploy.sh'
 
-<span class="c"># 3) (jeśli zmiana w bazie) migracja dla właściwego tenanta</span>
-<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && TENANT=please-support-me.com php artisan migrate --force'</pre>
-        <div class="dc-note">Nie musisz tego robić ręcznie — wystarczy, że napiszesz „wdróż na prod”, a Claude wykona wysyłkę, migracje i wyczyści cache, a na końcu sprawdzi, czy strona zwraca <strong>200</strong>.</div>
-        <div class="dc-note">Zaleta: produkcja zmienia się dopiero po świadomym „wdróż”, a pliki masz wersjonowane w repo (GitHub) — łatwo cofnąć zmianę.</div>
+<span class="c"># 3) (jeśli pull przyniósł NOWE pliki migracji) — jednorazowo, po backupie bazy</span>
+<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && sudo bash bin/deploy.sh --migrate'
+
+<span class="c"># zmiana WYŁĄCZNIE w PHP (bez frontendu) — można pominąć build:</span>
+<span class="c">$ sudo bash bin/deploy.sh --no-build</span></pre>
+        <div class="dc-note">Nie musisz tego robić ręcznie — wystarczy, że napiszesz „wdróż na prod”, a Claude wykona push, zdalne <code>bin/deploy.sh</code> (build + cache + restart SSR, migracje tylko na wyraźną prośbę i po backupie), a na końcu sprawdzi, czy strona zwraca <strong>200</strong>.</div>
+        <div class="dc-note">Zaleta: produkcja zmienia się dopiero po świadomym „wdróż”, a pliki masz wersjonowane w repo (GitHub) — łatwo cofnąć zmianę. <code>bin/deploy.sh</code> sam przełącza aplikację w tryb serwisowy na czas deployu i przywraca ją nawet po błędzie.</div>
 
         <h3 class="dc-sub">Część 2 — bezpośrednio na serwerze (Claude uruchomiony na serwerze)</h3>
-        <p>Tu nie ma osobnego deployu: logujesz się na serwer, odpalasz na nim Claude i wpisujesz prompty — Claude edytuje pliki od razu w <code>/var/www/support-me</code>, a zmiany są natychmiast na żywo (cache czyści sam).</p>
+        <p>Tu nie ma osobnego deployu z Twojego komputera: logujesz się na serwer, odpalasz na nim Claude i wpisujesz prompty — Claude edytuje pliki od razu w <code>/var/www/support-me</code>. Zmiana pliku frontendowego (<code>resources/js/**</code>) <strong>nie</strong> jest jednak od razu widoczna — frontend jest na React/Inertia, więc Claude musi jeszcze zbudować assety (<code>npm run build</code>) i zrestartować proces SSR, zanim strona zacznie serwować nową wersję. Zmiana wyłącznie w PHP (kontroler/trasa) jest widoczna po prostym czyszczeniu cache, bez builda.</p>
         <ol class="dc-steps">
             <li><strong>Zaloguj się na serwer</strong> po SSH (jak w sekcji 2) i wejdź do katalogu projektu:
                 <pre class="dc-pre"><span class="p">$</span> ssh root@<i>34.118.46.252</i>
@@ -128,7 +131,7 @@
                 <pre class="dc-pre"><span class="p">#</span> claude</pre>
                 <p>Przy pierwszym uruchomieniu Claude poprosi o jednorazowe zalogowanie (konto Anthropic / klucz API).</p>
             </li>
-            <li><strong>Wpisuj prompty wprost w terminalu</strong> — np. <em>„na stronie /kontakt zmień nagłówek na »Napisz do nas«”</em>. Claude od razu edytuje pliki na serwerze, czyści cache i (na prośbę) sprawdza, czy strona zwraca <strong>200</strong>. Zmiana jest natychmiast widoczna na <span class="dc-inline">please-support-me.com</span> — bez rsync i bez „wdróż”.</li>
+            <li><strong>Wpisuj prompty wprost w terminalu</strong> — np. <em>„na stronie /praca zmień nagłówek na »Dołącz do nas«”</em>. Claude edytuje plik <code>.jsx</code> na serwerze, ręcznie uruchamia <code>npm run build</code> i restartuje proces SSR (<code>bin/deploy.sh</code> robiłby tu też niepotrzebny <code>git pull</code>, bo zmiana jest tylko lokalna na serwerze), i (na prośbę) sprawdza, czy strona zwraca <strong>200</strong>. Zmiana jest widoczna na <span class="dc-inline">please-support-me.com</span> po tym buildzie — bez commitowania i bez wypychania na GitHub, dopóki nie poprosisz o zsynchronizowanie repo.</li>
         </ol>
         <div class="dc-note dc-note--warn"><strong>Uwaga — to praca bezpośrednio na produkcji.</strong> Nie ma kroku „wdróż”: każda zmiana jest od razu na żywo. Przy większych zmianach poproś Claude o <strong>kopię pliku przed edycją</strong> i o <strong>sprawdzenie strony po zmianie</strong>.</div>
         <div class="dc-note"><strong>Status na dziś:</strong> Claude nie jest jeszcze zainstalowany na tym serwerze — krok „uruchom <code>claude</code>” na razie nie zadziała. Gdy przekażesz <strong>login i hasło</strong> (lub dostęp SSH), podłączymy go tam: instalacja CLI + jednorazowe logowanie. Powyższy opis jest „na zapas”, żeby było wiadomo, jak to będzie wyglądać po podłączeniu.</div>
@@ -160,7 +163,7 @@ Zrób to <b>1:1 (pixel-perfect)</b>, wdróż na prod i pokaż porównanie.</pre>
         <div class="dc-block"><span class="dc-block__label">Przykłady</span>
             <ul>
                 <li><em>„Na stronie <strong>/inwestorzy</strong> zmień nagłówek na »Nasi partnerzy« i dodaj trzeciego akcjonariusza wg Figmy: [link]. Wdróż na prod.”</em></li>
-                <li><em>„Na <strong>/kontakt</strong> zrób formularz 1:1 z tą ramką Figmy: [node-id]. Pixel-perfect, potem nakładka Figma↔live.”</em></li>
+                <li><em>„Na <strong>/praca</strong> zrób sekcję ofert 1:1 z tą ramką Figmy: [node-id]. Pixel-perfect, potem nakładka Figma↔live.”</em></li>
                 <li><em>„Na stronie głównej <strong>/</strong> zmień kolor przycisku KUP na granatowy i powiększ czcionkę kwoty. Wdróż i pokaż na telefonie.”</em></li>
                 <li><em>„Dodaj nową podstronę <strong>/faq</strong> wg Figmy [link], dorzuć link w stopce, wdróż.”</em></li>
             </ul>
@@ -838,16 +841,10 @@ Na końcu sprawdź na telefonie.</pre>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--pub">Publiczne</span><h4>Cyfrowa Taca / wejście NFC</h4><p><code>/t/{tag}</code> — zbliżenie telefonu do taga; kategorie wsparcia.</p></div>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--pub">Publiczne</span><h4>Strona główna</h4><p><code>/main</code> — landing „Technologia, która pomaga czynić dobro".</p></div>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--pub">Publiczne</span><h4>Rekrutacja</h4><p><code>/praca</code> — oferty pracy i formularz aplikacyjny z CV.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--pub">Publiczne</span><h4>Kontakt</h4><p><code>/kontakt</code> — formularz wiadomości trafiający do panelu.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Dashboard</h4><p><code>/panel</code> — podsumowanie wpłat i wykres ostatnich 30 dni.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Parafie + CRM</h4><p>Lista parafii, statusy lejka, notatki, przypisanie handlowca.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Kategorie</h4><p>Drzewo „Kogo wspieramy?" — sekcje na stronie głównej.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Handlowcy</h4><p>Zespół sprzedaży, przypisane województwa.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Parafie do obdzwonienia + mapa</h4><p>Baza leadów z OSM, statusy telefonów, interaktywna mapa pokrycia.</p></div>
+            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Parafie + CRM</h4><p>Lista parafii, statusy lejka, notatki.</p></div>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Sklep (produkty NFC)</h4><p>Gadżety sklepu donacyjnego: kwota minimalna, tag NFC, produkt domyślny.</p></div>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Praca (stanowiska)</h4><p>Oferty pracy publikowane w sekcji <code>/praca</code>.</p></div>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Aplikacje rekrutacyjne</h4><p>Skrzynka zgłoszeń z CV, statusy rekrutacji.</p></div>
-            <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Wiadomości</h4><p>Skrzynka z formularza kontaktowego, znacznik przeczytania.</p></div>
             <div class="dc-modcard"><span class="dc-modcard__tag dc-modcard__tag--adm">Panel</span><h4>Eventy / analityka</h4><p>Zliczanie otwarć tagów i wpłat — źródło danych dla statystyk.</p></div>
         </div>
 
@@ -869,32 +866,31 @@ Na końcu sprawdź na telefonie.</pre>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-sklep-nfc.png</code> — pojawi się automatycznie.</div>
 
         
-        <h3 class="dc-sub">15.2 Cyfrowa Taca / wejście NFC — <code>/t/{tag}</code> i kategorie</h3>
-        <p>To serce idei „cyfrowej tacy". Darczyńca <strong>zbliża telefon do taga NFC</strong> (naklejki/karty), telefon otwiera adres <code>/t/{tag_uid}</code>, a system rozpoznaje, do czego ten tag jest przypisany, rejestruje zdarzenie <em>otwarcia taga</em> i przekierowuje we właściwe miejsce: jeśli tag wskazuje parafię — na jej stronę produktu; jeśli wskazuje gadżet sklepu — na sklep z automatycznie otwartym modalem tego produktu. Uzupełnieniem są <strong>kategorie wsparcia</strong> (<code>/kategoria/{slug}</code>) prezentowane na stronie głównej w sekcji „Kogo wspieramy?".</p>
+        <h3 class="dc-sub">15.2 Cyfrowa Taca / wejście NFC — <code>/t/{tag}</code></h3>
+        <p>To serce idei „cyfrowej tacy". Darczyńca <strong>zbliża telefon do taga NFC</strong> (naklejki/karty), telefon otwiera adres <code>/t/{tag_uid}</code>, a system rozpoznaje, do czego ten tag jest przypisany, rejestruje zdarzenie <em>otwarcia taga</em> i przekierowuje we właściwe miejsce: jeśli tag wskazuje parafię — na jej stronę produktu; jeśli wskazuje gadżet sklepu — na sklep z automatycznie otwartym modalem tego produktu.</p>
         <ol class="dc-steps">
             <li><strong>Zbliż telefon do taga</strong> — otworzy się <code>/t/{tag_uid}</code> (lub wpisz adres ręcznie do testu).</li>
-            <li><strong>System rejestruje event</strong> <code>tag_open</code> (lokalnie i asynchronicznie do bramki) — to później widać w analityce (15.15).</li>
+            <li><strong>System rejestruje event</strong> <code>tag_open</code> (lokalnie i asynchronicznie do bramki) — to później widać w analityce (15.9).</li>
             <li><strong>Następuje przekierowanie</strong> 302 na stronę produktu parafii albo na sklep z modalem gadżetu.</li>
-            <li><strong>Kategorie:</strong> na stronie głównej darczyńca może wejść w kategorię (<code>/kategoria/{slug}</code>); dla kategorii typu „parafie" wyświetla się lista realnych parafii.</li>
         </ol>
         <div class="dc-note dc-note--warn">UID taga musi być przypisany do <strong>aktywnej</strong> parafii lub aktywnego produktu sklepu. Jeśli tag prowadzi „donikąd", sprawdź w panelu, czy rekord jest aktywny i czy UID się zgadza (pola <em>tag UID</em> / <em>tag NFC</em>).</div>
-        <figure class="dc-fig" data-fig="modul-tag-nfc"><img src="__FIG:modul-tag-nfc__" loading="lazy" alt="Cyfrowa Taca / wejście NFC"><figcaption>Wejście z taga NFC i strona kategorii wsparcia.</figcaption></figure>
+        <figure class="dc-fig" data-fig="modul-tag-nfc"><img src="__FIG:modul-tag-nfc__" loading="lazy" alt="Cyfrowa Taca / wejście NFC"><figcaption>Wejście z taga NFC — przekierowanie na stronę parafii lub sklepu.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-tag-nfc.png</code> — pojawi się automatycznie.</div>
 
         
         <h3 class="dc-sub">15.3 Strona główna (landing) — <code>/main</code></h3>
-        <p>Marketingowy landing „Technologia, która pomaga czynić dobro" — opowiada o idei SupportME, prezentuje sekcję „Kogo wspieramy?" (zasilaną z modułu Kategorie) i kieruje dalej. To dobra strona „o nas/jak to działa", oddzielona od sklepu, który zajmuje adres główny <code>/</code>.</p>
+        <p>Marketingowy landing „Technologia, która pomaga czynić dobro" — opowiada o idei SupportME, prezentuje sekcję „Kogo wspieramy?" i kieruje dalej. To dobra strona „o nas/jak to działa", oddzielona od sklepu, który zajmuje adres główny <code>/</code>.</p>
         <ol class="dc-steps">
-            <li><strong>Wejdź na</strong> <code>/main</code> — landing renderuje się z aktualnymi kategoriami z bazy.</li>
-            <li><strong>Sekcja „Kogo wspieramy?"</strong> pokazuje kategorie najwyższego poziomu (kolejność i treść ustawiasz w module Kategorie, 15.10).</li>
-            <li><strong>Treść/wygląd</strong> zmieniasz w szablonie (Blade) — to typowa robota „pod Figmę" (patrz sekcje 4 i 14).</li>
+            <li><strong>Wejdź na</strong> <code>/main</code> — landing renderuje się z aktualną treścią „Wspieramy".</li>
+            <li><strong>Sekcja „Kogo wspieramy?"</strong> renderuje inline tę samą treść co osobna podstrona <code>/beneficiaries</code> (nagłówek, grafika, opis) — bez pośredniej warstwy kategorii. Link „Wspieramy” w nawigacji przenosi do tej sekcji na tej samej stronie.</li>
+            <li><strong>Treść/wygląd</strong> zmieniasz w komponencie React (Inertia) — to typowa robota „pod Figmę" (patrz sekcje 4 i 14).</li>
         </ol>
         <figure class="dc-fig" data-fig="modul-main"><img src="__FIG:modul-main__" loading="lazy" alt="Strona główna /main"><figcaption>Landing /main — „Technologia, która pomaga czynić dobro".</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-main.png</code> — pojawi się automatycznie.</div>
 
         
         <h3 class="dc-sub">15.4 Rekrutacja — <code>/praca</code></h3>
-        <p>Publiczna część rekrutacyjna: lista aktywnych stanowisk (<code>/praca</code>), pojedyncza oferta na osobnej podstronie (<code>/praca/oferta/{position}</code>) oraz formularz aplikacyjny — zarówno <strong>spontaniczny</strong> (<code>/praca/aplikuj</code>), jak i <strong>na konkretną ofertę</strong> (<code>/praca/{position}/aplikuj</code>). Kandydat załącza CV; plik trafia na <strong>prywatny</strong> dysk (niepubliczny), a zgłoszenie ląduje w panelu (15.13). Treść ofert pochodzi z modułu Praca w panelu (15.12).</p>
+        <p>Publiczna część rekrutacyjna: lista aktywnych stanowisk (<code>/praca</code>), pojedyncza oferta na osobnej podstronie (<code>/praca/oferta/{position}</code>) oraz formularz aplikacyjny — zarówno <strong>spontaniczny</strong> (<code>/praca/aplikuj</code>), jak i <strong>na konkretną ofertę</strong> (<code>/praca/{position}/aplikuj</code>). Kandydat załącza CV; plik trafia na <strong>prywatny</strong> dysk (niepubliczny), a zgłoszenie ląduje w panelu (15.8). Treść ofert pochodzi z modułu Praca w panelu (15.7).</p>
         <ol class="dc-steps">
             <li><strong>Kandydat wchodzi na</strong> <code>/praca</code> i przegląda aktywne stanowiska.</li>
             <li><strong>Otwiera ofertę</strong> (<code>/praca/oferta/{position}</code>) i klika „Aplikuj".</li>
@@ -905,90 +901,27 @@ Na końcu sprawdź na telefonie.</pre>
         <figure class="dc-fig" data-fig="modul-praca"><img src="__FIG:modul-praca__" loading="lazy" alt="Rekrutacja /praca"><figcaption>Lista ofert pracy i formularz aplikacyjny z CV.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-praca.png</code> — pojawi się automatycznie.</div>
 
-        
-        <h3 class="dc-sub">15.5 Kontakt — <code>/kontakt</code></h3>
-        <p>Prosty formularz kontaktowy. Wiadomości zapisują się w bazie i trafiają do skrzynki w panelu (15.14). Temat bywa wstępnie wypełniony, gdy ktoś trafi tu z linku „Aplikuj" (parametr <code>?stanowisko=</code>).</p>
-        <ol class="dc-steps">
-            <li><strong>Wejdź na</strong> <code>/kontakt</code> i wypełnij pola: imię i nazwisko, e-mail, telefon (opcjonalnie), temat (opcjonalnie), wiadomość.</li>
-            <li><strong>Wyślij</strong> — po zapisaniu zobaczysz komunikat „Dziękujemy, odezwiemy się.".</li>
-            <li><strong>Wiadomość</strong> czeka w panelu w module Wiadomości jako <em>nieprzeczytana</em>.</li>
-        </ol>
-        <figure class="dc-fig" data-fig="modul-kontakt"><img src="__FIG:modul-kontakt__" loading="lazy" alt="Formularz kontaktowy"><figcaption>Formularz kontaktowy /kontakt.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-kontakt.png</code> — pojawi się automatycznie.</div>
 
-        
         <h3 class="dc-sub" style="margin-top:2.4rem">Panel administracyjny — <code>/panel</code></h3>
-        <div class="dc-note"><strong>Logowanie do panelu.</strong> Wejdź na <code>/panel/login</code>, podaj dane administratora i zaloguj się. Wszystkie poniższe moduły (15.6–15.15) wymagają zalogowania — bez sesji panel przekieruje na ekran logowania.</div>
+        <div class="dc-note"><strong>Logowanie do panelu.</strong> Wejdź na <code>/panel/login</code>, podaj dane administratora i zaloguj się. Panel nie ma osobnego dashboardu — po zalogowaniu (i przy każdym wejściu na <code>/panel</code>) trafiasz bezpośrednio na listę Parafii (15.5). Wszystkie poniższe moduły (15.5–15.9) wymagają zalogowania — bez sesji panel przekieruje na ekran logowania.</div>
 
-        
-        <h3 class="dc-sub">15.6 Dashboard — <code>/panel</code></h3>
-        <p>Pulpit startowy panelu. Po zalogowaniu pokazuje <strong>podsumowanie wpłat</strong> (łącznie i za ostatnie 30 dni) oraz <strong>wykres dziennych zakupów</strong> z ostatnich 30 dni. To szybki „rzut oka" na kondycję zbiórki przed wejściem w szczegóły.</p>
-        <ol class="dc-steps">
-            <li><strong>Zaloguj się</strong> i trafisz prosto na dashboard (<code>/panel</code>).</li>
-            <li><strong>Odczytaj kafelki</strong> podsumowania: suma wpłat ogółem i z 30 dni.</li>
-            <li><strong>Spójrz na wykres</strong> dziennych zakupów, by ocenić trend.</li>
-            <li><strong>Stąd przechodź</strong> do szczegółowych modułów przez menu panelu.</li>
-        </ol>
-        <figure class="dc-fig" data-fig="modul-dashboard"><img src="__FIG:modul-dashboard__" loading="lazy" alt="Dashboard panelu"><figcaption>Dashboard — podsumowanie wpłat i wykres 30 dni.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-dashboard.png</code> — pojawi się automatycznie.</div>
 
-        
-        <h3 class="dc-sub">15.7 Parafie + CRM — <code>/panel/products</code></h3>
-        <p>Centralny moduł sprzedażowy. „Produkty" to w praktyce <strong>parafie</strong> (cyfrowa taca) z pełnym CRM: filtrowanie po statusie lejka i wyszukiwanie po nazwie/mieście/województwie, edycja danych parafii (telefon, www, województwo, instrukcja odbioru, opis, zdjęcia, UID taga), przypisanie <strong>handlowca</strong>, szybka zmiana <strong>statusu</strong> oraz <strong>notatki CRM</strong>. Status steruje publikacją: parafia <em>aktywna</em> jest widoczna publicznie, pozostałe statusy traktowane są jak lead (ukryta).</p>
+        <h3 class="dc-sub">15.5 Parafie + CRM — <code>/panel/products</code></h3>
+        <p>Centralny moduł sprzedażowy. „Produkty" to w praktyce <strong>parafie</strong> (cyfrowa taca) z pełnym CRM: filtrowanie po statusie lejka i wyszukiwanie po nazwie/mieście/województwie, edycja danych parafii (telefon, www, województwo, instrukcja odbioru, opis, zdjęcia, UID taga), szybka zmiana <strong>statusu</strong> oraz <strong>notatki CRM</strong>. Status steruje publikacją: parafia <em>aktywna</em> jest widoczna publicznie, pozostałe statusy traktowane są jak lead (ukryta).</p>
         <ol class="dc-steps">
             <li><strong>Otwórz</strong> <code>/panel/products</code> — zobaczysz listę parafii z zakładkami statusów i wyszukiwarką.</li>
             <li><strong>Filtruj/szukaj</strong> po statusie albo wpisz nazwę/miasto/województwo.</li>
             <li><strong>Dodaj parafię</strong> („Dodaj") lub edytuj istniejącą — uzupełnij dane, w tym <strong>UID taga NFC</strong> (wymagany i unikalny) oraz cenę (podawana w zł, w bazie trzymana w groszach).</li>
             <li><strong>Zmień status</strong> w lejku (np. kontakt → test → wdrożenie → aktywna). Ustawienie statusu „aktywna" <strong>publikuje</strong> parafię.</li>
-            <li><strong>Dodawaj notatki CRM</strong> (zapisywane na bieżąco) i <strong>przypisuj handlowca</strong> odpowiedzialnego za parafię.</li>
+            <li><strong>Dodawaj notatki CRM</strong> (zapisywane na bieżąco).</li>
             <li><strong>Statystyki parafii</strong> (<code>/panel/products/{id}/stats</code>) pokazują wpłaty i otwarcia taga dla konkretnej parafii.</li>
         </ol>
         <div class="dc-note dc-note--warn"><strong>UID taga jest unikalny.</strong> Jeśli przy zapisie pojawi się błąd o zajętym UID, oznacza to, że tag jest już przypisany do innej parafii. Pamiętaj też: dopiero status <em>aktywna</em> czyni parafię widoczną dla darczyńców.</div>
-        <figure class="dc-fig" data-fig="modul-parafie-crm"><img src="__FIG:modul-parafie-crm__" loading="lazy" alt="Parafie + CRM"><figcaption>Lista parafii z CRM — statusy, notatki, przypisanie handlowca.</figcaption></figure>
+        <figure class="dc-fig" data-fig="modul-parafie-crm"><img src="__FIG:modul-parafie-crm__" loading="lazy" alt="Parafie + CRM"><figcaption>Lista parafii z CRM — statusy i notatki.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-parafie-crm.png</code> — pojawi się automatycznie.</div>
 
-        
 
-        
-        <h3 class="dc-sub">15.8 Kategorie — <code>/panel/categories</code></h3>
-        <p>Edytowalne <strong>drzewo kategorii</strong> zasilające sekcję „Kogo wspieramy?" na stronach publicznych. Kategorie mają hierarchię (rodzic → dzieci), własną kolejność, slug, opis (intro), ikonkę oraz <strong>źródło pozycji</strong> (np. „parafie" — wtedy kategoria listuje realne parafie z bazy). Możesz je dodawać, edytować, zmieniać kolejność i usuwać.</p>
-        <ol class="dc-steps">
-            <li><strong>Otwórz</strong> <code>/panel/categories</code> — kategorie pokazane są jako drzewo z wcięciami.</li>
-            <li><strong>Dodaj kategorię</strong> — podaj nazwę (slug wygeneruje się sam, jeśli go nie wpiszesz), wybierz rodzica (lub brak = poziom główny), opis, ikonkę i źródło.</li>
-            <li><strong>Zmień kolejność</strong> przyciskami w górę/dół — zmienia pozycję wśród rodzeństwa.</li>
-            <li><strong>Edytuj/usuń</strong> w razie potrzeby. Po usunięciu rodzica jego dzieci nie znikają — stają się kategoriami poziomu głównego.</li>
-        </ol>
-        <div class="dc-note">Slug i unikalność są pilnowane automatycznie; przy edycji nie wybierzesz jako rodzica samej kategorii ani jej potomka (ochrona przed zapętleniem drzewa).</div>
-        <figure class="dc-fig" data-fig="modul-kategorie"><img src="__FIG:modul-kategorie__" loading="lazy" alt="Kategorie"><figcaption>Drzewo kategorii „Kogo wspieramy?".</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-kategorie.png</code> — pojawi się automatycznie.</div>
-
-        
-        <h3 class="dc-sub">15.9 Handlowcy — <code>/panel/salespeople</code></h3>
-        <p>Rejestr zespołu sprzedaży. Każdy handlowiec ma dane kontaktowe i przypisane <strong>województwa</strong>, w których działa. Handlowców przypisuje się do parafii (15.7) i do leadów na mapie/liście do obdzwonienia (15.10), dzięki czemu widać, kto za co odpowiada. Lista pokazuje też, ile parafii ma przypisany dany handlowiec.</p>
-        <ol class="dc-steps">
-            <li><strong>Otwórz</strong> <code>/panel/salespeople</code> — lista handlowców z liczbą przypisanych parafii.</li>
-            <li><strong>Dodaj handlowca</strong> — imię i nazwisko (wymagane), e-mail, telefon i listę województw, które obsługuje.</li>
-            <li><strong>Edytuj</strong> dane lub zakres województw w dowolnym momencie.</li>
-            <li><strong>Usuwanie</strong> jest bezpieczne: parafie nie znikają, tylko tracą przypisanie do tego handlowca.</li>
-        </ol>
-        <figure class="dc-fig" data-fig="modul-handlowcy"><img src="__FIG:modul-handlowcy__" loading="lazy" alt="Handlowcy"><figcaption>Zespół handlowców i przypisane województwa.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-handlowcy.png</code> — pojawi się automatycznie.</div>
-
-        
-        <h3 class="dc-sub">15.10 Parafie do obdzwonienia + mapa pokrycia — <code>/panel/potential-parishes</code>, <code>/panel/coverage</code></h3>
-        <p>Baza <strong>leadów</strong> (potencjalnych parafii, m.in. z OpenStreetMap) do telefonicznego pozyskania. Moduł ma dwa widoki: <strong>listę</strong> z filtrami (województwo, miasto, nazwa, status, handlowiec oraz filtr „ma numer telefonu" — domyślnie pokazywane są tylko parafie z numerem) i <strong>interaktywną mapę pokrycia</strong> (Leaflet z klastrowaniem markerów). Przy każdym leadzie zapisujesz status rozmowy, notatkę, telefon i przypisujesz handlowca; pierwsze przejście do statusu „zadzwoniono" stempluje datę pierwszego kontaktu.</p>
-        <ol class="dc-steps">
-            <li><strong>Otwórz listę</strong> <code>/panel/potential-parishes</code> — domyślnie widać leady z numerem telefonu, ze stronicowaniem.</li>
-            <li><strong>Zawężaj</strong> po województwie, mieście, nazwie, statusie lub handlowcu; przełącz filtr „ma numer", jeśli chcesz zobaczyć też leady bez telefonu.</li>
-            <li><strong>Obdzwaniaj i zapisuj</strong> status (auto-zapis), notatkę, telefon i handlowca prosto przy rekordzie.</li>
-            <li><strong>Otwórz mapę</strong> <code>/panel/coverage</code> — markery ładują się asynchronicznie; nad mapą widać liczniki per status oraz pokrycie per województwo. Markery można filtrować tak samo jak listę.</li>
-        </ol>
-        <div class="dc-note">Mapa nie wgrywa tysięcy punktów na sztywno do HTML — pobiera je lekkim zapytaniem JSON po starcie. Kolor markera odpowiada statusowi leada, więc od razu widać, gdzie jest robota do zrobienia.</div>
-        <figure class="dc-fig" data-fig="modul-obdzwanianie-mapa"><img src="__FIG:modul-obdzwanianie-mapa__" loading="lazy" alt="Parafie do obdzwonienia i mapa pokrycia"><figcaption>Lista leadów + interaktywna mapa pokrycia.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-obdzwanianie-mapa.png</code> — pojawi się automatycznie.</div>
-
-        
-        <h3 class="dc-sub">15.11 Sklep — produkty NFC — <code>/panel/shop-items</code></h3>
+        <h3 class="dc-sub">15.6 Sklep — produkty NFC — <code>/panel/shop-items</code></h3>
         <p>Zarządzanie gadżetami <strong>sklepu donacyjnego</strong> (to one wyświetlają się na stronie <code>/</code>, moduł 15.1). Każdy produkt ma nazwę, <strong>minimalną kwotę</strong> (w zł, w bazie w groszach), opcjonalny <strong>tag NFC</strong>, grafikę, kolejność oraz flagę <strong>domyślny</strong> (tylko jeden produkt może być domyślny — to on otwiera się automatycznie w sklepie).</p>
         <ol class="dc-steps">
             <li><strong>Otwórz</strong> <code>/panel/shop-items</code> — lista produktów sklepu wg kolejności.</li>
@@ -1001,7 +934,7 @@ Na końcu sprawdź na telefonie.</pre>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-sklep-panel.png</code> — pojawi się automatycznie.</div>
 
         
-        <h3 class="dc-sub">15.12 Praca — stanowiska — <code>/panel/positions</code></h3>
+        <h3 class="dc-sub">15.7 Praca — stanowiska — <code>/panel/positions</code></h3>
         <p>Treść ofert pracy publikowanych w sekcji <code>/praca</code> (15.4). Stanowisko ma tytuł, lokalizację, rodzaj zatrudnienia, krótki opis, pełny opis (edytor), kolejność oraz przełącznik aktywności. Lista pokazuje też liczbę zgłoszeń na każdą ofertę.</p>
         <ol class="dc-steps">
             <li><strong>Otwórz</strong> <code>/panel/positions</code> — lista stanowisk z liczbą aplikacji.</li>
@@ -1014,7 +947,7 @@ Na końcu sprawdź na telefonie.</pre>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-praca-panel.png</code> — pojawi się automatycznie.</div>
 
         
-        <h3 class="dc-sub">15.13 Aplikacje rekrutacyjne — <code>/panel/applications</code></h3>
+        <h3 class="dc-sub">15.8 Aplikacje rekrutacyjne — <code>/panel/applications</code></h3>
         <p>Skrzynka zgłoszeń przesłanych przez kandydatów (15.4). Najnowsze na górze, z licznikiem nieprzeczytanych i filtrami (po ofercie i po statusie rekrutacji). Otwarcie zgłoszenia oznacza je jako przeczytane; CV pobierasz bezpiecznie (plik leży na prywatnym dysku, niedostępny publicznie). Status rekrutacji zmieniasz (np. do sprawdzenia / zaakceptowany / odrzucony).</p>
         <ol class="dc-steps">
             <li><strong>Otwórz</strong> <code>/panel/applications</code> — lista zgłoszeń, najnowsze u góry.</li>
@@ -1027,31 +960,18 @@ Na końcu sprawdź na telefonie.</pre>
         <figure class="dc-fig" data-fig="modul-aplikacje"><img src="__FIG:modul-aplikacje__" loading="lazy" alt="Aplikacje rekrutacyjne"><figcaption>Skrzynka zgłoszeń rekrutacyjnych z CV.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-aplikacje.png</code> — pojawi się automatycznie.</div>
 
-        
-        <h3 class="dc-sub">15.14 Wiadomości — <code>/panel/messages</code></h3>
-        <p>Skrzynka wiadomości z formularza kontaktowego (15.5). Najnowsze na górze, z licznikiem nieprzeczytanych. Otwarcie wiadomości oznacza ją jako przeczytaną; zbędne można usuwać.</p>
-        <ol class="dc-steps">
-            <li><strong>Otwórz</strong> <code>/panel/messages</code> — lista wiadomości z licznikiem nieprzeczytanych.</li>
-            <li><strong>Kliknij wiadomość</strong>, by zobaczyć pełną treść; otwarcie zdejmuje status „nieprzeczytana".</li>
-            <li><strong>Usuń</strong> wiadomość, gdy jest już obsłużona.</li>
-        </ol>
-        <figure class="dc-fig" data-fig="modul-wiadomosci"><img src="__FIG:modul-wiadomosci__" loading="lazy" alt="Wiadomości"><figcaption>Skrzynka wiadomości z formularza kontaktowego.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-wiadomosci.png</code> — pojawi się automatycznie.</div>
-
-        
-        <h3 class="dc-sub">15.15 Eventy i analityka</h3>
-        <p>To moduł „pod maską", który zasila statystyki. System zapisuje zdarzenia — przede wszystkim <strong>otwarcia tagów NFC</strong> (<code>tag_open</code>, generowane przy wejściu <code>/t/{tag}</code>, 15.2) oraz <strong>wpłaty</strong> potwierdzane przez bramkę. Na tej podstawie liczone są podsumowania na Dashboardzie (15.6) i statystyki pojedynczej parafii (w CRM, 15.7). Część zdarzeń wysyłana jest również asynchronicznie do bramki, by nie spowalniać przekierowania darczyńcy.</p>
+        <h3 class="dc-sub">15.9 Eventy i analityka</h3>
+        <p>To moduł „pod maską", który zasila statystyki. System zapisuje zdarzenia — przede wszystkim <strong>otwarcia tagów NFC</strong> (<code>tag_open</code>, generowane przy wejściu <code>/t/{tag}</code>, 15.2) oraz <strong>wpłaty</strong> potwierdzane przez bramkę. Na tej podstawie liczone są statystyki pojedynczej parafii (w CRM, 15.5). Część zdarzeń wysyłana jest również asynchronicznie do bramki, by nie spowalniać przekierowania darczyńcy.</p>
         <ol class="dc-steps">
             <li><strong>Otwarcia tagów</strong> rejestrują się automatycznie — nic nie musisz robić; pojawią się w statystykach.</li>
             <li><strong>Wpłaty</strong> liczone są po potwierdzeniu płatności (webhook bramki <code>/webhooks/gateway</code>).</li>
-            <li><strong>Podgląd zbiorczy:</strong> Dashboard (<code>/panel</code>) — sumy i wykres 30 dni.</li>
             <li><strong>Podgląd dla parafii:</strong> statystyki produktu (<code>/panel/products/{id}/stats</code>).</li>
         </ol>
-        <div class="dc-note">Jeśli statystyki „nie rosną", sprawdź najpierw, czy tagi są przypisane do <strong>aktywnych</strong> rekordów (15.2/15.7) oraz czy działają usługi w tle (kolejki/scheduler — sekcja 11), bo to one przetwarzają część zdarzeń.</div>
+        <div class="dc-note">Jeśli statystyki „nie rosną", sprawdź najpierw, czy tagi są przypisane do <strong>aktywnych</strong> rekordów (15.2/15.5) oraz czy działają usługi w tle (kolejki/scheduler — sekcja 11), bo to one przetwarzają część zdarzeń.</div>
         <figure class="dc-fig" data-fig="modul-analityka"><img src="__FIG:modul-analityka__" loading="lazy" alt="Eventy i analityka"><figcaption>Statystyki wpłat i otwarć tagów.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/modul-analityka.png</code> — pojawi się automatycznie.</div>
 
-        <div class="dc-note" style="margin-top:2rem"><strong>Powiązania między modułami w skrócie.</strong> Sklep w panelu (15.11) → wyświetla się na <code>/</code> (15.1). Kategorie (15.8) → sekcja „Kogo wspieramy?" na <code>/main</code> (15.3). Praca w panelu (15.12) → oferty na <code>/praca</code> (15.4) → zgłoszenia w Aplikacjach (15.13). Kontakt (15.5) → Wiadomości (15.14). Tagi NFC (15.2) i wpłaty → Eventy/analityka (15.15) → Dashboard (15.6) i CRM parafii (15.7).</div>
+        <div class="dc-note" style="margin-top:2rem"><strong>Powiązania między modułami w skrócie.</strong> Sklep w panelu (15.6) → wyświetla się na <code>/</code> (15.1). Sekcja „Kogo wspieramy?" na <code>/main</code> (15.3) renderuje treść „Wspieramy" inline. Praca w panelu (15.7) → oferty na <code>/praca</code> (15.4) → zgłoszenia w Aplikacjach (15.8). Tagi NFC (15.2) i wpłaty → Eventy/analityka (15.9) → CRM parafii (15.5).</div>
     </section>
 
 </div>

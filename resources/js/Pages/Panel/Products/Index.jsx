@@ -43,12 +43,12 @@ export default function Index({ items, tabs, q, indexUrl, createUrl }) {
                 <table className="table">
                     <thead>
                         <tr>
-                            <th>Nazwa</th><th>Miasto / województwo</th><th>Status</th><th>Handlowiec</th>
+                            <th>Nazwa</th><th>Miasto / województwo</th><th>Status</th>
                             <th>Tag NFC</th><th>Wpłaty</th><th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length === 0 && <tr><td colSpan={7} className="text-muted">Brak parafii spełniających kryteria.</td></tr>}
+                        {items.length === 0 && <tr><td colSpan={6} className="text-muted">Brak parafii spełniających kryteria.</td></tr>}
                         {items.map((p) => (
                             <tr key={p.id}>
                                 <td className="fw-bold">{p.name}</td>
@@ -57,7 +57,6 @@ export default function Index({ items, tabs, q, indexUrl, createUrl }) {
                                     {p.voivodeship && <><br /><span className="text-muted" style={{ fontWeight: 400 }}>{p.voivodeship}</span></>}
                                 </td>
                                 <td><span className="badge" style={{ background: p.status_bg, color: p.status_fg, fontWeight: 600 }}>{p.status_label}</span></td>
-                                <td>{p.salesperson_name || '—'}</td>
                                 <td><code>{p.tag_uid}</code></td>
                                 <td>{p.orders_count}</td>
                                 <td className="actions nowrap">

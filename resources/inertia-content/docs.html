@@ -17,25 +17,20 @@
                 <li><span class="dc-toc__n">5.</span> <a href="#main">Strona główna /main</a></li>
                 <li><span class="dc-toc__n">6.</span> <a href="#inwestorzy">Inwestorzy i akcjonariusze</a></li>
                 <li><span class="dc-toc__n">7.</span> <a href="#rekrutacja">Rekrutacja i kariera</a></li>
-                <li><span class="dc-toc__n">8.</span> <a href="#kontakt">Kontakt</a></li>
-                <li><span class="dc-toc__n">9.</span> <a href="#regulamin">Regulamin</a></li>
-                <li><span class="dc-toc__n">10.</span> <a href="#powrot">Powrót z płatności</a></li>
-                <li><span class="dc-toc__n">11.</span> <a href="#client">Klient bramki i webhooki (sklep)</a></li>
-                <li><span class="dc-toc__n">12.</span> <a href="#gateway">Moduł Gateway — bramka PayU</a></li>
-                <li><span class="dc-toc__n">13.</span> <a href="#gw-api">Gateway: API i webhooki</a></li>
-                <li><span class="dc-toc__n">14.</span> <a href="#gw-panel">Gateway: panel zarządzania</a></li>
-                <li><span class="dc-toc__n">15.</span> <a href="#panel-auth">Panel: logowanie i dashboard</a></li>
-                <li><span class="dc-toc__n">16.</span> <a href="#panel-parafie">Panel: Parafie + CRM</a></li>
-                <li><span class="dc-toc__n">17.</span> <a href="#panel-kat">Panel: Kategorie</a></li>
-                <li><span class="dc-toc__n">18.</span> <a href="#panel-hand">Panel: Handlowcy</a></li>
-                <li><span class="dc-toc__n">19.</span> <a href="#panel-leady">Panel: Parafie do obdzwonienia + mapa</a></li>
-                <li><span class="dc-toc__n">20.</span> <a href="#panel-sklep">Panel: Sklep — produkty NFC</a></li>
-                <li><span class="dc-toc__n">21.</span> <a href="#panel-praca">Panel: Praca — stanowiska</a></li>
-                <li><span class="dc-toc__n">22.</span> <a href="#panel-apl">Panel: Aplikacje rekrutacyjne</a></li>
-                <li><span class="dc-toc__n">23.</span> <a href="#panel-wiad">Panel: Wiadomości</a></li>
-                <li><span class="dc-toc__n">24.</span> <a href="#analityka">Eventy i analityka</a></li>
-                <li><span class="dc-toc__n">25.</span> <a href="#baza">Pełny schemat bazy danych</a></li>
-                <li><span class="dc-toc__n">26.</span> <a href="#stack">Stack technologiczny i statystyki</a></li>
+                <li><span class="dc-toc__n">8.</span> <a href="#regulamin">Regulamin</a></li>
+                <li><span class="dc-toc__n">9.</span> <a href="#powrot">Powrót z płatności</a></li>
+                <li><span class="dc-toc__n">10.</span> <a href="#client">Klient bramki i webhooki (sklep)</a></li>
+                <li><span class="dc-toc__n">11.</span> <a href="#gateway">Moduł Gateway — bramka PayU</a></li>
+                <li><span class="dc-toc__n">12.</span> <a href="#gw-api">Gateway: API i webhooki</a></li>
+                <li><span class="dc-toc__n">13.</span> <a href="#gw-panel">Gateway: panel zarządzania</a></li>
+                <li><span class="dc-toc__n">14.</span> <a href="#panel-auth">Panel: logowanie</a></li>
+                <li><span class="dc-toc__n">15.</span> <a href="#panel-parafie">Panel: Parafie + CRM</a></li>
+                <li><span class="dc-toc__n">16.</span> <a href="#panel-sklep">Panel: Sklep — produkty NFC</a></li>
+                <li><span class="dc-toc__n">17.</span> <a href="#panel-praca">Panel: Praca — stanowiska</a></li>
+                <li><span class="dc-toc__n">18.</span> <a href="#panel-apl">Panel: Aplikacje rekrutacyjne</a></li>
+                <li><span class="dc-toc__n">19.</span> <a href="#analityka">Eventy i analityka</a></li>
+                <li><span class="dc-toc__n">20.</span> <a href="#baza">Pełny schemat bazy danych</a></li>
+                <li><span class="dc-toc__n">21.</span> <a href="#stack">Stack technologiczny i statystyki</a></li>
         </ol>
     </nav>
 
@@ -68,7 +63,6 @@
             <ul>
                 <li>Czyta host żądania i mapuje go na tenant (moduł + tryb + baza + klucz API bramki).</li>
                 <li>Dynamicznie podmienia bazę połączenia MySQL (<code>config.database.connections.mysql.database</code>) — per żądanie, bez restartu.</li>
-                <li>Przełącza ścieżki widoków Blade zależnie od trybu (church / products), więc ten sam kontroler renderuje inny wygląd.</li>
                 <li>Rejestruje singleton <code>app('tenant')</code> dostępny w całej aplikacji oraz klucz API bramki w <code>config('shop.gateway_api_key')</code>.</li>
             </ul>
         </div>
@@ -152,21 +146,20 @@
 
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>shop_items</code><code>orders</code></div></div>
         <div class="dc-block"><span class="dc-block__label">Pliki</span>
-            <div class="dc-files">CompanyStoreController.php · Models/ShopItem.php · views/…/shop/sklep.blade.php · public/css/sklep.css · public/css/landing.css (modal)</div>
+            <div class="dc-files">CompanyStoreController.php · Models/ShopItem.php · resources/js/Pages/Storefront/Storefront.jsx · public/css/sklep.css · public/css/landing.css (modal)</div>
         </div>
     </section>
 
     
     <section class="dc-module" id="taca">
         <div class="dc-module__head"><span class="dc-module__num">4.</span><h2>Cyfrowa Taca — wejście NFC i parafie</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Główna funkcja platformy. Darczyńca zbliża telefon do znacznika NFC w kościele, trafia na stronę parafii, wybiera kwotę i płaci, a na końcu widzi ekran „Bóg zapłać”. Wszystkim steruje <code>StorefrontController</code>; dane parafii zarządzane są w panelu (sekcja 16). Każdy etap loguje zdarzenie do analityki.</p>
+        <p class="dc-lead">Główna funkcja platformy. Darczyńca zbliża telefon do znacznika NFC w kościele, trafia na stronę parafii, wybiera kwotę i płaci, a na końcu widzi ekran „Bóg zapłać”. Wszystkim steruje <code>StorefrontController</code>; dane parafii zarządzane są w panelu (sekcja 15). Każdy etap loguje zdarzenie do analityki.</p>
 
         <div class="dc-block"><span class="dc-block__label">Trasy</span>
             <table class="dc-table">
                 <thead><tr><th>Metoda</th><th>URL</th><th>Nazwa</th><th>Opis</th></tr></thead>
                 <tbody>
                     <tr><td data-label="Metoda">GET</td><td data-label="URL"><code>/main</code></td><td data-label="Nazwa"><code>main</code></td><td data-label="Opis">Landing (sekcja 5)</td></tr>
-                    <tr><td data-label="Metoda">GET</td><td data-label="URL"><code>/kategoria/{slug}</code></td><td data-label="Nazwa"><code>category</code></td><td data-label="Opis">Lista parafii w kategorii + wyszukiwarka</td></tr>
                     <tr><td data-label="Metoda">GET</td><td data-label="URL"><code>/t/{tag_uid}</code></td><td data-label="Nazwa"><code>tag</code></td><td data-label="Opis">Wejście z taga NFC → przekierowanie</td></tr>
                     <tr><td data-label="Metoda">GET</td><td data-label="URL"><code>/p/{slug}</code></td><td data-label="Nazwa"><code>product.show</code></td><td data-label="Opis">Strona parafii + wybór kwoty</td></tr>
                     <tr><td data-label="Metoda">POST</td><td data-label="URL"><code>/p/{slug}/kup</code></td><td data-label="Nazwa"><code>product.buy</code></td><td data-label="Opis">Utworzenie zamówienia i transakcji</td></tr>
@@ -176,8 +169,7 @@
 
         <div class="dc-block"><span class="dc-block__label">Metody kontrolera</span>
             <ul class="dc-fns">
-                <li><code>index()</code><span>Renderuje landing: kategorie wsparcia z bazy (aktywne, najwyższy poziom) z ikoną, etykietą i opisem.</span></li>
-                <li><code>category($slug)</code><span>Pokazuje parafie danej kategorii (gdy <code>source = parishes</code>) lub pusty stan. Po stronie klienta działa wyszukiwarka po nazwie, mieście i województwie.</span></li>
+                <li><code>index()</code><span>Renderuje landing: sekcja „Kogo wspieramy?” inline z treści podstrony Wspieramy (zob. sekcja 5).</span></li>
                 <li><code>tag($tagUid)</code><span>Szuka parafii po <code>tag_uid</code> → przekierowuje na jej stronę i loguje <code>tag_open</code>. Jeśli to tag produktu sklepu → przekierowuje na sklep z modalem produktu. Nieznany tag → strona 404 „tabliczka nieprzypisana”.</span></li>
                 <li><code>show($slug)</code><span>Strona parafii; loguje <code>page_view</code>; renderuje formularz wyboru kwoty z presetami.</span></li>
                 <li><code>buy($slug)</code><span>Waliduje kwotę (2–5000 zł), loguje <code>buy_click</code>, tworzy <code>Order</code> powiązany z parafią i transakcję w bramce, przekierowuje do płatności.</span></li>
@@ -199,7 +191,6 @@
                     <tr><td data-label="Pole"><code>active</code></td><td data-label="Typ">bool</td><td data-label="Opis">Publikacja (sterowana statusem CRM)</td></tr>
                     <tr><td data-label="Pole"><code>phone, website, voivodeship</code></td><td data-label="Typ">string</td><td data-label="Opis">Dane kontaktowe (CRM)</td></tr>
                     <tr><td data-label="Pole"><code>status</code></td><td data-label="Typ">enum</td><td data-label="Opis">CRM: kontakt · test · wdrożenie · aktywna</td></tr>
-                    <tr><td data-label="Pole"><code>salesperson_id</code></td><td data-label="Typ">FK</td><td data-label="Opis">Handlowiec opiekujący się parafią</td></tr>
                 </tbody>
             </table>
         </div>
@@ -214,24 +205,24 @@
                 <li><code>tag()</code> znajduje parafię, loguje <code>tag_open</code> (lokalnie + asynchronicznie do bramki) i przekierowuje na <code>/p/{slug}</code>.</li>
                 <li><code>show()</code> loguje <code>page_view</code> i pokazuje stronę z presetami.</li>
                 <li>Po wyborze kwoty <code>POST /p/{slug}/kup</code>: <code>buy()</code> loguje <code>buy_click</code>, tworzy zamówienie i transakcję, przekierowuje do PayU.</li>
-                <li>Po płatności następuje powrót na ekran zwrotu (sekcja 10) — „Bóg zapłać”.</li>
+                <li>Po płatności następuje powrót na ekran zwrotu (sekcja 9) — „Bóg zapłać”.</li>
             </ol>
         </div>
 
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>products</code><code>categories</code><code>orders</code><code>events</code><code>product_images</code></div></div>
+        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>products</code><code>orders</code><code>events</code><code>product_images</code></div></div>
         <div class="dc-block"><span class="dc-block__label">Pliki</span>
-            <div class="dc-files">StorefrontController.php · Models/Product.php, Category.php, Order.php, Event.php · views/…/shop/{home,category,product}.blade.php · Jobs/SendGatewayEvent.php</div>
+            <div class="dc-files">StorefrontController.php · Models/Product.php, Order.php, Event.php · resources/js/Pages/Storefront/{Home,Product}.jsx · Jobs/SendGatewayEvent.php</div>
         </div>
     </section>
 
     
     <section class="dc-module" id="main">
         <div class="dc-module__head"><span class="dc-module__num">5.</span><h2>Strona główna /main</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Landing „Technologia, która pomaga czynić dobro” — zbudowany pixel-perfect z makiet Figmy (desktop i mobile). Sekcje są dynamiczne: kategorie „Kogo wspieramy?” pobierane są z bazy i zarządzane z panelu.</p>
+        <p class="dc-lead">Landing „Technologia, która pomaga czynić dobro” — zbudowany pixel-perfect z makiet Figmy (desktop i mobile). Sekcja „Kogo wspieramy?” renderuje inline tę samą treść co podstrona <code>/beneficiaries</code> (sekcja „Wspieramy” zarządzana z panelu) — bez osobnego systemu kategorii między nimi.</p>
         <div class="dc-block"><span class="dc-block__label">Sekcje</span>
             <ul>
                 <li><strong>Hero</strong> — nagłówek z misją platformy.</li>
-                <li><strong>Kogo wspieramy?</strong> — kafelki kategorii (ikona, etykieta HTML, opis); linki do <code>/kategoria/{slug}</code>.</li>
+                <li><strong>Kogo wspieramy?</strong> — treść węzłów „Wspieramy" (nagłówek, grafika, opis WYSIWYG) renderowana inline, ten sam model danych co <code>/beneficiaries</code>. Link „Wspieramy” w nawigacji przenosi do tej sekcji (<code>#kogo-wspieramy</code>) na tej samej stronie, zamiast na osobną podstronę.</li>
                 <li><strong>Jak to działa?</strong> — 4 kroki: zbliż telefon do NFC → wybierz wsparcie → zapłać → otrzymaj podziękowanie.</li>
                 <li><strong>Tekst zamykający</strong> + stopka z danymi firmy i linkami.</li>
             </ul>
@@ -239,15 +230,15 @@
         <div class="dc-block"><span class="dc-block__label">Modal „Wesprzyj” i podgląd linku (OG)</span>
             <p>Przycisk „Wesprzyj” w nagłówku otwiera modal domyślnego produktu (<code>/?produkt=serduszko</code>). W <code>&lt;head&gt;</code> ustawione są tagi Open Graph i Twitter z grafiką serca z logo — przy udostępnianiu linku na WhatsApp / Facebook pojawia się ładny podgląd z serduszkiem.</p>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>categories</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">StorefrontController::index() · views/…/shop/home.blade.php · layouts/landing.blade.php · public/css/landing.css · public/img/og-supportme.png</div></div>
+        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>beneficiary_nodes</code></div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">StorefrontController::index() · Models/BeneficiaryNode.php · Components/BeneficiaryNodes.jsx (współdzielony z /beneficiaries) · public/css/landing.css · public/img/og-supportme.png</div></div>
     </section>
 
     
     <section class="dc-module" id="inwestorzy">
         <div class="dc-module__head"><span class="dc-module__num">6.</span><h2>Inwestorzy i akcjonariusze</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Statyczna strona marketingowa (<code>GET /inwestorzy</code>, nazwa trasy <code>investors</code>) zbudowana 1:1 z makiety Figmy. Hero „Inwestorzy i akcjonariusze”, sekcja misji kapitałowej („Wierzymy, że kapitał może służyć dobru”) oraz karty akcjonariuszy z kwotami inwestycji (kapitałowa + wsparcie usługowe). Renderowana bez kontrolera (<code>Route::view</code>).</p>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (Route::view) · views/…/shop/inwestorzy.blade.php · public/css/inwestorzy.css</div></div>
+        <p class="dc-lead">Statyczna strona marketingowa (<code>GET /inwestorzy</code>, nazwa trasy <code>investors</code>) zbudowana 1:1 z makiety Figmy. Hero „Inwestorzy i akcjonariusze”, sekcja misji kapitałowej („Wierzymy, że kapitał może służyć dobru”) oraz karty akcjonariuszy z kwotami inwestycji (kapitałowa + wsparcie usługowe). Renderowana bez dedykowanego kontrolera — closure w <code>routes/web.php</code> zwracający <code>Inertia::render(...)</code>.</p>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (closure → Inertia::render) · resources/js/Pages/Storefront/Inwestorzy.jsx · public/css/inwestorzy.css</div></div>
     </section>
 
     
@@ -313,39 +304,11 @@
         <div class="dc-note"><strong>Powiadomienia e-mail</strong> <span class="dc-badge dc-badge--soon">Gotowy</span> — kod wysyłki maila jest kompletny; na produkcji działa tryb „tylko panel” (zgłoszenia + CV trafiają do skrzynki w panelu). Wysyłkę mailem włącza się konfiguracją mailera.</div>
 
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>job_positions</code><code>job_applications</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">CareersController.php · Models/JobPosition.php, JobApplication.php · Mail/JobApplicationReceived.php · views/…/shop/{praca,oferta,aplikuj}.blade.php · views/emails/job-application.blade.php</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">CareersController.php · Models/JobPosition.php, JobApplication.php · Mail/JobApplicationReceived.php · resources/js/Pages/Storefront/{Praca,Oferta,Aplikuj}.jsx · views/emails/job-application.blade.php (jedyny realny Blade — szablon maila)</div></div>
     </section>
 
-    
-    <section class="dc-module" id="kontakt">
-        <div class="dc-module__head"><span class="dc-module__num">8.</span><h2>Kontakt</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Publiczny formularz kontaktowy (<code>ContactController</code>). Wiadomości zapisywane są do bazy i trafiają do skrzynki w panelu z licznikiem nieprzeczytanych. Temat może być wstępnie wypełniony z linku z oferty pracy (<code>?stanowisko=…</code>).</p>
-        <div class="dc-block"><span class="dc-block__label">Trasy i metody</span>
-            <ul class="dc-fns">
-                <li><code>show()</code><span><code>GET /kontakt</code> (nazwa <code>contact.show</code>) — formularz.</span></li>
-                <li><code>store()</code><span><code>POST /kontakt</code> (nazwa <code>contact.store</code>) — walidacja i zapis wiadomości.</span></li>
-            </ul>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Pola (ContactMessage → contact_messages)</span>
-            <table class="dc-table">
-                <thead><tr><th>Pole</th><th>Typ</th><th>Walidacja</th></tr></thead>
-                <tbody>
-                    <tr><td data-label="Pole"><code>name</code></td><td data-label="Typ">string</td><td data-label="Walidacja">wymagane, max 255</td></tr>
-                    <tr><td data-label="Pole"><code>email</code></td><td data-label="Typ">string</td><td data-label="Walidacja">wymagane, e-mail, max 255</td></tr>
-                    <tr><td data-label="Pole"><code>phone</code></td><td data-label="Typ">string, nullable</td><td data-label="Walidacja">max 50</td></tr>
-                    <tr><td data-label="Pole"><code>subject</code></td><td data-label="Typ">string, nullable</td><td data-label="Walidacja">max 255</td></tr>
-                    <tr><td data-label="Pole"><code>message</code></td><td data-label="Typ">text</td><td data-label="Walidacja">wymagane, max 5000</td></tr>
-                    <tr><td data-label="Pole"><code>is_read</code></td><td data-label="Typ">bool</td><td data-label="Walidacja">oznaczane w panelu</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>contact_messages</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">ContactController.php · Models/ContactMessage.php · views/…/shop/kontakt.blade.php</div></div>
-    </section>
-
-    
     <section class="dc-module" id="regulamin">
-        <div class="dc-module__head"><span class="dc-module__num">9.</span><h2>Regulamin</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">8.</span><h2>Regulamin</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Statyczny dokument prawny (<code>GET /regulamin</code>, nazwa <code>regulamin</code>) — kompletny regulamin sklepu internetowego przeniesiony 1:1 z dokumentu źródłowego. 12 paragrafów + wzór formularza odstąpienia.</p>
         <div class="dc-block"><span class="dc-block__label">Zawartość</span>
             <ul>
@@ -355,12 +318,12 @@
                 <li>Załącznik: wzór formularza odstąpienia; dane firmy: Fundacja Support Me Haven &amp; Heaven, NIP 5342715041</li>
             </ul>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (Route::view) · views/…/shop/regulamin.blade.php · public/css/subpages.css</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (closure → Inertia::render) · resources/js/Pages/Storefront/Regulamin.jsx · public/css/subpages.css</div></div>
     </section>
 
     
     <section class="dc-module" id="powrot">
-        <div class="dc-module__head"><span class="dc-module__num">10.</span><h2>Powrót z płatności</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">9.</span><h2>Powrót z płatności</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Po powrocie z bramki <code>OrderReturnController</code> synchronizuje status zamówienia i pokazuje właściwy ekran: sukces („Bóg zapłać”), oczekiwanie (z pollingiem) lub niepowodzenie (z opcją ponowienia). To zabezpiecza przed sytuacją, gdy klient wróci wcześniej niż dotrze webhook.</p>
         <div class="dc-block"><span class="dc-block__label">Trasy i metody</span>
             <ul class="dc-fns">
@@ -392,12 +355,12 @@
             </table>
         </div>
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>orders</code><code>events</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">OrderReturnController.php · views/…/shop/return-{success,pending,failure}.blade.php</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">OrderReturnController.php · resources/js/Pages/Storefront/Return{Success,Pending,Failure}.jsx</div></div>
     </section>
 
     
     <section class="dc-module" id="client">
-        <div class="dc-module__head"><span class="dc-module__num">11.</span><h2>Klient bramki i webhooki (po stronie sklepu)</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">10.</span><h2>Klient bramki i webhooki (po stronie sklepu)</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Sklep komunikuje się z bramką przez serwis <code>GatewayClient</code> oraz odbiera powiadomienia zwrotne (webhooki) o opłaceniu. Zdarzenia analityczne (np. <code>tag_open</code>) wysyłane są asynchronicznie, by nie spowalniać odpowiedzi.</p>
         <div class="dc-block"><span class="dc-block__label">Metody GatewayClient</span>
             <ul class="dc-fns">
@@ -448,7 +411,7 @@ $data = $request-&gt;validate([
 
     
     <section class="dc-module" id="gateway">
-        <div class="dc-module__head"><span class="dc-module__num">12.</span><h2>Moduł Gateway — bramka PayU</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">11.</span><h2>Moduł Gateway — bramka PayU</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Samodzielna bramka płatnicza działająca jako odrębna aplikacja (<code>pay.please-support-me.com</code>, baza <code>nfc_pay</code>). Integruje PayU, obsługuje wiele sklepów, tagi NFC, transakcje, zdarzenia i statystyki. Zawiera 15 kontrolerów, własne API, panel oraz warstwę dostawców płatności (provider).</p>
 
         <div class="dc-block"><span class="dc-block__label">Dostawca płatności — PayUProvider</span>
@@ -543,7 +506,7 @@ if (! in_array($statusCode, [<i>'SUCCESS','WARNING_CONTINUE_3DS','WARNING_CONTIN
 
     
     <section class="dc-module" id="gw-api">
-        <div class="dc-module__head"><span class="dc-module__num">13.</span><h2>Gateway: API i webhooki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">12.</span><h2>Gateway: API i webhooki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Bramka udostępnia REST API dla sklepów (autoryzacja kluczem) oraz endpointy płatności i webhooki. Wszystkie powiadomienia są podpisywane i weryfikowane kryptograficznie.</p>
         <div class="dc-block"><span class="dc-block__label">Trasy API i płatności</span>
             <table class="dc-table">
@@ -623,7 +586,7 @@ $status = match ($payuStatus) {
 
     
     <section class="dc-module" id="gw-panel">
-        <div class="dc-module__head"><span class="dc-module__num">14.</span><h2>Gateway: panel zarządzania</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">13.</span><h2>Gateway: panel zarządzania</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Panel bramki (osobne logowanie) służy do zarządzania sklepami, tagami NFC, statystykami i leadami. Zawiera też moduły demonstracyjne (anti-theft, tryb testowy płatności).</p>
         <div class="dc-block"><span class="dc-block__label">Sekcje panelu bramki</span>
             <ul class="dc-fns">
@@ -697,25 +660,17 @@ protected $connection = 'gateway';</pre>
 
     
     <section class="dc-module" id="panel-auth">
-        <div class="dc-module__head"><span class="dc-module__num">15.</span><h2>Panel: logowanie i dashboard</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Panel sklepu (<code>/panel</code>) chroniony jest logowaniem (middleware <code>auth</code>). Po zalogowaniu dashboard pokazuje kondycję sprzedaży. Łącznie panel udostępnia ponad 50 tras.</p>
+        <div class="dc-module__head"><span class="dc-module__num">14.</span><h2>Panel: logowanie</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <p class="dc-lead">Panel sklepu (<code>/panel</code>) chroniony jest logowaniem (middleware <code>auth</code>). Panel nie ma osobnego dashboardu ze statystykami — po zalogowaniu (i przy każdym wejściu na <code>/panel</code>) admin trafia bezpośrednio na listę Parafii (sekcja 15), pierwszą pozycję nawigacji.</p>
         <div class="dc-block"><span class="dc-block__label">Logowanie (LoginController)</span>
             <ul class="dc-fns">
-                <li><code>show()</code><span><code>GET /panel/login</code> — formularz (przekierowanie do dashboardu, jeśli zalogowany).</span></li>
+                <li><code>show()</code><span><code>GET /panel/login</code> — formularz (przekierowanie do panelu, jeśli już zalogowany).</span></li>
                 <li><code>login()</code><span><code>POST /panel/login</code> — walidacja e-mail + hasło, sesja.</span></li>
                 <li><code>logout()</code><span><code>POST /panel/logout</code> — wylogowanie, unieważnienie sesji, regeneracja CSRF.</span></li>
             </ul>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Dashboard (DashboardController)</span>
-            <p><code>GET /panel</code> (nazwa <code>panel.dashboard</code>). Pokazuje metryki łączne i z 30 dni oraz wykres dziennej sprzedaży, korzystając z <code>ShopStatsService</code>:</p>
-            <ul>
-                <li>otwarcia tagów NFC (<code>tag_open</code>), wyświetlenia (<code>page_view</code>), kliknięcia „Kup” (<code>buy_click</code>)</li>
-                <li>opłacone zamówienia, przychód łączny (suma <code>amount</code>), konwersja % (zakupy / otwarcia)</li>
-                <li>seria dziennych zakupów (30 dni) do wykresu słupkowego</li>
-            </ul>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>users</code><code>events</code><code>orders</code></div></div>
-    
+        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>users</code></div></div>
+
         <!-- INJECTED:panel-auth -->
         <h3 class="dc-sub">Pola formularza logowania i mapowanie na bazę</h3>
         <table class="dc-table">
@@ -740,14 +695,14 @@ $request-&gt;session()-&gt;<b>regenerate()</b>; <span class="c">// anty session-
 return redirect()-&gt;intended(route('panel.dashboard'));</pre>
         <p>Dlaczego to ważne: ogólny komunikat błędu utrudnia enumerację kont, a regeneracja ID sesji po zalogowaniu zamyka klasę ataków na przejęcie sesji. Wylogowanie dodatkowo unieważnia sesję i regeneruje token CSRF.</p>
 
-        <figure class="dc-fig" data-fig="docs-panel-auth"><img src="__FIG:docs-panel-auth__" loading="lazy" alt=""><figcaption>Panel: ekran logowania i dashboard z metrykami.</figcaption></figure>
+        <figure class="dc-fig" data-fig="docs-panel-auth"><img src="__FIG:docs-panel-auth__" loading="lazy" alt=""><figcaption>Panel: ekran logowania.</figcaption></figure>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-auth.png</code> (np. formularz logowania, dashboard, wykres) — pojawi się tu automatycznie.</div>
     </section>
 
     
     <section class="dc-module" id="panel-parafie">
-        <div class="dc-module__head"><span class="dc-module__num">16.</span><h2>Panel: Parafie + CRM</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Najbogatsza sekcja panelu (<code>ProductController</code>): pełny CRUD parafii wraz z galerią zdjęć, opisem WYSIWYG, statystykami oraz wbudowanym CRM (statusy leada, notatki, przypisany handlowiec). Publikacja parafii sterowana jest statusem — ustawienie „aktywna” włącza widoczność publiczną.</p>
+        <div class="dc-module__head"><span class="dc-module__num">15.</span><h2>Panel: Parafie + CRM</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <p class="dc-lead">Najbogatsza sekcja panelu (<code>ProductController</code>): pełny CRUD parafii wraz z galerią zdjęć, opisem WYSIWYG, statystykami oraz wbudowanym CRM (statusy leada, notatki). Publikacja parafii sterowana jest statusem — ustawienie „aktywna” włącza widoczność publiczną.</p>
         <div class="dc-block"><span class="dc-block__label">Metody</span>
             <ul class="dc-fns">
                 <li><code>index()</code><span>Lista parafii z filtrem statusu i wyszukiwarką (nazwa/miasto/województwo) + liczniki statusów.</span></li>
@@ -778,8 +733,8 @@ return redirect()-&gt;intended(route('panel.dashboard'));</pre>
         <div class="dc-block"><span class="dc-block__label">Galeria (ProductImage → product_images)</span>
             <p>Pola: <code>product_id</code>, <code>path</code>, <code>sort</code>. Wielokrotny upload, sortowanie, usuwanie pojedynczych zdjęć.</p>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>products</code><code>parish_notes</code><code>product_images</code><code>salespeople</code><code>events</code><code>orders</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">Panel/ProductController.php · views/…/panel/products/{index,form,stats}.blade.php · ShopStatsService.php</div></div>
+        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>products</code><code>parish_notes</code><code>product_images</code><code>events</code><code>orders</code></div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">Panel/ProductController.php · resources/js/Pages/Panel/Products/{Index,Form,Stats}.jsx · ShopStatsService.php</div></div>
     
         <!-- INJECTED:panel-parafie -->
         <h3 class="dc-sub">Pola formularza parafii i mapowanie na bazę</h3>
@@ -797,7 +752,6 @@ return redirect()-&gt;intended(route('panel.dashboard'));</pre>
                 <tr><td data-label="Pole"><code>website</code></td><td data-label="Za co odpowiada">Strona www parafii (CRM)</td><td data-label="Kolumna (tabela.kolumna)"><code>products.website</code></td><td data-label="Walidacja">nullable · string · max:255</td></tr>
                 <tr><td data-label="Pole"><code>voivodeship</code></td><td data-label="Za co odpowiada">Województwo (CRM, mapa)</td><td data-label="Kolumna (tabela.kolumna)"><code>products.voivodeship</code></td><td data-label="Walidacja">nullable · string · max:255</td></tr>
                 <tr><td data-label="Pole"><code>status</code></td><td data-label="Za co odpowiada">Status w lejku wdrożenia</td><td data-label="Kolumna (tabela.kolumna)"><code>products.status</code> (string 20, default kontakt)</td><td data-label="Walidacja">required · in:kontakt,test,wdrozenie,aktywna</td></tr>
-                <tr><td data-label="Pole"><code>salesperson_id</code></td><td data-label="Za co odpowiada">Przypisany handlowiec</td><td data-label="Kolumna (tabela.kolumna)"><code>products.salesperson_id</code></td><td data-label="Walidacja">nullable · integer · exists:salespeople,id</td></tr>
                 <tr><td data-label="Pole"><code>main_image</code></td><td data-label="Za co odpowiada">Zdjęcie główne</td><td data-label="Kolumna (tabela.kolumna)"><code>products.main_image</code></td><td data-label="Walidacja">image · max:8192 (KB)</td></tr>
                 <tr><td data-label="Pole"><code>gallery[]</code></td><td data-label="Za co odpowiada">Zdjęcia galerii (wielokrotny upload)</td><td data-label="Kolumna (tabela.kolumna)"><code>product_images.path</code>, <code>.sort</code></td><td data-label="Walidacja">each: image · max:8192</td></tr>
                 <tr><td data-label="Pole"><code>slug</code></td><td data-label="Za co odpowiada">Identyfikator URL (auto z nazwy)</td><td data-label="Kolumna (tabela.kolumna)"><code>products.slug</code></td><td data-label="Walidacja">generowany, unikalny iteracyjnie</td></tr>
@@ -808,8 +762,7 @@ return redirect()-&gt;intended(route('panel.dashboard'));</pre>
         <pre class="dc-pre"><span class="c">// cena wpisywana w złotówkach — w bazie trzymamy grosze</span>
 $data['price'] = (int) round(((float) str_replace(',', '.', (string) $data['price'])) * 100);
 <span class="c">// status steruje publikacją: 'aktywna' => publiczna, pozostałe => lead (ukryta)</span>
-$data['active'] = $data['status'] === <b>'aktywna'</b>;
-$data['salesperson_id'] = $data['salesperson_id'] ?: null;</pre>
+$data['active'] = $data['status'] === <b>'aktywna'</b>;</pre>
         <p>Dlaczego to ważne: konwersja zł→grosze jest tu jedyna i spójna; obsługuje zarówno kropkę, jak i przecinek (PL). Sprzężenie <code>active = (status === 'aktywna')</code> oznacza, że nie da się opublikować parafii inaczej niż przez ustawienie statusu „aktywna” — to zapobiega publikacji niedokończonych leadów.</p>
 
         <h3 class="dc-sub">Pola notatki CRM i mapowanie (ParishNote → parish_notes)</h3>
@@ -828,183 +781,8 @@ $data['salesperson_id'] = $data['salesperson_id'] ?: null;</pre>
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-parafie.png</code> (np. lista parafii z zakładkami statusów, formularz, panel notatek) — pojawi się tu automatycznie.</div>
     </section>
 
-    
-    <section class="dc-module" id="panel-kat">
-        <div class="dc-module__head"><span class="dc-module__num">17.</span><h2>Panel: Kategorie</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Drzewo kategorii „Kogo wspieramy?” (<code>CategoryController</code>) sterujące sekcjami na stronie głównej. Obsługuje zagnieżdżanie (parent/child), zmianę kolejności i ikony, z ochroną przed cyklami.</p>
-        <div class="dc-block"><span class="dc-block__label">Metody</span>
-            <ul class="dc-fns">
-                <li><code>index()</code><span>Spłaszczone drzewo z wcięciami (rekurencja).</span></li>
-                <li><code>store() / update() / destroy()</code><span>CRUD; usunięcie przenosi dzieci na poziom wyższy.</span></li>
-                <li><code>reorder()</code><span>Zamiana kolejności (swap pozycji) w górę/dół.</span></li>
-            </ul>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Pola (Category → categories)</span>
-            <table class="dc-table">
-                <thead><tr><th>Pole</th><th>Opis</th></tr></thead>
-                <tbody>
-                    <tr><td data-label="Pole"><code>parent_id</code></td><td data-label="Opis">Kategoria nadrzędna (zagnieżdżenie)</td></tr>
-                    <tr><td data-label="Pole"><code>label / label_html / label_text</code></td><td data-label="Opis">Etykiety (tekst + wersja HTML)</td></tr>
-                    <tr><td data-label="Pole"><code>slug</code></td><td data-label="Opis">Identyfikator URL (auto z nazwy)</td></tr>
-                    <tr><td data-label="Pole"><code>intro</code></td><td data-label="Opis">Opis sekcji</td></tr>
-                    <tr><td data-label="Pole"><code>icon</code></td><td data-label="Opis">Ikona (upload)</td></tr>
-                    <tr><td data-label="Pole"><code>source</code></td><td data-label="Opis"><code>none</code> (pusta) lub <code>parishes</code> (lista parafii)</td></tr>
-                    <tr><td data-label="Pole"><code>position</code></td><td data-label="Opis">Kolejność w drzewie</td></tr>
-                    <tr><td data-label="Pole"><code>active</code></td><td data-label="Opis">Widoczność</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>categories</code></div></div>
-    
-        <!-- INJECTED:panel-kat -->
-        <h3 class="dc-sub">Pola formularza kategorii i mapowanie na bazę</h3>
-        <p>Reguły z <code>CategoryController::validated()</code>. <code>label_text</code> domyślnie przyjmuje wartość <code>label</code>, a <code>label_html</code> — escaped <code>label_text</code>; slug generowany jest z nazwy, gdy puste, i uspójniany do unikalności iteracyjnie.</p>
-        <table class="dc-table">
-            <thead><tr><th>Pole</th><th>Za co odpowiada</th><th>Kolumna (tabela.kolumna)</th><th>Walidacja</th></tr></thead>
-            <tbody>
-                <tr><td data-label="Pole"><code>parent_id</code></td><td data-label="Za co odpowiada">Kategoria nadrzędna (zagnieżdżenie)</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.parent_id</code></td><td data-label="Walidacja">nullable · integer · exists (≠ self)</td></tr>
-                <tr><td data-label="Pole"><code>label</code></td><td data-label="Za co odpowiada">Nazwa kategorii</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.label</code></td><td data-label="Walidacja">required · string · max:255</td></tr>
-                <tr><td data-label="Pole"><code>label_html</code></td><td data-label="Za co odpowiada">Etykieta z dopuszczalnym &lt;br&gt; (render)</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.label_html</code> (text)</td><td data-label="Walidacja">nullable · string · max:1000</td></tr>
-                <tr><td data-label="Pole"><code>label_text</code></td><td data-label="Za co odpowiada">Czysta wersja tekstowa</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.label_text</code></td><td data-label="Walidacja">nullable · string · max:255</td></tr>
-                <tr><td data-label="Pole"><code>slug</code></td><td data-label="Za co odpowiada">Identyfikator URL</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.slug</code></td><td data-label="Walidacja">nullable · max:255 · unique(ignore self)</td></tr>
-                <tr><td data-label="Pole"><code>intro</code></td><td data-label="Za co odpowiada">Opis sekcji</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.intro</code> (text)</td><td data-label="Walidacja">nullable · string · max:2000</td></tr>
-                <tr><td data-label="Pole"><code>source</code></td><td data-label="Za co odpowiada">Źródło pozycji na stronie kategorii</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.source</code> (string 20)</td><td data-label="Walidacja">required · in:none,parishes</td></tr>
-                <tr><td data-label="Pole"><code>position</code></td><td data-label="Za co odpowiada">Kolejność w drzewie</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.position</code></td><td data-label="Walidacja">nullable · integer · 0–65535</td></tr>
-                <tr><td data-label="Pole"><code>active</code></td><td data-label="Za co odpowiada">Widoczność</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.active</code></td><td data-label="Walidacja">nullable · boolean</td></tr>
-                <tr><td data-label="Pole"><code>icon</code></td><td data-label="Za co odpowiada">Ikonka (upload do storage public)</td><td data-label="Kolumna (tabela.kolumna)"><code>categories.icon</code></td><td data-label="Walidacja">nullable · image · max:8192</td></tr>
-            </tbody>
-        </table>
-
-        <div class="dc-note dc-note--warn"><strong>Krytyczny kod:</strong> ochrona przed cyklami w drzewie kategorii (<code>CategoryController::parentOptions</code> + <code>descendantIds</code>) — bez tego można by ustawić kategorię jako własnego potomka i zapętlić render.</div>
-        <pre class="dc-pre"><span class="c">// z listy możliwych rodziców wykluczamy edytowaną kategorię i WSZYSTKICH jej potomków</span>
-$excluded = $current ? $this-&gt;descendantIds($all, $current-&gt;id) : [];
-foreach ($all-&gt;where('parent_id', $parentId) as $cat) {
-    if (in_array($cat-&gt;id, $excluded, true)) { continue; } <span class="c">// blokada cyklu</span>
-    $options[$cat-&gt;id] = str_repeat('— ', $depth) . $cat-&gt;label_text;
-}
-<span class="c">// usunięcie rodzica NIE kasuje dzieci — FK nullOnDelete czyni je top-level</span></pre>
-        <p>Dlaczego to ważne: rekurencyjne <code>descendantIds</code> zbiera całe poddrzewo, więc select rodzica nigdy nie zaproponuje opcji tworzącej cykl. Usunięcie kategorii dzięki <code>nullOnDelete</code> przenosi dzieci na poziom wyższy zamiast je kasować.</p>
-
-        <figure class="dc-fig" data-fig="docs-panel-kat"><img src="__FIG:docs-panel-kat__" loading="lazy" alt=""><figcaption>Panel kategorii: drzewo z wcięciami, zmiana kolejności i ikony.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-kat.png</code> (np. drzewo kategorii, formularz, select rodzica) — pojawi się tu automatycznie.</div>
-    </section>
-
-    
-    <section class="dc-module" id="panel-hand">
-        <div class="dc-module__head"><span class="dc-module__num">18.</span><h2>Panel: Handlowcy</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">CRUD handlowców (<code>SalespersonController</code>) z przypisaniem obsługiwanych województw i licznikiem przypisanych parafii. Integruje się z CRM parafii i mapą pokrycia.</p>
-        <div class="dc-block"><span class="dc-block__label">Pola (Salesperson → salespeople)</span>
-            <table class="dc-table">
-                <thead><tr><th>Pole</th><th>Opis</th></tr></thead>
-                <tbody>
-                    <tr><td data-label="Pole"><code>name</code></td><td data-label="Opis">Imię i nazwisko</td></tr>
-                    <tr><td data-label="Pole"><code>email, phone</code></td><td data-label="Opis">Kontakt (opcjonalne)</td></tr>
-                    <tr><td data-label="Pole"><code>voivodeships</code></td><td data-label="Opis">Tablica obsługiwanych województw (JSON, 16 do wyboru)</td></tr>
-                    <tr><td data-label="Pole"><code>active</code></td><td data-label="Opis">Czy aktywny</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>salespeople</code><code>products</code><code>potential_parishes</code></div></div>
-    
-        <!-- INJECTED:panel-hand -->
-        <h3 class="dc-sub">Pola formularza handlowca i mapowanie na bazę</h3>
-        <p>Reguły z <code>SalespersonController::validated()</code>. Lista województw jest słownikiem zamkniętym (stała <code>Salesperson::VOIVODESHIPS</code>, 16 pozycji RP) — każde wybrane województwo musi do niej należeć.</p>
-        <table class="dc-table">
-            <thead><tr><th>Pole</th><th>Za co odpowiada</th><th>Kolumna (tabela.kolumna)</th><th>Walidacja</th></tr></thead>
-            <tbody>
-                <tr><td data-label="Pole"><code>name</code></td><td data-label="Za co odpowiada">Imię i nazwisko</td><td data-label="Kolumna (tabela.kolumna)"><code>salespeople.name</code></td><td data-label="Walidacja">required · string · max:255</td></tr>
-                <tr><td data-label="Pole"><code>email</code></td><td data-label="Za co odpowiada">E-mail kontaktowy</td><td data-label="Kolumna (tabela.kolumna)"><code>salespeople.email</code></td><td data-label="Walidacja">nullable · email · max:255</td></tr>
-                <tr><td data-label="Pole"><code>phone</code></td><td data-label="Za co odpowiada">Telefon</td><td data-label="Kolumna (tabela.kolumna)"><code>salespeople.phone</code></td><td data-label="Walidacja">nullable · string · max:255</td></tr>
-                <tr><td data-label="Pole"><code>voivodeships[]</code></td><td data-label="Za co odpowiada">Obsługiwane województwa</td><td data-label="Kolumna (tabela.kolumna)"><code>salespeople.voivodeships</code> (text, cast array→JSON)</td><td data-label="Walidacja">nullable · array; each in:&lt;16 województw&gt;</td></tr>
-                <tr><td data-label="Pole"><code>active</code></td><td data-label="Za co odpowiada">Czy handlowiec aktywny</td><td data-label="Kolumna (tabela.kolumna)"><code>salespeople.active</code></td><td data-label="Walidacja">nullable · boolean</td></tr>
-            </tbody>
-        </table>
-
-        <div class="dc-note dc-note--warn"><strong>Krytyczny kod:</strong> walidacja województw względem słownika i zapis jako JSON (<code>SalespersonController::validated</code> + cast modelu).</div>
-        <pre class="dc-pre"><span class="c">// walidacja: każde województwo musi należeć do zamkniętego słownika</span>
-'voivodeships'   =&gt; ['nullable', 'array'],
-<b>'voivodeships.*'</b> =&gt; ['string', 'in:' . implode(',', <i>Salesperson::VOIVODESHIPS</i>)],
-<span class="c">// pusta lista => null (kolumna nullable); tablica => cast 'array' w modelu => JSON</span>
-$data['voivodeships'] = ! empty($data['voivodeships']) ? array_values($data['voivodeships']) : null;</pre>
-        <p>Dlaczego to ważne: zamknięty słownik (<code>in:</code>) blokuje literówki i „lewe” województwa, dzięki czemu filtr mapy pokrycia i przypisania CRM zawsze działają na spójnych wartościach. Cast <code>'array'</code> w modelu serializuje listę do JSON i deserializuje z powrotem bez ręcznego <code>json_encode</code>.</p>
-
-        <figure class="dc-fig" data-fig="docs-panel-hand"><img src="__FIG:docs-panel-hand__" loading="lazy" alt=""><figcaption>Panel handlowców: lista z licznikiem parafii i wybór województw.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-hand.png</code> (np. lista handlowców, formularz z checkboxami województw) — pojawi się tu automatycznie.</div>
-    </section>
-
-    
-    <section class="dc-module" id="panel-leady">
-        <div class="dc-module__head"><span class="dc-module__num">19.</span><h2>Panel: Parafie do obdzwonienia + mapa pokrycia</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Lista leadów parafialnych (<code>PotentialParishController</code>) zaimportowanych z OpenStreetMap, z lejkiem obdzwaniania i interaktywną mapą pokrycia (Leaflet). Filtry: województwo, status, handlowiec, obecność telefonu. Paginacja po 50.</p>
-        <div class="dc-block"><span class="dc-block__label">Metody</span>
-            <ul class="dc-fns">
-                <li><code>index()</code><span>Lista z filtrami i paginacją; liczniki per status.</span></li>
-                <li><code>updateStatus()</code><span>Zmiana statusu/handlowca/notatki/telefonu (AJAX); ustawia <code>called_at</code> przy pierwszym kontakcie.</span></li>
-                <li><code>coverageData()</code><span>Zwraca punkty (JSON) do mapy — tylko rekordy ze współrzędnymi, z kolorem wg statusu.</span></li>
-            </ul>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Mapa pokrycia</span>
-            <p><code>GET /panel/coverage</code> — mapa Leaflet z klastrowaniem markerów, licznikami per województwo i status, popupami (nazwa, miasto, telefon, status, handlowiec) i filtrami przeładowującymi dane AJAX-em.</p>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Lejek obdzwaniania (status)</span>
-            <p><code>nowa</code> → <code>do_obdzwonienia</code> → <code>zadzwoniono</code> → <code>zainteresowana</code> → <code>dodana</code> / <code>odrzucona</code>.</p>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Pola (PotentialParish → potential_parishes)</span>
-            <table class="dc-table">
-                <thead><tr><th>Pole</th><th>Opis</th></tr></thead>
-                <tbody>
-                    <tr><td data-label="Pole"><code>name, city, address, voivodeship</code></td><td data-label="Opis">Dane adresowe</td></tr>
-                    <tr><td data-label="Pole"><code>denomination</code></td><td data-label="Opis">Wyznanie</td></tr>
-                    <tr><td data-label="Pole"><code>phone</code></td><td data-label="Opis">Telefon</td></tr>
-                    <tr><td data-label="Pole"><code>lat, lon</code></td><td data-label="Opis">Współrzędne (mapa)</td></tr>
-                    <tr><td data-label="Pole"><code>status</code></td><td data-label="Opis">Status leada (lejek)</td></tr>
-                    <tr><td data-label="Pole"><code>salesperson_id</code></td><td data-label="Opis">Prowadzący handlowiec</td></tr>
-                    <tr><td data-label="Pole"><code>note</code></td><td data-label="Opis">Notatka</td></tr>
-                    <tr><td data-label="Pole"><code>called_at</code></td><td data-label="Opis">Data pierwszego kontaktu</td></tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>potential_parishes</code><code>salespeople</code></div></div>
-    
-        <!-- INJECTED:panel-leady -->
-        <h3 class="dc-sub">Pola aktualizacji leada i mapowanie na bazę</h3>
-        <p>Reguły z <code>PotentialParishController::updateStatus()</code>. Dataset (~20 tys. parafii) pochodzi z OpenStreetMap (import <code>parishes:import</code>); telefon i adres uzupełniane są później (<code>parishes:enrich</code> / inline w panelu), bo OSM ich nie zawiera.</p>
-        <table class="dc-table">
-            <thead><tr><th>Pole</th><th>Za co odpowiada</th><th>Kolumna (tabela.kolumna)</th><th>Walidacja</th></tr></thead>
-            <tbody>
-                <tr><td data-label="Pole"><code>status</code></td><td data-label="Za co odpowiada">Etap w lejku obdzwaniania</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.status</code> (default nowa)</td><td data-label="Walidacja">required · in:nowa,do_obdzwonienia,zadzwoniono,zainteresowana,odrzucona,dodana</td></tr>
-                <tr><td data-label="Pole"><code>salesperson_id</code></td><td data-label="Za co odpowiada">Handlowiec prowadzący lead</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.salesperson_id</code></td><td data-label="Walidacja">nullable · integer · exists:salespeople,id</td></tr>
-                <tr><td data-label="Pole"><code>note</code></td><td data-label="Za co odpowiada">Notatka z rozmowy</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.note</code> (text)</td><td data-label="Walidacja">nullable · string · max:5000</td></tr>
-                <tr><td data-label="Pole"><code>phone</code></td><td data-label="Za co odpowiada">Telefon (uzupełniany inline)</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.phone</code></td><td data-label="Walidacja">nullable · string · max:50</td></tr>
-                <tr><td data-label="Pole"><code>name·city·address·voivodeship</code></td><td data-label="Za co odpowiada">Dane adresowe (z importu)</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.{name,city,address,voivodeship}</code></td><td data-label="Walidacja">import OSM</td></tr>
-                <tr><td data-label="Pole"><code>denomination</code></td><td data-label="Za co odpowiada">Wyznanie</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.denomination</code></td><td data-label="Walidacja">import OSM</td></tr>
-                <tr><td data-label="Pole"><code>lat·lon</code></td><td data-label="Za co odpowiada">Współrzędne do mapy</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.{lat,lon}</code> (decimal 10,7)</td><td data-label="Walidacja">import OSM</td></tr>
-                <tr><td data-label="Pole"><code>called_at</code></td><td data-label="Za co odpowiada">Data pierwszego kontaktu</td><td data-label="Kolumna (tabela.kolumna)"><code>potential_parishes.called_at</code> (timestamp)</td><td data-label="Walidacja">auto przy „zadzwoniono”</td></tr>
-            </tbody>
-        </table>
-
-        <div class="dc-note dc-note--warn"><strong>Krytyczny kod:</strong> stempel pierwszego kontaktu i filtr obecności telefonu (<code>PotentialParishController</code>) — <code>called_at</code> ustawiamy raz, a domyślny widok pokazuje tylko parafie z numerem.</div>
-        <pre class="dc-pre"><span class="c">// stempel pierwszego kontaktu — ustawiany RAZ, przy przejściu do „zadzwoniono”</span>
-if ($data['status'] === <b>'zadzwoniono'</b> &amp;&amp; $potentialParish-&gt;called_at === null) {
-    $potentialParish-&gt;called_at = now();
-}
-<span class="c">// filtr telefonu: domyślnie 'with' (pokazujemy TYLKO parafie z numerem)</span>
-$hasPhone = $request-&gt;query('has_phone', <i>'with'</i>);
-if ($hasPhone === 'with') {
-    $query-&gt;whereNotNull('phone')-&gt;where('phone', '!=', '');
-}</pre>
-        <p>Dlaczego to ważne: warunek <code>called_at === null</code> gwarantuje, że data pierwszego telefonu nie jest nadpisywana przy kolejnych zmianach statusu. Domyślny filtr <code>with</code> chroni handlowca przed listą 20 tys. rekordów bez numerów — od razu widzi to, co można obdzwonić.</p>
-
-        <h3 class="dc-sub">Mapa pokrycia (coverageData) — transfer danych</h3>
-        <p>Endpoint <code>GET /panel/coverage</code> ładuje markery AJAX-em (NIE wkleja 20 tys. punktów do HTML). <code>coverageData()</code> zwraca tylko niezbędne kolumny (<code>id, name, city, voivodeship, lat, lon, phone, status, salesperson_id, note</code>) plus kolor wg statusu — oszczędność transferu i czasu renderu. Filtry mapy są te same co listy, więc markery można zawężać re-fetchem.</p>
-
-        <figure class="dc-fig" data-fig="docs-panel-leady"><img src="__FIG:docs-panel-leady__" loading="lazy" alt=""><figcaption>Panel leadów: lista do obdzwonienia + interaktywna mapa pokrycia (Leaflet).</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-leady.png</code> (np. mapa z klastrami markerów, lista z filtrami, popup parafii) — pojawi się tu automatycznie.</div>
-    </section>
-
-    
     <section class="dc-module" id="panel-sklep">
-        <div class="dc-module__head"><span class="dc-module__num">20.</span><h2>Panel: Sklep — produkty NFC</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">16.</span><h2>Panel: Sklep — produkty NFC</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">CRUD produktów sklepu donacyjnego (<code>ShopItemController</code>): minimalna kwota, tag NFC, produkt domyślny (tylko jeden), upload grafiki, kolejność i aktywność. Cena wpisywana w złotych, zapisywana w groszach.</p>
         <div class="dc-block"><span class="dc-block__label">Metody</span>
             <ul class="dc-fns">
@@ -1052,7 +830,7 @@ if ($request-&gt;boolean('is_default')) {
 
     
     <section class="dc-module" id="panel-praca">
-        <div class="dc-module__head"><span class="dc-module__num">21.</span><h2>Panel: Praca — stanowiska</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">17.</span><h2>Panel: Praca — stanowiska</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">CRUD ofert pracy (<code>PositionController</code>) z opisem WYSIWYG, lokalizacją, typem zatrudnienia, kolejnością i licznikiem aplikacji per oferta. Oferty pojawiają się publicznie na <code>/praca</code>.</p>
         <div class="dc-block"><span class="dc-block__label">Metody</span>
             <ul class="dc-fns">
@@ -1085,7 +863,7 @@ if ($request-&gt;boolean('is_default')) {
 
     
     <section class="dc-module" id="panel-apl">
-        <div class="dc-module__head"><span class="dc-module__num">22.</span><h2>Panel: Aplikacje rekrutacyjne</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">18.</span><h2>Panel: Aplikacje rekrutacyjne</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">Skrzynka zgłoszeń rekrutacyjnych (<code>ApplicationController</code>) z pobieraniem CV z prywatnego dysku, statusami i filtrami. Licznik nieprzeczytanych widoczny w nawigacji panelu.</p>
         <div class="dc-block"><span class="dc-block__label">Metody</span>
             <ul class="dc-fns">
@@ -1128,42 +906,8 @@ return Storage::disk('local')-&gt;download(
         <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-apl.png</code> (np. skrzynka zgłoszeń, szczegóły kandydata, przycisk CV) — pojawi się tu automatycznie.</div>
     </section>
 
-    
-    <section class="dc-module" id="panel-wiad">
-        <div class="dc-module__head"><span class="dc-module__num">23.</span><h2>Panel: Wiadomości</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Skrzynka wiadomości z formularza kontaktowego (<code>MessageController</code>) z licznikiem nieprzeczytanych.</p>
-        <div class="dc-block"><span class="dc-block__label">Metody</span>
-            <ul class="dc-fns">
-                <li><code>index()</code><span>Lista wiadomości (najnowsze na górze).</span></li>
-                <li><code>show()</code><span>Szczegóły; oznacza jako przeczytane.</span></li>
-                <li><code>destroy()</code><span>Usunięcie.</span></li>
-            </ul>
-        </div>
-        <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>contact_messages</code></div></div>
-    
-        <!-- INJECTED:panel-wiad -->
-        <h3 class="dc-sub">Pola wiadomości kontaktowej i mapowanie na bazę</h3>
-        <p>Wiadomości pochodzą z publicznego formularza kontaktowego; panel jest skrzynką odbiorczą (najnowsze na górze, licznik nieprzeczytanych w nawigacji). Otwarcie wiadomości oznacza ją jako przeczytaną.</p>
-        <table class="dc-table">
-            <thead><tr><th>Pole</th><th>Za co odpowiada</th><th>Kolumna (tabela.kolumna)</th><th>Uwagi</th></tr></thead>
-            <tbody>
-                <tr><td data-label="Pole"><code>name</code></td><td data-label="Za co odpowiada">Imię i nazwisko nadawcy</td><td data-label="Kolumna (tabela.kolumna)"><code>contact_messages.name</code></td><td data-label="Uwagi">string</td></tr>
-                <tr><td data-label="Pole"><code>email</code></td><td data-label="Za co odpowiada">Adres zwrotny</td><td data-label="Kolumna (tabela.kolumna)"><code>contact_messages.email</code></td><td data-label="Uwagi">string</td></tr>
-                <tr><td data-label="Pole"><code>phone</code></td><td data-label="Za co odpowiada">Telefon (opcjonalnie)</td><td data-label="Kolumna (tabela.kolumna)"><code>contact_messages.phone</code></td><td data-label="Uwagi">nullable</td></tr>
-                <tr><td data-label="Pole"><code>subject</code></td><td data-label="Za co odpowiada">Temat</td><td data-label="Kolumna (tabela.kolumna)"><code>contact_messages.subject</code></td><td data-label="Uwagi">nullable</td></tr>
-                <tr><td data-label="Pole"><code>message</code></td><td data-label="Za co odpowiada">Treść wiadomości</td><td data-label="Kolumna (tabela.kolumna)"><code>contact_messages.message</code> (text)</td><td data-label="Uwagi">wymagane</td></tr>
-                <tr><td data-label="Pole"><code>is_read</code></td><td data-label="Za co odpowiada">Czy przeczytane</td><td data-label="Kolumna (tabela.kolumna)"><code>contact_messages.is_read</code></td><td data-label="Uwagi">boolean, auto przy otwarciu</td></tr>
-            </tbody>
-        </table>
-        <p>Na co uważać: model ma <code>public $timestamps = false</code> i własne <code>created_at</code> z DB default (<code>useCurrent()</code>) — nie ma kolumny <code>updated_at</code>. Oznaczenie jako przeczytane to jedyna mutacja rekordu w panelu (poza usunięciem).</p>
-
-        <figure class="dc-fig" data-fig="docs-panel-wiad"><img src="__FIG:docs-panel-wiad__" loading="lazy" alt=""><figcaption>Panel wiadomości: skrzynka kontaktowa z licznikiem nieprzeczytanych.</figcaption></figure>
-        <div class="dc-note">Zrzut: wrzuć do <code>public/img/docs/docs-panel-wiad.png</code> (np. lista wiadomości, widok pojedynczej wiadomości) — pojawi się tu automatycznie.</div>
-    </section>
-
-    
     <section class="dc-module" id="analityka">
-        <div class="dc-module__head"><span class="dc-module__num">24.</span><h2>Eventy i analityka</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <div class="dc-module__head"><span class="dc-module__num">19.</span><h2>Eventy i analityka</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
         <p class="dc-lead">System rejestruje każde istotne zdarzenie — od zbliżenia telefonu po finalną wpłatę — co zasila statystyki w panelu i pozwala mierzyć konwersję. Zdarzenia trzymane są w tabeli <code>events</code> (z indeksem po typie i dacie), a agregacją zajmuje się <code>ShopStatsService</code>.</p>
         <div class="dc-block"><span class="dc-block__label">Typy zdarzeń (sklep)</span>
             <table class="dc-table">
@@ -1231,8 +975,8 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
 
     
     <section class="dc-module" id="baza">
-        <div class="dc-module__head"><span class="dc-module__num">25.</span><h2>Pełny schemat bazy danych</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">18 migracji budujących ~25 tabel w trzech bazach (multi-tenant). Poniżej wszystkie tabele z kluczowymi kolumnami.</p>
+        <div class="dc-module__head"><span class="dc-module__num">20.</span><h2>Pełny schemat bazy danych</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <p class="dc-lead">30 plików migracji (w tym 4 dropujące) budujące 22 realnie istniejące tabele w trzech bazach (multi-tenant). Poniżej wszystkie tabele z kluczowymi kolumnami.</p>
         <div class="dc-block"><span class="dc-block__label">Baza nfc_pay (bramka)</span>
             <table class="dc-table">
                 <thead><tr><th>Tabela</th><th>Kluczowe kolumny</th></tr></thead>
@@ -1250,25 +994,23 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
             <table class="dc-table">
                 <thead><tr><th>Tabela</th><th>Kluczowe kolumny</th></tr></thead>
                 <tbody>
-                    <tr><td data-label="Tabela"><code>products</code></td><td data-label="Kluczowe kolumny">name, city, purpose, slug, description_html, price, tag_uid, main_image, active, phone, website, voivodeship, status, salesperson_id</td></tr>
+                    <tr><td data-label="Tabela"><code>products</code></td><td data-label="Kluczowe kolumny">name, city, purpose, slug, description_html, price, tag_uid, main_image, active, phone, website, voivodeship, status</td></tr>
                     <tr><td data-label="Tabela"><code>product_images</code></td><td data-label="Kluczowe kolumny">product_id, path, sort</td></tr>
                     <tr><td data-label="Tabela"><code>orders</code></td><td data-label="Kluczowe kolumny">id (uuid), product_id (nullable), transaction_id, amount, status, paid_at</td></tr>
                     <tr><td data-label="Tabela"><code>events</code></td><td data-label="Kluczowe kolumny">product_id, type, created_at</td></tr>
                     <tr><td data-label="Tabela"><code>shop_items</code></td><td data-label="Kluczowe kolumny">slug, name, image, min_amount, is_default, tag_uid, active, sort</td></tr>
-                    <tr><td data-label="Tabela"><code>categories</code></td><td data-label="Kluczowe kolumny">parent_id, slug, label, label_html, intro, icon, source, position, active</td></tr>
-                    <tr><td data-label="Tabela"><code>salespeople</code></td><td data-label="Kluczowe kolumny">name, email, phone, voivodeships (JSON), active</td></tr>
-                    <tr><td data-label="Tabela"><code>potential_parishes</code></td><td data-label="Kluczowe kolumny">name, city, address, voivodeship, denomination, phone, lat, lon, status, salesperson_id, note, called_at</td></tr>
+                    <tr><td data-label="Tabela"><code>beneficiary_nodes</code></td><td data-label="Kluczowe kolumny">heading, image, image_side, image_scale, image_x, image_y, text_align, body_html, position, active</td></tr>
                     <tr><td data-label="Tabela"><code>parish_notes</code></td><td data-label="Kluczowe kolumny">product_id, type, body, author</td></tr>
                     <tr><td data-label="Tabela"><code>job_positions</code></td><td data-label="Kluczowe kolumny">title, location, employment_type, short_description, description_html, active, sort</td></tr>
                     <tr><td data-label="Tabela"><code>job_applications</code></td><td data-label="Kluczowe kolumny">job_position_id, name, email, phone, message, cv_path, cv_original_name, is_read, status</td></tr>
-                    <tr><td data-label="Tabela"><code>contact_messages</code></td><td data-label="Kluczowe kolumny">name, email, phone, subject, message, is_read</td></tr>
                 </tbody>
             </table>
         </div>
         <div class="dc-block"><span class="dc-block__label">Tabele systemowe (Laravel)</span>
-            <div class="dc-tables"><code>users</code><code>cache</code><code>cache_locks</code><code>jobs</code></div>
+            <div class="dc-tables"><code>users</code><code>password_reset_tokens</code><code>sessions</code><code>cache</code><code>cache_locks</code><code>jobs</code><code>job_batches</code><code>failed_jobs</code></div>
         </div>
-    
+        <div class="dc-note">Usunięte w ramach czyszczenia panelu admina (Dashboard/Kategorie/Handlowcy/Parafie do obdzwonienia/Mapa pokrycia/Wiadomości): tabele <code>categories</code>, <code>salespeople</code>, <code>potential_parishes</code>, <code>contact_messages</code> oraz kolumna <code>products.salesperson_id</code>. Dropnięte migracjami <code>2026_08_05_0000{01..04}_drop_*</code>.</div>
+
         <!-- INJECTED:baza -->
         <h3 class="dc-sub">Pełne typy kolumn z migracji — bramka (nfc_pay)</h3>
         <table class="dc-table">
@@ -1298,24 +1040,18 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
                 <tr><td data-label="Tabela.kolumna"><code>products.tag_uid</code></td><td data-label="Typ (migracja)">string</td><td data-label="Atrybuty">unique</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>products.slug</code></td><td data-label="Typ (migracja)">string</td><td data-label="Atrybuty">unique</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>products.status</code></td><td data-label="Typ (migracja)">string(20)</td><td data-label="Atrybuty">default kontakt · index</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>products.salesperson_id</code></td><td data-label="Typ (migracja)">FK</td><td data-label="Atrybuty">→ salespeople · nullOnDelete</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>orders.id</code></td><td data-label="Typ (migracja)">uuid</td><td data-label="Atrybuty">primary</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>orders.product_id</code></td><td data-label="Typ (migracja)">FK</td><td data-label="Atrybuty">nullable (zamówienia sklepu nie wiążą się z products)</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>orders.status</code></td><td data-label="Typ (migracja)">enum</td><td data-label="Atrybuty">pending·paid·failed</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>shop_items.min_amount</code></td><td data-label="Typ (migracja)">unsignedInteger</td><td data-label="Atrybuty">grosze</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>shop_items.tag_uid</code></td><td data-label="Typ (migracja)">string</td><td data-label="Atrybuty">nullable · unique</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>shop_items.is_default</code></td><td data-label="Typ (migracja)">boolean</td><td data-label="Atrybuty">default false (tylko jeden true)</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>categories.parent_id</code></td><td data-label="Typ (migracja)">FK</td><td data-label="Atrybuty">→ categories · nullOnDelete (samoodniesienie)</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>categories.source</code></td><td data-label="Typ (migracja)">string(20)</td><td data-label="Atrybuty">none·parishes</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>salespeople.voivodeships</code></td><td data-label="Typ (migracja)">text</td><td data-label="Atrybuty">cast array → JSON</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>potential_parishes.lat / .lon</code></td><td data-label="Typ (migracja)">decimal(10,7)</td><td data-label="Atrybuty">współrzędne</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>potential_parishes.status</code></td><td data-label="Typ (migracja)">string</td><td data-label="Atrybuty">default nowa · index</td></tr>
+                <tr><td data-label="Tabela.kolumna"><code>beneficiary_nodes.image_side</code></td><td data-label="Typ (migracja)">string</td><td data-label="Atrybuty">default left · left/right</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>parish_notes.product_id</code></td><td data-label="Typ (migracja)">FK</td><td data-label="Atrybuty">→ products · cascadeOnDelete</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>parish_notes.type</code></td><td data-label="Typ (migracja)">string(20)</td><td data-label="Atrybuty">default kontakt</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>job_applications.job_position_id</code></td><td data-label="Typ (migracja)">FK</td><td data-label="Atrybuty">nullable · nullOnDelete</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>job_applications.cv_path</code></td><td data-label="Typ (migracja)">string</td><td data-label="Atrybuty">dysk local (prywatny)</td></tr>
                 <tr><td data-label="Tabela.kolumna"><code>job_applications.status</code></td><td data-label="Typ (migracja)">string(20)</td><td data-label="Atrybuty">default pending · index</td></tr>
-                <tr><td data-label="Tabela.kolumna"><code>contact_messages.is_read</code></td><td data-label="Typ (migracja)">boolean</td><td data-label="Atrybuty">default false</td></tr>
             </tbody>
         </table>
 
@@ -1327,8 +1063,6 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
                 <tr><td data-label="Relacja (FK)"><code>transactions.tag_id</code> → tags</td><td data-label="onDelete">nullOnDelete</td><td data-label="Efekt">transakcja zostaje, traci tag</td></tr>
                 <tr><td data-label="Relacja (FK)"><code>product_images.product_id</code> → products</td><td data-label="onDelete">cascade</td><td data-label="Efekt">usunięcie parafii kasuje galerię</td></tr>
                 <tr><td data-label="Relacja (FK)"><code>parish_notes.product_id</code> → products</td><td data-label="onDelete">cascade</td><td data-label="Efekt">usunięcie parafii kasuje notatki</td></tr>
-                <tr><td data-label="Relacja (FK)"><code>products.salesperson_id</code> → salespeople</td><td data-label="onDelete">nullOnDelete</td><td data-label="Efekt">parafia traci handlowca, nie znika</td></tr>
-                <tr><td data-label="Relacja (FK)"><code>categories.parent_id</code> → categories</td><td data-label="onDelete">nullOnDelete</td><td data-label="Efekt">dzieci stają się top-level</td></tr>
                 <tr><td data-label="Relacja (FK)"><code>job_applications.job_position_id</code> → job_positions</td><td data-label="onDelete">nullOnDelete</td><td data-label="Efekt">aplikacja staje się spontaniczna</td></tr>
             </tbody>
         </table>
@@ -1345,14 +1079,14 @@ config(['database.connections.mysql.database' =&gt; <i>$tenant['database']</i>])
 
     
     <section class="dc-module" id="stack">
-        <div class="dc-module__head"><span class="dc-module__num">26.</span><h2>Stack technologiczny i statystyki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Lekki, nowoczesny stos oparty o Laravel 12 — bez ciężkiego frontendu SPA, co przekłada się na szybkość i prostotę utrzymania.</p>
+        <div class="dc-module__head"><span class="dc-module__num">21.</span><h2>Stack technologiczny i statystyki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
+        <p class="dc-lead">Laravel 12 na backendzie, React (Inertia.js) + SSR na froncie — bez ciężkiego, osobnego SPA (jeden proces serwuje HTML od razu z danymi), co przekłada się na szybkość i prostotę utrzymania.</p>
         <div class="dc-block"><span class="dc-block__label">Technologie</span>
             <div class="dc-pills">
                 <span class="dc-pill">Laravel 12 (PHP 8.2+)</span>
                 <span class="dc-pill">MySQL / MariaDB (3 bazy)</span>
                 <span class="dc-pill">Architektura multi-tenant</span>
-                <span class="dc-pill">Blade + CSS (bez SPA)</span>
+                <span class="dc-pill">React 19 + Inertia.js 3 (SSR)</span>
                 <span class="dc-pill">Vite 7 + Tailwind 4</span>
                 <span class="dc-pill">PayU REST API v2.1</span>
                 <span class="dc-pill">BLIK · pay-by-link · 3DS</span>
@@ -1369,15 +1103,15 @@ config(['database.connections.mysql.database' =&gt; <i>$tenant['database']</i>])
                 <thead><tr><th>Warstwa</th><th>Liczby</th></tr></thead>
                 <tbody>
                     <tr><td data-label="Warstwa">Moduły aplikacji</td><td data-label="Liczby">2 (Gateway · Storefront)</td></tr>
-                    <tr><td data-label="Warstwa">Kontrolery</td><td data-label="Liczby">32 (15 Gateway + 17 Storefront)</td></tr>
-                    <tr><td data-label="Warstwa">Modele danych</td><td data-label="Liczby">19</td></tr>
+                    <tr><td data-label="Warstwa">Kontrolery</td><td data-label="Liczby">30 (15 Gateway + 15 Storefront)</td></tr>
+                    <tr><td data-label="Warstwa">Modele danych</td><td data-label="Liczby">15 (6 Gateway + 9 Storefront)</td></tr>
                     <tr><td data-label="Warstwa">Serwisy i dostawcy płatności</td><td data-label="Liczby">GatewayClient, ShopStatsService, TransactionService, StatsService + PayUProvider, MockProvider</td></tr>
-                    <tr><td data-label="Warstwa">Migracje / tabele</td><td data-label="Liczby">18 / ~25</td></tr>
-                    <tr><td data-label="Warstwa">Widoki Blade</td><td data-label="Liczby">69</td></tr>
-                    <tr><td data-label="Warstwa">Trasy (web · API · webhooki)</td><td data-label="Liczby">109</td></tr>
-                    <tr><td data-label="Warstwa">Arkusze stylów CSS</td><td data-label="Liczby">6</td></tr>
+                    <tr><td data-label="Warstwa">Migracje / tabele</td><td data-label="Liczby">30 / 22 aktualnie istniejących</td></tr>
+                    <tr><td data-label="Warstwa">Strony i komponenty (Inertia/React)</td><td data-label="Liczby">52 strony (.jsx w Pages) + 8 współdzielonych komponentów/layoutów</td></tr>
+                    <tr><td data-label="Warstwa">Trasy (web · API · webhooki)</td><td data-label="Liczby">112</td></tr>
+                    <tr><td data-label="Warstwa">Arkusze stylów CSS</td><td data-label="Liczby">7</td></tr>
                     <tr><td data-label="Warstwa">Bazy danych</td><td data-label="Liczby">3 (multi-tenant)</td></tr>
-                    <tr><td data-label="Warstwa">Linie kodu (PHP + Blade + CSS)</td><td data-label="Liczby">~13 500</td></tr>
+                    <tr><td data-label="Warstwa">Linie kodu (PHP + JS/JSX + CSS)</td><td data-label="Liczby">~13 500</td></tr>
                 </tbody>
             </table>
         </div>
