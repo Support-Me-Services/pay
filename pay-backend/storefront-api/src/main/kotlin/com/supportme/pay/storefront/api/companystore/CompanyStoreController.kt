@@ -39,7 +39,7 @@ class CompanyStoreController(
 
     @GetMapping("/")
     fun index(): ResponseEntity<List<ShopItemSummary>> {
-        val owner = userRepository.findByHandle(shopConfig.mainAccountHandle) ?: return ResponseEntity.ok(emptyList())
+        val owner = owner() ?: return ResponseEntity.ok(emptyList())
         val items = shopItemRepository.findAllByOwnerOrderBySortAscIdAsc(owner).filter { it.active }
             .map { ShopItemSummary(it.slug, it.name, it.image, it.isSvg(), it.minAmountPln(), PricePlnFormatter.format(it.priceGrosze()), it.isDefault, it.description) }
         return ResponseEntity.ok(items)
@@ -47,11 +47,19 @@ class CompanyStoreController(
 
     @PostMapping("/sklep/kup/{slug}")
     fun purchase(@PathVariable slug: String, @RequestBody body: CompanyStorePurchaseRequest, request: HttpServletRequest): ResponseEntity<Any> {
-        val owner = userRepository.findByHandle(shopConfig.mainAccountHandle) ?: return ResponseEntity.notFound().build()
-        val item = shopItemRepository.findAllByOwnerOrderBySortAscIdAsc(owner).firstOrNull { it.slug == slug }
+        // Póki PayU nie zatwierdził sklepu: pomijamy płatność — SPRAWDZANE JAKO
+        // PIERWSZE, przed jakimkolwiek lookupem/zapisem (jak w PHP), więc bypass
+        // NIE tworzy sierocych wierszy Order.
+        if (paymentBypass.bypass) {
+            return ResponseEntity.ok(PurchaseResponse(redirectUrl = "/?dzieki=1", bypassed = true))
+        }
+
+        val owner = owner()
+        val item = (if (owner != null) shopItemRepository.findAllByOwnerOrderBySortAscIdAsc(owner) else emptyList())
+            .firstOrNull { it.slug == slug && it.active }
             ?: return ResponseEntity.notFound().build()
 
-        val minPln = ceil(item.minAmount / 100.0).toInt()
+        val minPln = maxOf(1, ceil(item.minAmount / 100.0).toInt())
         if (body.amountPln < minPln || body.amountPln > MAX_AMOUNT_PLN) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Kwota musi być co najmniej $minPln zł."))
         }
@@ -59,15 +67,11 @@ class CompanyStoreController(
         val amountGrosze = body.amountPln * 100
         val order = orderRepository.save(Order(product = null, amount = amountGrosze))
 
-        if (paymentBypass.bypass) {
-            return ResponseEntity.ok(PurchaseResponse(redirectUrl = "/?dzieki=1", bypassed = true))
-        }
-
         val gatewayResponse = try {
             gatewayClient.createTransaction(
                 GatewayCreateTransactionRequest(
-                    productExternalId = "shop-${item.id}",
-                    productName = item.name,
+                    productExternalId = "shop-${item.slug}-${order.id}",
+                    productName = "Wsparcie: ${item.name}",
                     amount = amountGrosze,
                     returnUrl = orderReturnUrl(order.id!!),
                     notifyUrl = gatewayNotifyUrl(),
@@ -83,6 +87,9 @@ class CompanyStoreController(
 
         return ResponseEntity.ok(PurchaseResponse(redirectUrl = gatewayResponse.paymentUrl))
     }
+
+    /** Konto główne (właściciel produktów widocznych na „/") — fallback na pierwszego usera, jak w PHP. */
+    private fun owner() = userRepository.findByHandle(shopConfig.mainAccountHandle) ?: userRepository.findFirstByOrderById()
 
     companion object {
         private const val MAX_AMOUNT_PLN = 5000

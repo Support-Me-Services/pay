@@ -9,4 +9,7 @@ interface UserRepository : JpaRepository<User, Long> {
     fun findByHandle(handle: String): User?
 
     fun existsByHandle(handle: String): Boolean
+
+    /** Fallback dla `CompanyStoreController::owner()` — `User::orderBy('id')->first()` gdy handle nie istnieje. */
+    fun findFirstByOrderById(): User?
 }

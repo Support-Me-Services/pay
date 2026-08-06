@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController
 
 data class CartLine(val itemId: Long, val name: String, val qty: Int, val unitPricePln: String, val lineTotalPln: String)
 data class CartResponse(val lines: List<CartLine>, val subtotalPln: String, val shipCostPln: String, val totalPln: String, val shippingMethod: String?, val shippingPoint: String?)
+data class AddToCartRequest(val qty: Int = 1)
 data class SetShippingRequest(val method: String, val point: String? = null)
 data class CartCheckoutResponse(val redirectUrl: String? = null, val bypassed: Boolean = false)
 
@@ -49,19 +50,26 @@ class CartController(
     }
 
     @PostMapping("/dodaj/{itemId}")
-    fun add(@PathVariable handle: String, @PathVariable itemId: Long, request: HttpServletRequest): ResponseEntity<CartResponse> {
+    fun add(@PathVariable handle: String, @PathVariable itemId: Long, @RequestBody(required = false) body: AddToCartRequest?, request: HttpServletRequest): ResponseEntity<Any> {
         val owner = userRepository.findByHandle(handle) ?: return ResponseEntity.notFound().build()
+        // Istnienie + własność + aktywność sprawdzone PRZED dodaniem do koszyka
+        // (jak `ShopItem::forUser(...)->where('active', true)->firstOrFail()` w PHP)
+        // — inaczej nieaktywny/nieistniejący/cudzy item wchodzi wyceniony do koszyka.
+        shopItemRepository.findByOwnerAndId(owner, itemId)?.takeIf { it.active }
+            ?: return ResponseEntity.notFound().build()
+
         val cart = cartMap(request.getSession(true), handle)
-        cart[itemId] = ((cart[itemId] ?: 0) + 1).coerceIn(1, MAX_QTY)
+        val addQty = maxOf(1, body?.qty ?: 1)
+        cart[itemId] = ((cart[itemId] ?: 0) + addQty).coerceIn(1, MAX_QTY)
         return ResponseEntity.ok(buildCartResponse(request.getSession(true), handle, owner.id!!))
     }
 
     @PostMapping("/aktualizuj/{itemId}")
     fun update(@PathVariable handle: String, @PathVariable itemId: Long, @RequestBody body: Map<String, Int>, request: HttpServletRequest): ResponseEntity<CartResponse> {
         val owner = userRepository.findByHandle(handle) ?: return ResponseEntity.notFound().build()
-        val qty = (body["qty"] ?: 1).coerceIn(1, MAX_QTY)
+        val qty = body["qty"] ?: 1
         val cart = cartMap(request.getSession(true), handle)
-        cart[itemId] = qty
+        if (qty <= 0) cart.remove(itemId) else cart[itemId] = qty.coerceAtMost(MAX_QTY)
         return ResponseEntity.ok(buildCartResponse(request.getSession(true), handle, owner.id!!))
     }
 
@@ -72,19 +80,21 @@ class CartController(
         return ResponseEntity.ok(buildCartResponse(request.getSession(true), handle, owner.id!!))
     }
 
+    /**
+     * Punkt odbioru NIE jest tu wymagany, nawet dla metody, która go potrzebuje
+     * — PHP zapisuje `ship_point` bezwarunkowo (albo `null`), walidacja "wybierz
+     * punkt" dzieje się WYŁĄCZNIE przy `checkout()`, nie tutaj.
+     */
     @PostMapping("/dostawa")
     fun setShipping(@PathVariable handle: String, @RequestBody body: SetShippingRequest, request: HttpServletRequest): ResponseEntity<Any> {
         val method = ShippingMethods.find(body.method)
         if (method == null || !method.enabled) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Wybierz dostępną metodę dostawy."))
         }
-        if (method.requiresPoint && body.point.isNullOrBlank()) {
-            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Wybierz punkt odbioru."))
-        }
 
         val session = request.getSession(true)
         session.setAttribute("ship.$handle", method.code)
-        session.setAttribute("ship_point.$handle", body.point)
+        session.setAttribute("ship_point.$handle", if (method.requiresPoint) body.point?.trim() else null)
         return ResponseEntity.ok(mapOf("status" to "ok"))
     }
 
@@ -109,7 +119,10 @@ class CartController(
         val subtotal = items.sumOf { (item, qty) -> item.priceGrosze() * qty }
         val total = subtotal + shippingMethod.priceGrosze
 
-        val description = items.joinToString(", ") { (item, qty) -> "${item.name} x$qty" } + " (${shippingMethod.label})"
+        // Jak PHP checkout(): "Zamówienie (<handle>): <nazwy, max 80 znaków> | Dostawa: <etykieta> (<punkt>)".
+        val names = items.joinToString(", ") { (item, qty) -> "${item.name} ×$qty" }.take(80)
+        val shipLabel = shippingMethod.label + (shippingPoint?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: "")
+        val description = "Zamówienie ($handle): $names | Dostawa: $shipLabel"
 
         if (paymentBypass.bypass) {
             cart.clear()
@@ -151,7 +164,7 @@ class CartController(
     }
 
     private fun resolveItems(ownerId: Long, cart: Map<Long, Int>): List<Pair<ShopItem, Int>> =
-        shopItemRepository.findAllById(cart.keys).filter { it.owner?.id == ownerId }.map { it to (cart[it.id] ?: 0) }
+        shopItemRepository.findAllById(cart.keys).filter { it.owner?.id == ownerId && it.active }.map { it to (cart[it.id] ?: 0) }
 
     private fun buildCartResponse(session: HttpSession, handle: String, ownerId: Long): CartResponse {
         val cart = cartMap(session, handle)
