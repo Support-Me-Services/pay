@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import StorefrontLayout from '@/Layouts/StorefrontLayout'
-import BeneficiaryNodes from '@/Components/BeneficiaryNodes'
 
 const CSS = `
 .ty-overlay{ position:fixed; inset:0; z-index:1200; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(20,30,48,.55); -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px); }
@@ -19,6 +18,17 @@ const CSS = `
 @media(max-width:520px){ .ty-modal{ padding:30px 22px 20px; } .ty-title{ font-size:1.4rem; } }
 `
 
+// Kafelki „Kogo wspieramy?" — statyczne (system Kategorie usunięty), wszystkie
+// prowadzą do podstrony „Wspieramy" (beneficiariesUrl).
+const CATEGORIES = [
+    { slug: 'organizacje-spoleczne', icon: 'category-icons/organizacje-spoleczne.jpg', label: 'Organizacje społeczne' },
+    { slug: 'fundacje-i-stowarzyszenia', icon: 'category-icons/fundacje-i-stowarzyszenia.jpg', label: 'Fundacje <br>i stowarzyszenia' },
+    { slug: 'wspolnoty-lokalne', icon: 'category-icons/wspolnoty-lokalne.jpg', label: 'Wspólnoty lokalne' },
+    { slug: 'miejsca-kultu', icon: 'category-icons/miejsca-kultu.jpg', label: 'Miejsca kultu <br>i organizacje religijne' },
+    { slug: 'inicjatywy-charytatywne', icon: 'category-icons/inicjatywy-charytatywne.jpg', label: 'Inicjatywy charytatywne' },
+    { slug: 'projekty-spoleczne-i-edukacyjne', icon: 'category-icons/projekty-spoleczne-i-edukacyjne.jpg', label: 'Projekty społeczne <br>i edukacyjne' },
+]
+
 const STEPS = [
     { num: 'KROK 1', g: 'g1', rev: false, body: <p><b>Zbliż telefon do znacznika NFC</b><br />W miejscu zbiórki, podczas wydarzenia, w organizacji lub przestrzeni publicznej zbliżasz telefon do oznaczonego punktu NFC.</p> },
     { num: 'KROK 2', g: 'g2', rev: true, body: <><p><b>Wybierz wsparcie</b><br />Automatycznie otwiera się bezpieczna strona płatności.</p><p>Zobaczysz:<br />• nazwę organizacji lub instytucji<br />• cel zbiórki<br />• sugerowaną kwotę wsparcia<br />• możliwość wpisania własnej kwoty</p></> },
@@ -26,8 +36,8 @@ const STEPS = [
     { num: 'KROK 4', g: 'g4', rev: true, body: <><p><b>Otrzymujesz podziękowanie</b><br />Po zakończonej wpłacie trafiasz na specjalnie przygotowaną stronę podziękowania.</p><p><br />Może tam na Ciebie czekać:<br />• wiadomość od organizacji<br />• podziękowanie od zespołu lub opiekuna projektu<br />• zdjęcie z realizowanej inicjatywy<br />• informacja o wykorzystaniu środków<br />• inspirujący cytat lub krótka historia związana z projektem</p></> },
 ]
 
-/** Strona główna marketingowa (/main) — sekcja „Wspieramy" inline + „Jak to działa" + modal podziękowania. */
-export default function Home({ beneficiaries, showThanks, mecenasLogo, mecenasUrl, mainUrl }) {
+/** Strona główna marketingowa (/main) — kafelki kategorii + „Jak to działa" + modal podziękowania. */
+export default function Home({ beneficiariesUrl, showThanks, mecenasLogo, mecenasUrl, mainUrl }) {
     const [thanks, setThanks] = useState(showThanks)
 
     useEffect(() => {
@@ -69,7 +79,14 @@ export default function Home({ beneficiaries, showThanks, mecenasLogo, mecenasUr
                     <h2>Kogo wspieramy?</h2>
                     <p>Każdego dnia tysiące osób chce pomagać, ale często brakuje prostych i wygodnych narzędzi do działania. Tworzymy rozwiązanie, które umożliwia wsparcie jednym zbliżeniem telefonu.</p>
                 </div>
-                <BeneficiaryNodes nodes={beneficiaries} />
+                <div className="lp-cats">
+                    {CATEGORIES.map((cat) => (
+                        <a className="lp-cat" href={beneficiariesUrl} key={cat.slug}>
+                            <span className="lp-cat__disc"><img className="lp-cat__disc-img" src={`/storage/${cat.icon}`} alt="" /></span>
+                            <span className="lp-cat__label" dangerouslySetInnerHTML={{ __html: cat.label }} />
+                        </a>
+                    ))}
+                </div>
             </section>
 
             <section className="lp-section lp-how">

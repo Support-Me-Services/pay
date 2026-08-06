@@ -100,6 +100,24 @@ img{ display:block; max-width:100%; }
 }
 .lp-head p{ margin:0; font-size:20px; line-height:33px; }
 
+.lp-cats{
+    display:flex; flex-wrap:wrap; gap:8px; justify-content:center;
+    max-width:1148px; margin:49px auto 0;
+}
+.lp-cat{
+    width:184px; display:flex; flex-direction:column; align-items:center; gap:27px;
+    text-align:center;
+}
+.lp-cat__disc{
+    width:87px; height:87px; border-radius:50%;
+    background:radial-gradient(circle at 50% 38%, #F8E9EE, #EFD6DE);
+    transition:transform .18s ease, box-shadow .18s ease;
+}
+.lp-cat__label{
+    font-family:var(--lp-display); font-weight:700; font-size:14px; line-height:21px; color:#000;
+}
+.lp-cat:hover .lp-cat__disc{ transform:translateY(-3px); box-shadow:0 10px 22px rgba(36,50,74,.14); }
+
 /* ---------- JAK TO DZIALA (+ wave bg) ---------- */
 .lp-how{ position:relative; padding:150px 0 171px; margin:96px 0 261px; }
 .lp-how::before{
@@ -154,6 +172,7 @@ img{ display:block; max-width:100%; }
     .lp-step__body{ width:100%; max-width:520px; transform:none; }
     .lp-step__art{ align-self:center; }
     .lp-circle--step{ width:280px; height:280px; font-size:32px; }
+    .lp-cats{ justify-content:center; }
 }
 /* MOBILE — wg ramki Figmy 1:5 (402px): te same fonty 40/20/25px co desktop,
    układ pionowy i wyśrodkowany. NIE zmniejszamy typografii. */
@@ -173,6 +192,7 @@ img{ display:block; max-width:100%; }
     .lp-circle--hero{ width:min(342px,86vw); height:min(342px,86vw); font-size:40px; }
     .lp-head h2{ font-size:40px; }
     .lp-support{ padding-top:44px; }   /* gap hero→„Kogo wspieramy" jak Figma (było +24px za dużo) */
+    .lp-cats{ flex-direction:column; align-items:center; gap:8px; margin-top:72px; }
     /* mobile: brak nagłówka „Jak to działa?" (nie ma go w ramce mobilnej Figmy) */
     .lp-how .lp-head{ display:none; }
     .lp-how{ margin:14px 0 0; padding:137px 0 70px; background:var(--lp-wave); }
@@ -211,6 +231,10 @@ img{ display:block; max-width:100%; }
     }
     .lp-header.lp-open .lp-nav a:not(.lp-nav__shop){ display:block; }
 }
+
+/* === category icons (panel) === */
+.lp-cat__disc{ overflow:hidden; }
+.lp-cat__disc-img{ width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
 
 /* === Modal „WESPRZYJ" (szybkie wsparcie) — wg Figmy SKLEP 65:1616 === */
 .wesprzyj[hidden]{ display:none; }

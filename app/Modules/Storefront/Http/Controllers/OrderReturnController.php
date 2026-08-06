@@ -50,7 +50,7 @@ class OrderReturnController extends Controller
                 'productName' => $product->name,
                 'productCity' => $product->city,
                 'orderId' => $order->id,
-                'categoryUrl' => route('main') . '#kogo-wspieramy',
+                'categoryUrl' => route('beneficiaries'),
             ]);
         }
 
@@ -58,7 +58,7 @@ class OrderReturnController extends Controller
             return Inertia::render('Storefront/ReturnFailure', [
                 'orderId' => $order->id,
                 'retryUrl' => route('product.show', $order->product->slug),
-                'categoryUrl' => route('main') . '#kogo-wspieramy',
+                'categoryUrl' => route('beneficiaries'),
             ]);
         }
 
