@@ -3,7 +3,6 @@
 namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Jobs\SendGatewayEvent;
-use App\Modules\Storefront\Models\BeneficiaryNode;
 use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Product;
@@ -17,27 +16,12 @@ class StorefrontController extends Controller
     /**
      * GET / — strona główna (landing SupportME wg Figmy).
      *
-     * Sekcja „Kogo wspieramy?" renderuje treść podstrony „Wspieramy" (BeneficiaryNode)
-     * inline, zamiast osobnych kafelków kategorii (system Kategorie usunięty —
-     * zob. pamięć projektową „Wspieramy inline homepage"). Podstrona /beneficiaries
-     * zostaje nietknięta jako alternatywne wejście / możliwość odwrócenia zmiany.
+     * Sekcja „Kogo wspieramy?" to statyczne kafelki (ikona + etykieta, na sztywno
+     * w Storefront/Home.jsx — system Kategorie usunięty, kafelki nie są już
+     * edytowalne z panelu), wszystkie prowadzące do podstrony „Wspieramy" (/beneficiaries).
      */
     public function index()
     {
-        $beneficiaries = BeneficiaryNode::active()->ordered()->get()
-            ->map(fn (BeneficiaryNode $n) => [
-                'id' => $n->id,
-                'heading' => $n->heading,
-                'text_align' => $n->text_align,
-                'image' => $n->image ? asset('storage/' . $n->image) : null,
-                'image_x' => $n->image_x,
-                'image_y' => $n->image_y,
-                'image_scale' => $n->image_scale,
-                'image_right' => $n->imageRight(),
-                'body_html' => $n->body_html ?? '',
-            ])
-            ->values();
-
         // Logo mecenasa (LokalnyRolnik) do modala podziękowania — pierwszy istniejący format.
         $mecenasLogo = null;
         foreach (['svg', 'png', 'webp', 'jpg'] as $ext) {
@@ -48,7 +32,7 @@ class StorefrontController extends Controller
         }
 
         return Inertia::render('Storefront/Home', [
-            'beneficiaries' => $beneficiaries,
+            'beneficiariesUrl' => route('beneficiaries'),
             // Modal „Dziękujemy" po powrocie z płatności (redirect ...?dzieki=1).
             'showThanks' => (bool) request('dzieki'),
             'mecenasLogo' => $mecenasLogo,
@@ -83,8 +67,8 @@ class StorefrontController extends Controller
         }
 
         return Inertia::render('Storefront/TagNotFound', [
-            // Strona kategorii usunięta — powrót prowadzi do sekcji „Kogo wspieramy?" na /main.
-            'categoryUrl' => route('main') . '#kogo-wspieramy',
+            // Strona kategorii usunięta — powrót prowadzi na podstronę „Wspieramy".
+            'categoryUrl' => route('beneficiaries'),
         ])->toResponse(request())->setStatusCode(404);
     }
 
@@ -115,8 +99,8 @@ class StorefrontController extends Controller
             'presets' => $presets,
             'default' => $default,
             'buyUrl' => route('product.buy', $product->slug),
-            // Strona kategorii usunięta — powrót prowadzi do sekcji „Kogo wspieramy?" na /main.
-            'categoryUrl' => route('main') . '#kogo-wspieramy',
+            // Strona kategorii usunięta — powrót prowadzi na podstronę „Wspieramy".
+            'categoryUrl' => route('beneficiaries'),
             'css' => asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10),
             'pageTitle' => 'Wesprzyj: ' . $product->name . ' — ' . config('shop.name'),
             'pageDescription' => 'Złóż cyfrową tacę na rzecz parafii ' . $product->name . '. Szybka wpłata BLIK, bez gotówki.',
