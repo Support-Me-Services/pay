@@ -26,7 +26,7 @@ class GatewayServiceProvider extends ServiceProvider
         // Hosty BRAMKI: pełny zestaw tras — landing/panel (web.php), trasy
         // płatności klienta (payment.php) oraz API dla sklepów (api.php).
         // Scope per domena izoluje je od storefrontu — jeden proces, wiele hostów.
-        // Widoki/baza przełączane są per żądanie przez ResolveTenant.
+        // Baza przełączana jest per żądanie przez ResolveTenant.
         foreach ($this->gatewayHosts() as $host) {
             Route::domain($host)->middleware('web')->group(__DIR__.'/routes/web.php');
             Route::domain($host)->middleware('web')->group(__DIR__.'/routes/payment.php');
@@ -36,12 +36,10 @@ class GatewayServiceProvider extends ServiceProvider
         // Hosty SKLEPU: tylko trasy płatności klienta (payment.php) + API.
         // BEZ web.php — landing '/' i panel kolidowałyby z trasami sklepu.
         // Dzięki temu klient wpłacający zostaje na domenie sklepu (np.
-        // please-support-me.com/pay/{uuid}). GatewayContext doklejania widoki bramki;
-        // dane czytane są z nfc_pay przez połączenie 'gateway' (modele przypięte).
+        // please-support-me.com/pay/{uuid}). Dane czytane są z nfc_pay przez
+        // połączenie 'gateway' (modele przypięte), niezależnie od bazy hosta.
         foreach ($this->storefrontHosts() as $host) {
-            Route::domain($host)
-                ->middleware(['web', \App\Modules\Gateway\Http\Middleware\GatewayContext::class])
-                ->group(__DIR__.'/routes/payment.php');
+            Route::domain($host)->middleware('web')->group(__DIR__.'/routes/payment.php');
             Route::domain($host)->middleware('api')->prefix('api')->group(__DIR__.'/routes/api.php');
         }
 

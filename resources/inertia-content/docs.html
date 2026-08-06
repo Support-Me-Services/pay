@@ -63,7 +63,6 @@
             <ul>
                 <li>Czyta host żądania i mapuje go na tenant (moduł + tryb + baza + klucz API bramki).</li>
                 <li>Dynamicznie podmienia bazę połączenia MySQL (<code>config.database.connections.mysql.database</code>) — per żądanie, bez restartu.</li>
-                <li>Przełącza ścieżki widoków Blade zależnie od trybu (church / products), więc ten sam kontroler renderuje inny wygląd.</li>
                 <li>Rejestruje singleton <code>app('tenant')</code> dostępny w całej aplikacji oraz klucz API bramki w <code>config('shop.gateway_api_key')</code>.</li>
             </ul>
         </div>
@@ -147,7 +146,7 @@
 
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>shop_items</code><code>orders</code></div></div>
         <div class="dc-block"><span class="dc-block__label">Pliki</span>
-            <div class="dc-files">CompanyStoreController.php · Models/ShopItem.php · views/…/shop/sklep.blade.php · public/css/sklep.css · public/css/landing.css (modal)</div>
+            <div class="dc-files">CompanyStoreController.php · Models/ShopItem.php · resources/js/Pages/Storefront/Storefront.jsx · public/css/sklep.css · public/css/landing.css (modal)</div>
         </div>
     </section>
 
@@ -212,7 +211,7 @@
 
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>products</code><code>orders</code><code>events</code><code>product_images</code></div></div>
         <div class="dc-block"><span class="dc-block__label">Pliki</span>
-            <div class="dc-files">StorefrontController.php · Models/Product.php, Order.php, Event.php · views/…/shop/{home,product}.blade.php · Jobs/SendGatewayEvent.php</div>
+            <div class="dc-files">StorefrontController.php · Models/Product.php, Order.php, Event.php · resources/js/Pages/Storefront/{Home,Product}.jsx · Jobs/SendGatewayEvent.php</div>
         </div>
     </section>
 
@@ -238,8 +237,8 @@
     
     <section class="dc-module" id="inwestorzy">
         <div class="dc-module__head"><span class="dc-module__num">6.</span><h2>Inwestorzy i akcjonariusze</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Statyczna strona marketingowa (<code>GET /inwestorzy</code>, nazwa trasy <code>investors</code>) zbudowana 1:1 z makiety Figmy. Hero „Inwestorzy i akcjonariusze”, sekcja misji kapitałowej („Wierzymy, że kapitał może służyć dobru”) oraz karty akcjonariuszy z kwotami inwestycji (kapitałowa + wsparcie usługowe). Renderowana bez kontrolera (<code>Route::view</code>).</p>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (Route::view) · views/…/shop/inwestorzy.blade.php · public/css/inwestorzy.css</div></div>
+        <p class="dc-lead">Statyczna strona marketingowa (<code>GET /inwestorzy</code>, nazwa trasy <code>investors</code>) zbudowana 1:1 z makiety Figmy. Hero „Inwestorzy i akcjonariusze”, sekcja misji kapitałowej („Wierzymy, że kapitał może służyć dobru”) oraz karty akcjonariuszy z kwotami inwestycji (kapitałowa + wsparcie usługowe). Renderowana bez dedykowanego kontrolera — closure w <code>routes/web.php</code> zwracający <code>Inertia::render(...)</code>.</p>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (closure → Inertia::render) · resources/js/Pages/Storefront/Inwestorzy.jsx · public/css/inwestorzy.css</div></div>
     </section>
 
     
@@ -305,7 +304,7 @@
         <div class="dc-note"><strong>Powiadomienia e-mail</strong> <span class="dc-badge dc-badge--soon">Gotowy</span> — kod wysyłki maila jest kompletny; na produkcji działa tryb „tylko panel” (zgłoszenia + CV trafiają do skrzynki w panelu). Wysyłkę mailem włącza się konfiguracją mailera.</div>
 
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>job_positions</code><code>job_applications</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">CareersController.php · Models/JobPosition.php, JobApplication.php · Mail/JobApplicationReceived.php · views/…/shop/{praca,oferta,aplikuj}.blade.php · views/emails/job-application.blade.php</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">CareersController.php · Models/JobPosition.php, JobApplication.php · Mail/JobApplicationReceived.php · resources/js/Pages/Storefront/{Praca,Oferta,Aplikuj}.jsx · views/emails/job-application.blade.php (jedyny realny Blade — szablon maila)</div></div>
     </section>
 
     <section class="dc-module" id="regulamin">
@@ -319,7 +318,7 @@
                 <li>Załącznik: wzór formularza odstąpienia; dane firmy: Fundacja Support Me Haven &amp; Heaven, NIP 5342715041</li>
             </ul>
         </div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (Route::view) · views/…/shop/regulamin.blade.php · public/css/subpages.css</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">routes/web.php (closure → Inertia::render) · resources/js/Pages/Storefront/Regulamin.jsx · public/css/subpages.css</div></div>
     </section>
 
     
@@ -356,7 +355,7 @@
             </table>
         </div>
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>orders</code><code>events</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">OrderReturnController.php · views/…/shop/return-{success,pending,failure}.blade.php</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">OrderReturnController.php · resources/js/Pages/Storefront/Return{Success,Pending,Failure}.jsx</div></div>
     </section>
 
     
@@ -735,7 +734,7 @@ return redirect()-&gt;intended(route('panel.dashboard'));</pre>
             <p>Pola: <code>product_id</code>, <code>path</code>, <code>sort</code>. Wielokrotny upload, sortowanie, usuwanie pojedynczych zdjęć.</p>
         </div>
         <div class="dc-block"><span class="dc-block__label">Tabele</span><div class="dc-tables"><code>products</code><code>parish_notes</code><code>product_images</code><code>events</code><code>orders</code></div></div>
-        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">Panel/ProductController.php · views/…/panel/products/{index,form,stats}.blade.php · ShopStatsService.php</div></div>
+        <div class="dc-block"><span class="dc-block__label">Pliki</span><div class="dc-files">Panel/ProductController.php · resources/js/Pages/Panel/Products/{Index,Form,Stats}.jsx · ShopStatsService.php</div></div>
     
         <!-- INJECTED:panel-parafie -->
         <h3 class="dc-sub">Pola formularza parafii i mapowanie na bazę</h3>
@@ -977,7 +976,7 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
     
     <section class="dc-module" id="baza">
         <div class="dc-module__head"><span class="dc-module__num">20.</span><h2>Pełny schemat bazy danych</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">22 migracje budujące ~21 tabel w trzech bazach (multi-tenant). Poniżej wszystkie tabele z kluczowymi kolumnami.</p>
+        <p class="dc-lead">30 plików migracji (w tym 4 dropujące) budujące 22 realnie istniejące tabele w trzech bazach (multi-tenant). Poniżej wszystkie tabele z kluczowymi kolumnami.</p>
         <div class="dc-block"><span class="dc-block__label">Baza nfc_pay (bramka)</span>
             <table class="dc-table">
                 <thead><tr><th>Tabela</th><th>Kluczowe kolumny</th></tr></thead>
@@ -1008,7 +1007,7 @@ Event::create(['shop_id' =&gt; $shop-&gt;id, 'tag_id' =&gt; $tag?-&gt;id, 'type'
             </table>
         </div>
         <div class="dc-block"><span class="dc-block__label">Tabele systemowe (Laravel)</span>
-            <div class="dc-tables"><code>users</code><code>cache</code><code>cache_locks</code><code>jobs</code></div>
+            <div class="dc-tables"><code>users</code><code>password_reset_tokens</code><code>sessions</code><code>cache</code><code>cache_locks</code><code>jobs</code><code>job_batches</code><code>failed_jobs</code></div>
         </div>
         <div class="dc-note">Usunięte w ramach czyszczenia panelu admina (Dashboard/Kategorie/Handlowcy/Parafie do obdzwonienia/Mapa pokrycia/Wiadomości): tabele <code>categories</code>, <code>salespeople</code>, <code>potential_parishes</code>, <code>contact_messages</code> oraz kolumna <code>products.salesperson_id</code>. Dropnięte migracjami <code>2026_08_05_0000{01..04}_drop_*</code>.</div>
 
@@ -1081,13 +1080,13 @@ config(['database.connections.mysql.database' =&gt; <i>$tenant['database']</i>])
     
     <section class="dc-module" id="stack">
         <div class="dc-module__head"><span class="dc-module__num">21.</span><h2>Stack technologiczny i statystyki</h2><span class="dc-badge dc-badge--on">Aktywny</span></div>
-        <p class="dc-lead">Lekki, nowoczesny stos oparty o Laravel 12 — bez ciężkiego frontendu SPA, co przekłada się na szybkość i prostotę utrzymania.</p>
+        <p class="dc-lead">Laravel 12 na backendzie, React (Inertia.js) + SSR na froncie — bez ciężkiego, osobnego SPA (jeden proces serwuje HTML od razu z danymi), co przekłada się na szybkość i prostotę utrzymania.</p>
         <div class="dc-block"><span class="dc-block__label">Technologie</span>
             <div class="dc-pills">
                 <span class="dc-pill">Laravel 12 (PHP 8.2+)</span>
                 <span class="dc-pill">MySQL / MariaDB (3 bazy)</span>
                 <span class="dc-pill">Architektura multi-tenant</span>
-                <span class="dc-pill">Blade + CSS (bez SPA)</span>
+                <span class="dc-pill">React 19 + Inertia.js 3 (SSR)</span>
                 <span class="dc-pill">Vite 7 + Tailwind 4</span>
                 <span class="dc-pill">PayU REST API v2.1</span>
                 <span class="dc-pill">BLIK · pay-by-link · 3DS</span>
@@ -1104,15 +1103,15 @@ config(['database.connections.mysql.database' =&gt; <i>$tenant['database']</i>])
                 <thead><tr><th>Warstwa</th><th>Liczby</th></tr></thead>
                 <tbody>
                     <tr><td data-label="Warstwa">Moduły aplikacji</td><td data-label="Liczby">2 (Gateway · Storefront)</td></tr>
-                    <tr><td data-label="Warstwa">Kontrolery</td><td data-label="Liczby">26 (15 Gateway + 11 Storefront)</td></tr>
-                    <tr><td data-label="Warstwa">Modele danych</td><td data-label="Liczby">15</td></tr>
+                    <tr><td data-label="Warstwa">Kontrolery</td><td data-label="Liczby">30 (15 Gateway + 15 Storefront)</td></tr>
+                    <tr><td data-label="Warstwa">Modele danych</td><td data-label="Liczby">15 (6 Gateway + 9 Storefront)</td></tr>
                     <tr><td data-label="Warstwa">Serwisy i dostawcy płatności</td><td data-label="Liczby">GatewayClient, ShopStatsService, TransactionService, StatsService + PayUProvider, MockProvider</td></tr>
-                    <tr><td data-label="Warstwa">Migracje / tabele</td><td data-label="Liczby">22 / ~21</td></tr>
-                    <tr><td data-label="Warstwa">Widoki Blade</td><td data-label="Liczby">69</td></tr>
-                    <tr><td data-label="Warstwa">Trasy (web · API · webhooki)</td><td data-label="Liczby">86</td></tr>
-                    <tr><td data-label="Warstwa">Arkusze stylów CSS</td><td data-label="Liczby">6</td></tr>
+                    <tr><td data-label="Warstwa">Migracje / tabele</td><td data-label="Liczby">30 / 22 aktualnie istniejących</td></tr>
+                    <tr><td data-label="Warstwa">Strony i komponenty (Inertia/React)</td><td data-label="Liczby">52 strony (.jsx w Pages) + 8 współdzielonych komponentów/layoutów</td></tr>
+                    <tr><td data-label="Warstwa">Trasy (web · API · webhooki)</td><td data-label="Liczby">112</td></tr>
+                    <tr><td data-label="Warstwa">Arkusze stylów CSS</td><td data-label="Liczby">7</td></tr>
                     <tr><td data-label="Warstwa">Bazy danych</td><td data-label="Liczby">3 (multi-tenant)</td></tr>
-                    <tr><td data-label="Warstwa">Linie kodu (PHP + Blade + CSS)</td><td data-label="Liczby">~13 500</td></tr>
+                    <tr><td data-label="Warstwa">Linie kodu (PHP + JS/JSX + CSS)</td><td data-label="Liczby">~13 500</td></tr>
                 </tbody>
             </table>
         </div>

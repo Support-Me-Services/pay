@@ -23,8 +23,7 @@ class ResolveTenant
      * Rozwiązuje tenant dla danego hosta i ustawia kontekst runtime:
      *  - config('platform.role' / 'platform.shop_kind'),
      *  - aktywną bazę MySQL (purge + reconnect),
-     *  - singleton 'tenant' (czytany przez providery/widoki),
-     *  - ścieżki widoków modułu (świeży prepend na każde żądanie).
+     *  - singleton 'tenant' (czytany przez providery).
      *
      * @param  string|null  $host  Host żądania; null => fallback z config('tenants.default').
      * @return array{module:string,kind:?string,db:string,host:string}
@@ -64,33 +63,6 @@ class ResolveTenant
         // 3) Singleton tenanta — dostępny przez app('tenant') w całym żądaniu.
         app()->instance('tenant', $tenant);
 
-        // 4) Ścieżki widoków per żądanie (jeden proces obsługuje wiele hostów).
-        static::applyViewPaths($tenant);
-
         return $tenant;
-    }
-
-    /**
-     * Prepend ścieżek widoków dla rozwiązanego tenanta — świeżo na każde
-     * żądanie, by hosty nie „przeciekały” ścieżkami między sobą.
-     *
-     * @param  array{module:string,kind:?string}  $tenant
-     */
-    public static function applyViewPaths(array $tenant): void
-    {
-        $finder = app('view')->getFinder();
-
-        // Reset zakumulowanych prependów z poprzedniego żądania.
-        $finder->setPaths(config('view.paths'));
-        $finder->flush();
-
-        if ($tenant['module'] === 'gateway') {
-            // Widoki bramki: view('landing'), view('panel.login') itd.
-            $finder->prependLocation(resource_path('views/gateway'));
-        } else {
-            // Storefront: motyw church (jedyny) + widoki wspólne.
-            $finder->prependLocation(resource_path('views/storefront/common'));
-            $finder->prependLocation(resource_path('views/storefront/church'));
-        }
     }
 }

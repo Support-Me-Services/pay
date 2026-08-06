@@ -103,22 +103,25 @@
         <div class="dc-module__head"><span class="dc-module__num">3.</span><h2>Wdrażanie zmian — 2 warianty</h2></div>
         <p class="dc-lead">Zmiany możesz wprowadzać na dwa sposoby. <strong>Wariant 1</strong> — Claude pracuje na Twoim komputerze (lokalne repo) i wysyła gotowe pliki na serwer. <strong>Wariant 2</strong> — logujesz się na serwer i uruchamiasz Claude bezpośrednio tam, a on edytuje pliki od razu na miejscu. Oba prowadzą do tego samego efektu na produkcji.</p>
 
-        <h3 class="dc-sub">Część 1 — z lokalnego środowiska (deploy przez SSH)</h3>
-        <p>Claude edytuje pliki w lokalnym repo (<code>/var/www/pay/unified</code>), a potem wysyła je na serwer przez <strong>rsync po SSH</strong> i czyści cache. Potrzebny jest dostęp z sekcji 2. Schemat, który Claude wykonuje automatycznie:</p>
-        <pre class="dc-pre"><span class="c"># 1) wyślij zmienione pliki na serwer (przykład: jedna podstrona + jej CSS)</span>
-<span class="p">$</span> rsync -az resources/views/.../inwestorzy.blade.php public/css/inwestorzy.css \
-        root@<i>34.118.46.252</i>:<i>/var/www/support-me/</i>
+        <h3 class="dc-sub">Część 1 — z lokalnego środowiska (git push + <code>bin/deploy.sh</code>)</h3>
+        <p>Claude edytuje pliki w lokalnym repo, commituje i wypycha na GitHub, a na serwerze uruchamia skrypt <code>bin/deploy.sh</code>, który robi <code>git pull</code> + build frontendu (Vite: klient i SSR) + czyszczenie cache + restart procesu SSR. Frontend jest na <strong>React/Inertia</strong> — zbudowane assety (<code>public/build</code>) są w <code>.gitignore</code>, więc sam <code>git pull</code> NIE wystarcza po zmianie w <code>resources/js/**</code>; build i restart SSR są obowiązkowe. Potrzebny jest dostęp z sekcji 2. Schemat, który Claude wykonuje automatycznie:</p>
+        <pre class="dc-pre"><span class="c"># 1) lokalnie: commit + push (przykład: zmiana jednej podstrony)</span>
+<span class="p">$</span> git add resources/js/Pages/Storefront/Inwestorzy.jsx public/css/inwestorzy.css
+<span class="p">$</span> git commit -m "Inwestorzy: ..." &amp;&amp; git push
 
-<span class="c"># 2) wyczyść cache widoków/tras na serwerze</span>
-<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && php artisan view:clear && php artisan route:clear'
+<span class="c"># 2) na serwerze: pull + npm run build (klient+SSR) + cache + restart SSR</span>
+<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && sudo bash bin/deploy.sh'
 
-<span class="c"># 3) (jeśli zmiana w bazie) migracja dla właściwego tenanta</span>
-<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && TENANT=please-support-me.com php artisan migrate --force'</pre>
-        <div class="dc-note">Nie musisz tego robić ręcznie — wystarczy, że napiszesz „wdróż na prod”, a Claude wykona wysyłkę, migracje i wyczyści cache, a na końcu sprawdzi, czy strona zwraca <strong>200</strong>.</div>
-        <div class="dc-note">Zaleta: produkcja zmienia się dopiero po świadomym „wdróż”, a pliki masz wersjonowane w repo (GitHub) — łatwo cofnąć zmianę.</div>
+<span class="c"># 3) (jeśli pull przyniósł NOWE pliki migracji) — jednorazowo, po backupie bazy</span>
+<span class="p">$</span> ssh root@<i>34.118.46.252</i> 'cd /var/www/support-me && sudo bash bin/deploy.sh --migrate'
+
+<span class="c"># zmiana WYŁĄCZNIE w PHP (bez frontendu) — można pominąć build:</span>
+<span class="c">$ sudo bash bin/deploy.sh --no-build</span></pre>
+        <div class="dc-note">Nie musisz tego robić ręcznie — wystarczy, że napiszesz „wdróż na prod”, a Claude wykona push, zdalne <code>bin/deploy.sh</code> (build + cache + restart SSR, migracje tylko na wyraźną prośbę i po backupie), a na końcu sprawdzi, czy strona zwraca <strong>200</strong>.</div>
+        <div class="dc-note">Zaleta: produkcja zmienia się dopiero po świadomym „wdróż”, a pliki masz wersjonowane w repo (GitHub) — łatwo cofnąć zmianę. <code>bin/deploy.sh</code> sam przełącza aplikację w tryb serwisowy na czas deployu i przywraca ją nawet po błędzie.</div>
 
         <h3 class="dc-sub">Część 2 — bezpośrednio na serwerze (Claude uruchomiony na serwerze)</h3>
-        <p>Tu nie ma osobnego deployu: logujesz się na serwer, odpalasz na nim Claude i wpisujesz prompty — Claude edytuje pliki od razu w <code>/var/www/support-me</code>, a zmiany są natychmiast na żywo (cache czyści sam).</p>
+        <p>Tu nie ma osobnego deployu z Twojego komputera: logujesz się na serwer, odpalasz na nim Claude i wpisujesz prompty — Claude edytuje pliki od razu w <code>/var/www/support-me</code>. Zmiana pliku frontendowego (<code>resources/js/**</code>) <strong>nie</strong> jest jednak od razu widoczna — frontend jest na React/Inertia, więc Claude musi jeszcze zbudować assety (<code>npm run build</code>) i zrestartować proces SSR, zanim strona zacznie serwować nową wersję. Zmiana wyłącznie w PHP (kontroler/trasa) jest widoczna po prostym czyszczeniu cache, bez builda.</p>
         <ol class="dc-steps">
             <li><strong>Zaloguj się na serwer</strong> po SSH (jak w sekcji 2) i wejdź do katalogu projektu:
                 <pre class="dc-pre"><span class="p">$</span> ssh root@<i>34.118.46.252</i>
@@ -128,7 +131,7 @@
                 <pre class="dc-pre"><span class="p">#</span> claude</pre>
                 <p>Przy pierwszym uruchomieniu Claude poprosi o jednorazowe zalogowanie (konto Anthropic / klucz API).</p>
             </li>
-            <li><strong>Wpisuj prompty wprost w terminalu</strong> — np. <em>„na stronie /praca zmień nagłówek na »Dołącz do nas«”</em>. Claude od razu edytuje pliki na serwerze, czyści cache i (na prośbę) sprawdza, czy strona zwraca <strong>200</strong>. Zmiana jest natychmiast widoczna na <span class="dc-inline">please-support-me.com</span> — bez rsync i bez „wdróż”.</li>
+            <li><strong>Wpisuj prompty wprost w terminalu</strong> — np. <em>„na stronie /praca zmień nagłówek na »Dołącz do nas«”</em>. Claude edytuje plik <code>.jsx</code> na serwerze, ręcznie uruchamia <code>npm run build</code> i restartuje proces SSR (<code>bin/deploy.sh</code> robiłby tu też niepotrzebny <code>git pull</code>, bo zmiana jest tylko lokalna na serwerze), i (na prośbę) sprawdza, czy strona zwraca <strong>200</strong>. Zmiana jest widoczna na <span class="dc-inline">please-support-me.com</span> po tym buildzie — bez commitowania i bez wypychania na GitHub, dopóki nie poprosisz o zsynchronizowanie repo.</li>
         </ol>
         <div class="dc-note dc-note--warn"><strong>Uwaga — to praca bezpośrednio na produkcji.</strong> Nie ma kroku „wdróż”: każda zmiana jest od razu na żywo. Przy większych zmianach poproś Claude o <strong>kopię pliku przed edycją</strong> i o <strong>sprawdzenie strony po zmianie</strong>.</div>
         <div class="dc-note"><strong>Status na dziś:</strong> Claude nie jest jeszcze zainstalowany na tym serwerze — krok „uruchom <code>claude</code>” na razie nie zadziała. Gdy przekażesz <strong>login i hasło</strong> (lub dostęp SSH), podłączymy go tam: instalacja CLI + jednorazowe logowanie. Powyższy opis jest „na zapas”, żeby było wiadomo, jak to będzie wyglądać po podłączeniu.</div>
