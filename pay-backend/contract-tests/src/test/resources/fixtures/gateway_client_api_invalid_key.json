@@ -1,0 +1,13 @@
+{
+  "description": "Client API bramki z niepoprawnym X-Api-Key -> 401, identyczny kształt jak brak klucza w ogóle",
+  "request": {
+    "method": "GET",
+    "path": "/api/gateway/v1/transactions/00000000-0000-0000-0000-000000000000",
+    "headers": { "X-Api-Key": "to-jest-na-pewno-niepoprawny-klucz" }
+  },
+  "expectedResponse": {
+    "status": 401,
+    "body": "{\"error\":\"Niepoprawny klucz API\"}"
+  },
+  "ignoredFields": []
+}

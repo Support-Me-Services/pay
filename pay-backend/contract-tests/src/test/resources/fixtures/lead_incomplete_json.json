@@ -1,0 +1,14 @@
+{
+  "description": "Formularz /lead z brakującym polem non-nullable -> 400 (nie 500 — regresja złapana i naprawiona w Fazie 5, GlobalExceptionHandler)",
+  "request": {
+    "method": "POST",
+    "path": "/lead",
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"name\":\"x\"}"
+  },
+  "expectedResponse": {
+    "status": 400,
+    "body": "{\"error\":\"Nieprawidłowe żądanie.\"}"
+  },
+  "ignoredFields": []
+}

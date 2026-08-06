@@ -1,0 +1,31 @@
+# Lokalny dev dla stosu Kotlin/Spring Boot — Postgres (NIE MySQL, jak w
+# starym docker/docker-compose.yml PHP), żeby zlikwidować rozjazd wobec
+# produkcji (Cloud SQL Postgres). Dwie bazy fizyczne odpowiadające
+# tenants.map w application.yml: nfc_shop1 (Storefront) i nfc_pay (Gateway).
+#
+# Użycie:
+#   docker compose up -d
+#   ./gradlew :app:bootRun
+#
+# Domyślne dane logowania MUSZĄ być nadpisane poza tym plikiem (.env lokalny,
+# nigdy nie commitowany) przy jakimkolwiek użyciu poza czystym dev na laptopie.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-nfc_pay}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+      POSTGRES_DB: ${DB_GATEWAY_DATABASE:-nfc_pay}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pay-backend-db-data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-nfc_pay}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pay-backend-db-data:

@@ -1,0 +1,13 @@
+{
+  "description": "Panel Storefront bez sesji -> 403 (Spring Security domyślny AccessDeniedHandler, bez formLogin/httpBasic — brak ciała JSON, sprawdzamy tylko status)",
+  "request": {
+    "method": "PUT",
+    "path": "/api/storefront/panel/password",
+    "headers": { "Content-Type": "application/json" },
+    "body": "{}"
+  },
+  "expectedResponse": {
+    "status": 403
+  },
+  "ignoredFields": []
+}

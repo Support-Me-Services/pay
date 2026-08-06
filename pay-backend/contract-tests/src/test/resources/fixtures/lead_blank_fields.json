@@ -1,0 +1,14 @@
+{
+  "description": "Formularz /lead z wszystkimi polami obecnymi ale pustymi -> 422 z błędami walidacji per pole (@NotBlank)",
+  "request": {
+    "method": "POST",
+    "path": "/lead",
+    "headers": { "Content-Type": "application/json" },
+    "body": "{\"name\":\"\",\"email\":\"\",\"phone\":\"\",\"message\":\"\"}"
+  },
+  "expectedResponse": {
+    "status": 422,
+    "body": "{\"error\":\"Błąd walidacji\",\"fields\":{\"name\":\"nie może być odstępem\",\"email\":\"nie może być odstępem\",\"phone\":\"nie może być odstępem\",\"message\":\"nie może być odstępem\"}}"
+  },
+  "ignoredFields": []
+}

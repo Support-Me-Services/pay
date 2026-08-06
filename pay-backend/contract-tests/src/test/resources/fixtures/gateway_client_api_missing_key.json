@@ -1,0 +1,13 @@
+{
+  "description": "Client API bramki bez X-Api-Key -> 401 z komunikatem zgodnym z oryginalnym AuthenticateApiKey (kontrakt zewnętrzny dla sklepów-klientów, nie wolno cicho zmienić kształtu błędu)",
+  "request": {
+    "method": "GET",
+    "path": "/api/gateway/v1/transactions/00000000-0000-0000-0000-000000000000",
+    "headers": {}
+  },
+  "expectedResponse": {
+    "status": 401,
+    "body": "{\"error\":\"Niepoprawny klucz API\"}"
+  },
+  "ignoredFields": []
+}
