@@ -7,6 +7,8 @@ import com.supportme.pay.gateway.domain.repository.ShopRepository
 import com.supportme.pay.gateway.domain.repository.TagRepository
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import org.hibernate.validator.constraints.URL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,8 +33,8 @@ data class ShopSummary(
 )
 
 data class ShopUpsertRequest(
-    @field:NotBlank val name: String,
-    @field:NotBlank val baseUrl: String,
+    @field:NotBlank @field:Size(max = 255) val name: String,
+    @field:NotBlank @field:Size(max = 255) @field:URL val baseUrl: String,
     @field:NotBlank val paymentMode: String,
 )
 

@@ -10,6 +10,9 @@ interface TagRepository : JpaRepository<Tag, Long> {
 
     fun findAllByShopOrderById(shop: Shop): List<Tag>
 
+    /** Dla dropdownu w `Panel\StatsController` — `$shop->tags()->orderBy('tag_uid')`. */
+    fun findAllByShopOrderByTagUid(shop: Shop): List<Tag>
+
     /** Ownership guard — odpowiednik `abort_unless($tag->shop_id === $shop->id, 404)`. */
     fun findByIdAndShop(id: Long, shop: Shop): Tag?
 

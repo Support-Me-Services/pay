@@ -25,13 +25,17 @@ interface TransactionRepository : JpaRepository<Transaction, UUID> {
     /**
      * Odpowiednik `StatsService::summary()`. `shopId`/`tagId` = -1 i `since`
      * = `Instant.EPOCH` = "brak filtra" (sentinel, NIE `null` — patrz
-     * [GatewayEventRepository.countByTypeGrouped] po co).
+     * [GatewayEventRepository.countByTypeGrouped] po co). Filtr na
+     * `created_at`, NIE `paid_at` — PHP filtruje `$txQuery` (przed
+     * doklejeniem `where('status','paid')`) po `created_at`, więc transakcja
+     * stworzona 45 dni temu a opłacona 5 dni temu wypada z okna "ostatnie
+     * 30 dni" mimo świeżego `paid_at`.
      */
     @Query(
         "select count(t) from Transaction t where t.status = :status and " +
             "(:shopId = -1 or t.shop.id = :shopId) and " +
             "(:tagId = -1 or t.tag.id = :tagId) and " +
-            "t.paidAt >= :since",
+            "t.createdAt >= :since",
     )
     fun countByStatus(
         @Param("status") status: TransactionStatus,
@@ -44,7 +48,7 @@ interface TransactionRepository : JpaRepository<Transaction, UUID> {
         "select coalesce(sum(t.amount), 0) from Transaction t where t.status = :status and " +
             "(:shopId = -1 or t.shop.id = :shopId) and " +
             "(:tagId = -1 or t.tag.id = :tagId) and " +
-            "t.paidAt >= :since",
+            "t.createdAt >= :since",
     )
     fun sumAmountByStatus(
         @Param("status") status: TransactionStatus,

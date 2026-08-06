@@ -6,6 +6,8 @@ import com.supportme.pay.gateway.domain.repository.ShopRepository
 import com.supportme.pay.gateway.domain.repository.TagRepository
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
+import org.hibernate.validator.constraints.URL
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,10 +29,11 @@ data class TagSummary(
 )
 
 data class TagUpsertRequest(
-    @field:NotBlank val tagUid: String,
-    val label: String? = null,
-    @field:NotBlank val targetUrl: String,
-    val active: Boolean = true,
+    @field:NotBlank @field:Size(max = 255) val tagUid: String,
+    @field:Size(max = 255) val label: String? = null,
+    @field:NotBlank @field:Size(max = 255) @field:URL val targetUrl: String,
+    /** Domyślnie `false` gdy pole nieobecne w body — jak `$request->boolean('active')` w PHP. */
+    val active: Boolean = false,
 )
 
 /** Odpowiednik `Panel\TagController` — zagnieżdżony pod sklepem (`/shops/{shopId}/tags`). */

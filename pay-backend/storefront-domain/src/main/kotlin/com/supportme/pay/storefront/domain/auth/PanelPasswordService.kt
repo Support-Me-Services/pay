@@ -11,12 +11,15 @@ class PanelPasswordService(
     private val userRepository: UserRepository,
     private val passwordEncoder: PasswordEncoder,
 ) {
-    fun changePassword(principal: TenantPrincipal, currentPassword: String, newPassword: String) {
+    fun changePassword(principal: TenantPrincipal, currentPassword: String, newPassword: String, newPasswordConfirmation: String) {
         if (!passwordEncoder.matches(currentPassword, principal.user.password)) {
             throw BadCredentialsException("Nieprawidłowe obecne hasło.")
         }
         require(newPassword.length >= MIN_PASSWORD_LENGTH) {
             "Hasło musi mieć co najmniej $MIN_PASSWORD_LENGTH znaków."
+        }
+        require(newPassword == newPasswordConfirmation) {
+            "Potwierdzenie hasła nie jest zgodne." // jak `confirmed` w PHP (Password::min(8))
         }
 
         val user = userRepository.findById(principal.user.id!!).orElseThrow()

@@ -25,7 +25,7 @@ class GatewayPasswordController(
             ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
 
         return try {
-            panelPasswordService.changePassword(principal, body.currentPassword, body.newPassword)
+            panelPasswordService.changePassword(principal, body.currentPassword, body.newPassword, body.newPasswordConfirmation)
             ResponseEntity.ok(mapOf("status" to "ok"))
         } catch (e: BadCredentialsException) {
             ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to (e.message ?: "Błąd.")))

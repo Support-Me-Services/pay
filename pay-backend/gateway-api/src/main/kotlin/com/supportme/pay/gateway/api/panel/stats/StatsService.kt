@@ -31,7 +31,10 @@ class StatsService(
     private val transactionRepository: TransactionRepository,
 ) {
     fun summary(shopId: Long?, tagId: Long?, days: Int?): StatsSummary {
-        val since = days?.let { Instant.now().minus(it.toLong(), java.time.temporal.ChronoUnit.DAYS) } ?: Instant.EPOCH
+        // Jak `Carbon::now()->subDays($days)->startOfDay()` w PHP — przycięte do
+        // północy UTC, NIE dokładny czas (inaczej okno "30 dni" dryfuje wg
+        // godziny wywołania endpointu).
+        val since = days?.let { todayMidnightUtc().minus(it.toLong(), java.time.temporal.ChronoUnit.DAYS) } ?: Instant.EPOCH
         val shopFilter = shopId ?: NO_FILTER
         val tagFilter = tagId ?: NO_FILTER
 
@@ -58,7 +61,12 @@ class StatsService(
     }
 
     fun dailyPaidSeries(shopId: Long?, tagId: Long?, days: Int = 30): List<DailyPoint> {
-        val since = Instant.now().minus(days.toLong(), java.time.temporal.ChronoUnit.DAYS)
+        // Jak `Carbon::now()->subDays($days - 1)->startOfDay()` w PHP — UWAGA na
+        // `days - 1`, NIE `days` (żeby okno obejmowało dokładnie `days` dni
+        // KALENDARZOWYCH łącznie z dniem dzisiejszym, nie o jeden za dużo).
+        val sinceDate = todayMidnightUtc().atZone(ZoneOffset.UTC).toLocalDate().minusDays((days - 1).toLong())
+        val since = sinceDate.atStartOfDay(ZoneOffset.UTC).toInstant()
+
         val rows = transactionRepository.dailyPaidStats(shopId ?: NO_FILTER, tagId ?: NO_FILTER, since)
             .associate { row ->
                 // Hibernate 6 + pgjdbc zwraca TIMESTAMPTZ z natywnego zapytania jako
@@ -70,13 +78,16 @@ class StatsService(
                 day to (cnt to total)
             }
 
-        val labelFormat = DateTimeFormatter.ofPattern("d.M")
-        return (days - 1 downTo 0).map { offset ->
-            val date = Instant.now().atZone(ZoneOffset.UTC).toLocalDate().minusDays(offset.toLong())
+        // "dd.MM" (zero-padded) jak PHP `format('d.m')` — NIE "d.M" (bez zer, "6.8").
+        val labelFormat = DateTimeFormatter.ofPattern("dd.MM")
+        return (0 until days).map { offset ->
+            val date = sinceDate.plusDays(offset.toLong())
             val (cnt, total) = rows[date] ?: (0L to 0L)
             DailyPoint(label = date.format(labelFormat), paidCount = cnt, revenuePln = total / 100.0)
         }
     }
+
+    private fun todayMidnightUtc(): Instant = Instant.now().atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant()
 
     companion object {
         /** "Brak filtra" — nigdy nie wiążemy `null` do parametru JDBC (patrz TransactionRepository/GatewayEventRepository). */

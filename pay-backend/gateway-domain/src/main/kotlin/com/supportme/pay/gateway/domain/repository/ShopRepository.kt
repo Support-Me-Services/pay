@@ -12,4 +12,7 @@ interface ShopRepository : JpaRepository<Shop, Long> {
     fun existsBySlug(slug: String): Boolean
 
     fun findAllByOrderById(): List<Shop>
+
+    /** Dla dropdownu w `Panel\StatsController` — `Shop::orderBy('name')`, INNY porządek niż lista sklepów. */
+    fun findAllByOrderByName(): List<Shop>
 }

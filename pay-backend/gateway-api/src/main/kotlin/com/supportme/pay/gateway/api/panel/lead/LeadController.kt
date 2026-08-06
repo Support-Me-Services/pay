@@ -43,7 +43,7 @@ class LeadController(private val leadRepository: LeadRepository) {
         while (true) {
             val chunk = leadRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, 200, Sort.by("createdAt").descending()))
             chunk.content.forEach { lead ->
-                builder.append(csvField(formatDate(lead.createdAt))).append(';')
+                builder.append(csvField(formatCsvDate(lead.createdAt))).append(';')
                     .append(csvField(lead.name)).append(';')
                     .append(csvField(lead.email)).append(';')
                     .append(csvField(lead.phone)).append(';')
@@ -54,7 +54,7 @@ class LeadController(private val leadRepository: LeadRepository) {
             page++
         }
 
-        val filename = "leady_${System.currentTimeMillis() / 1000}.csv"
+        val filename = "leady_${FILENAME_FORMAT.format(java.time.Instant.now().atZone(ZoneOffset.UTC))}.csv"
         return ResponseEntity.ok()
             .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8"))
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
@@ -71,6 +71,15 @@ class LeadController(private val leadRepository: LeadRepository) {
     private fun formatDate(instant: java.time.Instant?): String =
         instant?.atZone(ZoneOffset.UTC)?.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")) ?: ""
 
+    /** Format CSV RÓŻNY od formatu listy JSON — jak PHP `exportCsv` (`Y-m-d H:i`) vs `index` (`d.m.Y H:i`). */
+    private fun formatCsvDate(instant: java.time.Instant?): String =
+        instant?.atZone(ZoneOffset.UTC)?.format(CSV_DATE_FORMAT) ?: ""
+
     private fun summarize(id: Long, createdAt: java.time.Instant?, name: String, email: String, phone: String, company: String?, message: String) =
         LeadSummary(id, formatDate(createdAt), name, email, phone, company, message)
+
+    companion object {
+        private val CSV_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        private val FILENAME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss")
+    }
 }

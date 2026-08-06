@@ -37,8 +37,8 @@ class StatsController(
             total = statsService.summary(shop?.id, tag?.id, null),
             last30Days = statsService.summary(shop?.id, tag?.id, 30),
             dailySeries = statsService.dailyPaidSeries(shop?.id, tag?.id, 30),
-            shops = shopRepository.findAllByOrderById().map { ShopOption(it.id!!, it.name) },
-            tags = shop?.let { tagRepository.findAllByShopOrderById(it).map { t -> TagOption(t.id!!, t.tagUid, t.label) } } ?: emptyList(),
+            shops = shopRepository.findAllByOrderByName().map { ShopOption(it.id!!, it.name) },
+            tags = shop?.let { tagRepository.findAllByShopOrderByTagUid(it).map { t -> TagOption(t.id!!, t.tagUid, t.label) } } ?: emptyList(),
         )
     }
 }
