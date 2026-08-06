@@ -11,4 +11,6 @@ interface ShopItemRepository : JpaRepository<ShopItem, Long> {
     fun findByOwnerAndId(owner: User, id: Long): ShopItem?
 
     fun findByTagUid(tagUid: String): ShopItem?
+
+    fun findByTagUidAndActiveTrue(tagUid: String): ShopItem?
 }

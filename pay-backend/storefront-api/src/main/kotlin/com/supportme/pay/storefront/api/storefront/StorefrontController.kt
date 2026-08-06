@@ -11,6 +11,7 @@ import com.supportme.pay.storefront.domain.entity.Order
 import com.supportme.pay.storefront.domain.entity.StorefrontEventType
 import com.supportme.pay.storefront.domain.repository.OrderRepository
 import com.supportme.pay.storefront.domain.repository.ProductRepository
+import com.supportme.pay.storefront.domain.repository.ShopItemRepository
 import com.supportme.pay.storefront.domain.repository.StorefrontEventRepository
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.http.HttpStatus
@@ -39,25 +40,34 @@ data class BuyResponse(val redirectUrl: String)
 @RestController
 class StorefrontController(
     private val productRepository: ProductRepository,
+    private val shopItemRepository: ShopItemRepository,
     private val eventRepository: StorefrontEventRepository,
     private val orderRepository: OrderRepository,
     private val gatewayClient: GatewayClient,
 ) {
 
+    /** Tag może wskazywać parafię (Product) albo produkt sklepu donacyjnego (ShopItem). */
     @GetMapping("/t/{tagUid}")
     fun tag(@PathVariable tagUid: String): ResponseEntity<Any> {
-        val product = productRepository.findByTagUid(tagUid)
+        val product = productRepository.findByTagUidAndActiveTrue(tagUid)
         if (product != null) {
             eventRepository.save(Event(product = product, type = StorefrontEventType.TAG_OPEN))
             gatewayClient.sendEvent("tag_open", tagUid)
             return ResponseEntity.ok(mapOf("redirect" to "/p/${product.slug}"))
         }
+
+        val item = shopItemRepository.findByTagUidAndActiveTrue(tagUid)
+        if (item != null) {
+            gatewayClient.sendEvent("tag_open", tagUid)
+            return ResponseEntity.ok(mapOf("redirect" to "/?produkt=${item.slug}"))
+        }
+
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("error" to "Nie znaleziono"))
     }
 
     @GetMapping("/p/{slug}")
     fun show(@PathVariable slug: String): ResponseEntity<ProductDetail> {
-        val product = productRepository.findBySlug(slug) ?: return ResponseEntity.notFound().build()
+        val product = productRepository.findBySlugAndActiveTrue(slug) ?: return ResponseEntity.notFound().build()
         eventRepository.save(Event(product = product, type = StorefrontEventType.PAGE_VIEW))
 
         val isChurch = TenantContext.current().kind == "church"
@@ -79,7 +89,7 @@ class StorefrontController(
 
     @PostMapping("/p/{slug}/kup")
     fun buy(@PathVariable slug: String, @RequestBody(required = false) body: BuyRequest?, request: HttpServletRequest): ResponseEntity<Any> {
-        val product = productRepository.findBySlug(slug) ?: return ResponseEntity.notFound().build()
+        val product = productRepository.findBySlugAndActiveTrue(slug) ?: return ResponseEntity.notFound().build()
         eventRepository.save(Event(product = product, type = StorefrontEventType.BUY_CLICK))
 
         val isChurch = TenantContext.current().kind == "church"
