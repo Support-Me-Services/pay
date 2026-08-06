@@ -64,14 +64,6 @@ export default function Home({ beneficiaries, showThanks, mecenasLogo, mecenasUr
                 </div>
             </section>
 
-            <section className="lp-section lp-support" id="kogo-wspieramy">
-                <div className="lp-head">
-                    <h2>Kogo wspieramy?</h2>
-                    <p>Każdego dnia tysiące osób chce pomagać, ale często brakuje prostych i wygodnych narzędzi do działania. Tworzymy rozwiązanie, które umożliwia wsparcie jednym zbliżeniem telefonu.</p>
-                </div>
-                <BeneficiaryNodes nodes={beneficiaries} />
-            </section>
-
             <section className="lp-section lp-how">
                 <div className="lp-head">
                     <h2>Jak to działa?</h2>
@@ -88,6 +80,14 @@ export default function Home({ beneficiaries, showThanks, mecenasLogo, mecenasUr
                         </div>
                     ))}
                 </div>
+            </section>
+
+            <section className="lp-section lp-support" id="kogo-wspieramy">
+                <div className="lp-head">
+                    <h2>Kogo wspieramy?</h2>
+                    <p>Każdego dnia tysiące osób chce pomagać, ale często brakuje prostych i wygodnych narzędzi do działania. Tworzymy rozwiązanie, które umożliwia wsparcie jednym zbliżeniem telefonu.</p>
+                </div>
+                <BeneficiaryNodes nodes={beneficiaries} />
             </section>
 
             <section className="lp-closing">
