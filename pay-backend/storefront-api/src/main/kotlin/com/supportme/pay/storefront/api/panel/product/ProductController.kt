@@ -6,11 +6,13 @@ import com.supportme.pay.storefront.domain.entity.ParishNoteType
 import com.supportme.pay.storefront.domain.entity.Product
 import com.supportme.pay.storefront.domain.entity.ProductImage
 import com.supportme.pay.storefront.domain.entity.ProductStatus
-import com.supportme.pay.storefront.domain.entity.StorefrontEventType
 import com.supportme.pay.storefront.domain.repository.ParishNoteRepository
 import com.supportme.pay.storefront.domain.repository.ProductImageRepository
 import com.supportme.pay.storefront.domain.repository.ProductRepository
-import com.supportme.pay.storefront.domain.repository.StorefrontEventRepository
+import jakarta.validation.Valid
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -26,12 +28,28 @@ import org.springframework.web.multipart.MultipartFile
 
 data class ProductPanelSummary(val id: Long, val name: String, val city: String?, val slug: String, val status: String, val active: Boolean)
 data class ProductRequest(
-    val name: String, val city: String? = null, val purpose: String? = null, val descriptionHtml: String? = null,
-    val pickupInstruction: String? = null, val pricePln: Int, val tagUid: String, val phone: String? = null,
-    val website: String? = null, val voivodeship: String? = null,
+    @field:NotBlank @field:Size(max = 255) val name: String,
+    @field:Size(max = 255) val city: String? = null,
+    val purpose: String? = null,
+    val descriptionHtml: String? = null,
+    @field:Size(max = 2000) val pickupInstruction: String? = null,
+    /** String, jak w PHP (`regex:/^\d{1,5}([.,]\d{1,2})?$/`) — pozwala na grosze (np. "19,99"), nie tylko całe złote. */
+    @field:NotBlank @field:Pattern(regexp = "\\d{1,5}([.,]\\d{1,2})?") val price: String,
+    @field:NotBlank @field:Size(max = 255) val tagUid: String,
+    @field:Size(max = 255) val phone: String? = null,
+    @field:Size(max = 255) val website: String? = null,
+    @field:Size(max = 255) val voivodeship: String? = null,
+    @field:NotBlank val status: String,
 )
-data class ProductStatsResponse(val opens: Long, val buyClicks: Long, val purchases: Long)
-data class NoteRequest(val body: String, val type: String = "kontakt", val author: String? = null)
+data class ProductStatsSummaryResponse(val opens: Long, val views: Long, val clicks: Long, val purchases: Long, val revenuePln: String, val conversionPercent: Double)
+data class FunnelPoint(val label: String, val value: Long)
+data class ProductStatsResponse(
+    val total: ProductStatsSummaryResponse,
+    val last30: ProductStatsSummaryResponse,
+    val funnel: List<FunnelPoint>,
+    val series: List<DailyPurchasePoint>,
+)
+data class NoteRequest(@field:NotBlank @field:Size(max = 5000) val body: String, val type: String = "kontakt", val author: String? = null)
 data class NoteSummary(val id: Long, val body: String, val type: String, val author: String?, val createdAt: String?)
 
 /** Odpowiednik `Panel\ProductController` — CRM parafii/Taca. `status` steruje `active` (publish gate). */
@@ -41,8 +59,8 @@ class ProductController(
     private val productRepository: ProductRepository,
     private val productImageRepository: ProductImageRepository,
     private val parishNoteRepository: ParishNoteRepository,
-    private val eventRepository: StorefrontEventRepository,
     private val fileStorageService: FileStorageService,
+    private val statsService: StorefrontStatsService,
 ) {
 
     @GetMapping
@@ -57,23 +75,28 @@ class ProductController(
     }
 
     @PostMapping
-    fun store(@RequestBody body: ProductRequest): ResponseEntity<Any> {
+    fun store(@Valid @RequestBody body: ProductRequest): ResponseEntity<Any> {
+        val status = ProductStatus.entries.firstOrNull { it.dbValue == body.status }
+            ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Nieprawidłowy status."))
         if (productRepository.findByTagUid(body.tagUid) != null) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Tag NFC już przypisany do innej parafii."))
         }
         val product = productRepository.save(
             Product(
                 name = body.name, city = body.city, purpose = body.purpose, slug = generateUniqueSlug(body.name),
-                descriptionHtml = body.descriptionHtml, pickupInstruction = body.pickupInstruction, price = body.pricePln * 100,
+                descriptionHtml = body.descriptionHtml, pickupInstruction = body.pickupInstruction, price = parsePriceGrosze(body.price),
                 tagUid = body.tagUid, phone = body.phone, website = body.website, voivodeship = body.voivodeship,
+                status = status, active = status == ProductStatus.AKTYWNA,
             ),
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(mapOf("id" to product.id!!))
     }
 
     @PutMapping("/{id}")
-    fun update(@PathVariable id: Long, @RequestBody body: ProductRequest): ResponseEntity<Any> {
+    fun update(@PathVariable id: Long, @Valid @RequestBody body: ProductRequest): ResponseEntity<Any> {
         val product = productRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+        val status = ProductStatus.entries.firstOrNull { it.dbValue == body.status }
+            ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Nieprawidłowy status."))
         if (body.tagUid != product.tagUid && productRepository.findByTagUid(body.tagUid) != null) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Tag NFC już przypisany do innej parafii."))
         }
@@ -83,14 +106,20 @@ class ProductController(
         product.purpose = body.purpose
         product.descriptionHtml = body.descriptionHtml
         product.pickupInstruction = body.pickupInstruction
-        product.price = body.pricePln * 100
+        product.price = parsePriceGrosze(body.price)
         product.tagUid = body.tagUid
         product.phone = body.phone
         product.website = body.website
         product.voivodeship = body.voivodeship
+        // Status steruje publikacją: aktywna => publiczna, pozostałe => lead (ukryta) — jak w PHP.
+        product.status = status
+        product.active = status == ProductStatus.AKTYWNA
         productRepository.save(product)
         return ResponseEntity.ok(mapOf("id" to product.id!!))
     }
+
+    /** Jak `(int) round(((float) str_replace(',', '.', $price)) * 100)` w PHP. */
+    private fun parsePriceGrosze(price: String): Int = Math.round(price.replace(',', '.').toDouble() * 100).toInt()
 
     @PostMapping("/{id}/main-image")
     fun uploadMainImage(@PathVariable id: Long, @RequestParam file: MultipartFile): ResponseEntity<Any> {
@@ -114,7 +143,10 @@ class ProductController(
 
     @DeleteMapping("/{id}/images/{imageId}")
     fun deleteImage(@PathVariable id: Long, @PathVariable imageId: Long): ResponseEntity<Any> {
-        val image = productImageRepository.findById(imageId).orElse(null) ?: return ResponseEntity.notFound().build()
+        // Scope po product_id — jak `$product->images()->where('id',$imageId)` w PHP,
+        // inaczej DELETE ...{A}/images/{imageIdNależącyDoB} usuwałby zdjęcie produktu B.
+        val image = productImageRepository.findById(imageId).orElse(null)?.takeIf { it.product.id == id }
+            ?: return ResponseEntity.notFound().build()
         fileStorageService.deletePublic(image.path)
         productImageRepository.delete(image)
         return ResponseEntity.noContent().build()
@@ -124,7 +156,8 @@ class ProductController(
     @PostMapping("/{id}/status")
     fun updateStatus(@PathVariable id: Long, @RequestBody body: Map<String, String>): ResponseEntity<Any> {
         val product = productRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        val status = ProductStatus.entries.firstOrNull { it.dbValue == body["status"] } ?: return ResponseEntity.badRequest().build()
+        val status = ProductStatus.entries.firstOrNull { it.dbValue == body["status"] }
+            ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build()
         product.status = status
         product.active = status == ProductStatus.AKTYWNA
         productRepository.save(product)
@@ -133,16 +166,27 @@ class ProductController(
 
     @GetMapping("/{id}/stats")
     fun stats(@PathVariable id: Long): ResponseEntity<ProductStatsResponse> {
-        val product = productRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        val events = eventRepository.findAll().filter { it.product?.id == product.id }
+        productRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
+
+        val total = statsService.summary(id, null)
+        val last30 = statsService.summary(id, 30)
+        val series = statsService.dailyPurchases(id, 30)
+
         return ResponseEntity.ok(
             ProductStatsResponse(
-                opens = events.count { it.type == StorefrontEventType.TAG_OPEN }.toLong(),
-                buyClicks = events.count { it.type == StorefrontEventType.BUY_CLICK }.toLong(),
-                purchases = events.count { it.type == StorefrontEventType.PURCHASE }.toLong(),
+                total = total.toResponse(),
+                last30 = last30.toResponse(),
+                funnel = listOf(
+                    FunnelPoint("Otwarcia tagów", total.opens),
+                    FunnelPoint("Kliki „Kup”", total.clicks),
+                    FunnelPoint("Zakupy", total.purchases),
+                ),
+                series = series,
             ),
         )
     }
+
+    private fun ShopStatsSummary.toResponse() = ProductStatsSummaryResponse(opens, views, clicks, purchases, revenuePln, conversionPercent)
 
     @GetMapping("/{id}/notes")
     fun notes(@PathVariable id: Long): ResponseEntity<List<NoteSummary>> {
@@ -151,16 +195,19 @@ class ProductController(
     }
 
     @PostMapping("/{id}/notes")
-    fun storeNote(@PathVariable id: Long, @RequestBody body: NoteRequest): ResponseEntity<Any> {
+    fun storeNote(@PathVariable id: Long, @Valid @RequestBody body: NoteRequest): ResponseEntity<Any> {
         val product = productRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        val type = ParishNoteType.entries.firstOrNull { it.dbValue == body.type } ?: ParishNoteType.KONTAKT
+        val type = ParishNoteType.entries.firstOrNull { it.dbValue == body.type }
+            ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Nieprawidłowy typ notatki."))
         val note = parishNoteRepository.save(ParishNote(product = product, body = body.body, type = type, author = body.author))
         return ResponseEntity.status(HttpStatus.CREATED).body(mapOf("id" to note.id!!))
     }
 
-    @DeleteMapping("/notes/{noteId}")
-    fun destroyNote(@PathVariable noteId: Long): ResponseEntity<Any> {
-        val note = parishNoteRepository.findById(noteId).orElse(null) ?: return ResponseEntity.notFound().build()
+    @DeleteMapping("/{id}/notes/{noteId}")
+    fun destroyNote(@PathVariable id: Long, @PathVariable noteId: Long): ResponseEntity<Any> {
+        // Scope po product_id — jak `abort_unless($note->product_id === $product->id, 404)` w PHP.
+        val note = parishNoteRepository.findById(noteId).orElse(null)?.takeIf { it.product.id == id }
+            ?: return ResponseEntity.notFound().build()
         parishNoteRepository.delete(note)
         return ResponseEntity.noContent().build()
     }

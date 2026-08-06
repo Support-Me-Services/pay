@@ -1,10 +1,13 @@
 package com.supportme.pay.app.config
 
+import com.supportme.pay.storefront.domain.auth.PanelRememberMeServices
 import com.supportme.pay.storefront.domain.auth.TenantUserDetailsService
+import com.supportme.pay.storefront.domain.repository.UserRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ProviderManager
+import org.springframework.security.authentication.RememberMeAuthenticationProvider
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
@@ -38,10 +41,28 @@ class PanelAuthenticationConfig(
         return provider
     }
 
+    /** Osobny provider dla tokenów remember-me — `DaoAuthenticationProvider` nie akceptowałby ich (oczekuje weryfikacji hasła). */
     @Bean
-    fun authenticationManager(provider: DaoAuthenticationProvider): AuthenticationManager = ProviderManager(provider)
+    fun rememberMeAuthenticationProvider(): RememberMeAuthenticationProvider = RememberMeAuthenticationProvider(REMEMBER_ME_KEY)
+
+    @Bean
+    fun authenticationManager(provider: DaoAuthenticationProvider, rememberMeProvider: RememberMeAuthenticationProvider): AuthenticationManager =
+        ProviderManager(listOf(provider, rememberMeProvider))
 
     /** Jawny zapis SecurityContext do sesji HTTP przy programistycznym logowaniu (poza formLogin). */
     @Bean
     fun securityContextRepository(): SecurityContextRepository = HttpSessionSecurityContextRepository()
+
+    /**
+     * Współdzielony przez oba panele (jak [TenantUserDetailsService]) — jedna
+     * fizyczna tabela `users`, jeden mechanizm remember-me niezależnie od hosta.
+     */
+    @Bean
+    fun panelRememberMeServices(userRepository: UserRepository): PanelRememberMeServices =
+        PanelRememberMeServices(userRepository, REMEMBER_ME_KEY)
+
+    companion object {
+        /** Sekret integralności `RememberMeAuthenticationToken` Springa — NIE zabezpiecza samego cookie (to robi porównanie z `users.remember_token`). */
+        private const val REMEMBER_ME_KEY = "panel-remember-me-token-key"
+    }
 }

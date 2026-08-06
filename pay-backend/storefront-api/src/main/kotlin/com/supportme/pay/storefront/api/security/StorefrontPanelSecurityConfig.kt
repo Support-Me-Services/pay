@@ -1,5 +1,6 @@
 package com.supportme.pay.storefront.api.security
 
+import com.supportme.pay.storefront.domain.auth.PanelRememberMeServices
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -16,7 +17,7 @@ import org.springframework.security.web.SecurityFilterChain
  * CSRF wyłączone na razie, jak w panelu Gateway (do Fazy 5).
  */
 @Configuration
-class StorefrontPanelSecurityConfig {
+class StorefrontPanelSecurityConfig(private val panelRememberMeServices: PanelRememberMeServices) {
 
     @Bean
     @Order(3)
@@ -32,6 +33,16 @@ class StorefrontPanelSecurityConfig {
             formLogin { disable() }
             httpBasic { disable() }
             logout { disable() }
+            // Jak `Auth::attempt($credentials, true)` w PHP — sesja wygasła/przeglądarka
+            // zamknięta nie wymusza ponownego logowania, cookie `panel_remember`
+            // reautoryzuje po cichu (RememberMeServices woła się ręcznie z PanelAuthService).
+            // `key` MUSI matchować [PanelRememberMeServices.key] — inaczej DSL
+            // auto-generuje własny losowy key i `RememberMeAuthenticationProvider`
+            // odrzuca token z "does not contain the expected key" (złapane przy weryfikacji).
+            rememberMe {
+                rememberMeServices = panelRememberMeServices
+                key = panelRememberMeServices.key
+            }
         }
         return http.build()
     }

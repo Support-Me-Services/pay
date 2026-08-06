@@ -4,8 +4,14 @@ import com.supportme.pay.storefront.api.storage.FileStorageService
 import com.supportme.pay.storefront.domain.entity.BeneficiaryNode
 import com.supportme.pay.storefront.domain.entity.Side
 import com.supportme.pay.storefront.domain.repository.BeneficiaryNodeRepository
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Pattern
+import jakarta.validation.constraints.Size
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -24,6 +30,7 @@ data class BeneficiaryNodePanelItem(
 
 /** Odpowiednik `Panel\BeneficiaryNodeController` — CRUD + drag&drop reorder (AJAX, `order[]`). */
 @RestController
+@Validated
 @RequestMapping("/api/storefront/panel/beneficiaries")
 class BeneficiaryNodeController(
     private val beneficiaryNodeRepository: BeneficiaryNodeRepository,
@@ -35,16 +42,17 @@ class BeneficiaryNodeController(
 
     @PostMapping
     fun store(
-        @RequestParam heading: String,
-        @RequestParam(required = false, defaultValue = "left") imageSide: String,
-        @RequestParam(required = false, defaultValue = "left") textAlign: String,
-        @RequestParam(required = false, defaultValue = "100") imageScale: Int,
-        @RequestParam(required = false, defaultValue = "0") imageX: Int,
-        @RequestParam(required = false, defaultValue = "0") imageY: Int,
-        @RequestParam(required = false) bodyHtml: String?,
-        @RequestParam(required = false, defaultValue = "true") active: Boolean,
+        @RequestParam @NotBlank @Size(max = 255) heading: String,
+        @RequestParam @Pattern(regexp = "left|right") imageSide: String,
+        @RequestParam @Pattern(regexp = "left|center|right") textAlign: String,
+        @RequestParam(required = false) @Min(20) @Max(400) imageScale: Int?,
+        @RequestParam(required = false) @Min(-100) @Max(100) imageX: Int?,
+        @RequestParam(required = false) @Min(-100) @Max(100) imageY: Int?,
+        @RequestParam(required = false) @Size(max = 20000) bodyHtml: String?,
         @RequestParam(required = false) image: MultipartFile?,
     ): ResponseEntity<Any> {
+        // `active` NIE jest ustawialne z tego panelu (jak w PHP — `validated()`
+        // nigdy go nie zwraca), zawsze zostaje na domyślnym `true` encji.
         val maxPosition = beneficiaryNodeRepository.findAllByOrderByPositionAscIdAsc().maxOfOrNull { it.position } ?: -1
         val imagePath = image?.takeIf { !it.isEmpty }?.let { fileStorageService.storePublic(it, "beneficiaries") }
 
@@ -54,12 +62,11 @@ class BeneficiaryNodeController(
                 image = imagePath,
                 imageSide = side(imageSide),
                 textAlign = side(textAlign),
-                imageScale = imageScale,
-                imageX = imageX,
-                imageY = imageY,
+                imageScale = imageScale ?: 100,
+                imageX = imageX ?: 0,
+                imageY = imageY ?: 0,
                 bodyHtml = bodyHtml,
                 position = maxPosition + 1,
-                active = active,
             ),
         )
         return ResponseEntity.status(HttpStatus.CREATED).body(mapOf("id" to node.id!!))
@@ -68,14 +75,13 @@ class BeneficiaryNodeController(
     @PutMapping("/{id}")
     fun update(
         @PathVariable id: Long,
-        @RequestParam heading: String,
-        @RequestParam(required = false, defaultValue = "left") imageSide: String,
-        @RequestParam(required = false, defaultValue = "left") textAlign: String,
-        @RequestParam(required = false, defaultValue = "100") imageScale: Int,
-        @RequestParam(required = false, defaultValue = "0") imageX: Int,
-        @RequestParam(required = false, defaultValue = "0") imageY: Int,
-        @RequestParam(required = false) bodyHtml: String?,
-        @RequestParam(required = false, defaultValue = "true") active: Boolean,
+        @RequestParam @NotBlank @Size(max = 255) heading: String,
+        @RequestParam @Pattern(regexp = "left|right") imageSide: String,
+        @RequestParam @Pattern(regexp = "left|center|right") textAlign: String,
+        @RequestParam(required = false) @Min(20) @Max(400) imageScale: Int?,
+        @RequestParam(required = false) @Min(-100) @Max(100) imageX: Int?,
+        @RequestParam(required = false) @Min(-100) @Max(100) imageY: Int?,
+        @RequestParam(required = false) @Size(max = 20000) bodyHtml: String?,
         @RequestParam(required = false, defaultValue = "false") removeImage: Boolean,
         @RequestParam(required = false) image: MultipartFile?,
     ): ResponseEntity<Any> {
@@ -84,11 +90,11 @@ class BeneficiaryNodeController(
         node.heading = heading
         node.imageSide = side(imageSide)
         node.textAlign = side(textAlign)
-        node.imageScale = imageScale
-        node.imageX = imageX
-        node.imageY = imageY
+        node.imageScale = imageScale ?: 100
+        node.imageX = imageX ?: 0
+        node.imageY = imageY ?: 0
         node.bodyHtml = bodyHtml
-        node.active = active
+        // `active` NIE jest ustawialne z tego panelu — jak w PHP, zostaje niezmienione.
 
         if (removeImage) {
             node.image?.let { fileStorageService.deletePublic(it) }

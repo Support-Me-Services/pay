@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service
 class PanelAuthService(
     private val authenticationManager: AuthenticationManager,
     private val securityContextRepository: SecurityContextRepository,
+    private val rememberMeServices: PanelRememberMeServices,
 ) {
     fun login(
         email: String,
@@ -38,10 +39,16 @@ class PanelAuthService(
         SecurityContextHolder.setContext(context)
         securityContextRepository.saveContext(context, request, response)
 
+        // Jak `Auth::attempt($credentials, true)` w PHP — remember-me WŁĄCZONE
+        // ZAWSZE, oba `Panel\LoginController` przekazują `true` na sztywno.
+        rememberMeServices.loginSuccess(request, response, authResult)
+
         return authResult.principal as TenantPrincipal
     }
 
-    fun logout(request: HttpServletRequest) {
+    fun logout(request: HttpServletRequest, response: HttpServletResponse) {
+        val userId = currentPrincipal()?.user?.id
+        rememberMeServices.forgetMe(request, response, userId)
         SecurityContextHolder.clearContext()
         request.getSession(false)?.invalidate()
     }

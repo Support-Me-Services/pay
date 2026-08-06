@@ -3,9 +3,8 @@ package com.supportme.pay.storefront.api.panel.career
 import com.supportme.pay.storefront.api.storage.FileStorageService
 import com.supportme.pay.storefront.domain.entity.JobApplicationStatus
 import com.supportme.pay.storefront.domain.repository.JobApplicationRepository
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -36,17 +35,19 @@ class ApplicationController(
 ) {
 
     @GetMapping
-    fun index(@RequestParam(required = false) positionId: Long?): List<ApplicationSummary> =
-        jobApplicationRepository.findAll()
+    fun index(@RequestParam(required = false) positionId: Long?, @RequestParam(required = false) status: String?): List<ApplicationSummary> {
+        val statusFilter = status?.let { s -> JobApplicationStatus.entries.firstOrNull { it.dbValue == s } }
+        return jobApplicationRepository.findAll()
             .filter { positionId == null || it.position?.id == positionId }
+            .filter { statusFilter == null || it.status == statusFilter }
             .sortedByDescending { it.createdAt }
             .map(::summarize)
+    }
 
     @GetMapping("/consents")
     fun consents(): List<ApplicationSummary> {
         val cutoff = Instant.now().minusSeconds(60L * 60 * 24 * 30 * 24) // 24 miesiące (przybliżenie 30-dniowych miesięcy dla filtra listy)
-        return jobApplicationRepository.findActiveFutureConsent(cutoff, PageRequest.of(0, 200, Sort.by("futureRecruitmentConsentAt").descending()))
-            .content.map(::summarize)
+        return jobApplicationRepository.findActiveFutureConsent(cutoff).map(::summarize)
     }
 
     @GetMapping("/{id}")
@@ -62,7 +63,7 @@ class ApplicationController(
     @GetMapping("/{id}/cv")
     fun downloadCv(@PathVariable id: Long): ResponseEntity<ByteArray> {
         val application = jobApplicationRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        val path = application.cvPath ?: return ResponseEntity.notFound().build()
+        val path = application.cvPath?.takeIf { fileStorageService.existsPrivate(it) } ?: return ResponseEntity.notFound().build()
         val bytes = fileStorageService.readPrivate(path)
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
@@ -73,7 +74,7 @@ class ApplicationController(
     @PostMapping("/{id}/status")
     fun updateStatus(@PathVariable id: Long, @RequestBody body: ApplicationStatusRequest): ResponseEntity<Any> {
         val application = jobApplicationRepository.findById(id).orElse(null) ?: return ResponseEntity.notFound().build()
-        val status = JobApplicationStatus.entries.firstOrNull { it.dbValue == body.status } ?: return ResponseEntity.badRequest().build()
+        val status = JobApplicationStatus.entries.firstOrNull { it.dbValue == body.status } ?: return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).build()
         application.status = status
         jobApplicationRepository.save(application)
         return ResponseEntity.ok(mapOf("status" to status.dbValue))

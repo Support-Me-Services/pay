@@ -15,4 +15,12 @@ interface JobApplicationRepository : JpaRepository<JobApplication, Long> {
             "order by a.futureRecruitmentConsentAt desc",
     )
     fun findActiveFutureConsent(expiredBefore: Instant, pageable: Pageable): Page<JobApplication>
+
+    /** Jak PHP `consents()` — BEZ limitu/paginacji (`->get()`), nie ucina listy po 200. */
+    @Query(
+        "select a from JobApplication a where a.futureRecruitmentConsent = true " +
+            "and a.futureRecruitmentConsentAt is not null and a.futureRecruitmentConsentAt > :expiredBefore " +
+            "order by a.futureRecruitmentConsentAt desc",
+    )
+    fun findActiveFutureConsent(expiredBefore: Instant): List<JobApplication>
 }

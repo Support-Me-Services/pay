@@ -1,5 +1,6 @@
 package com.supportme.pay.gateway.api.security
 
+import com.supportme.pay.storefront.domain.auth.PanelRememberMeServices
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
@@ -19,7 +20,7 @@ import org.springframework.security.web.SecurityFilterChain
  * CSRF), nie jest to pominięcie przypadkowe.
  */
 @Configuration
-class GatewayPanelSecurityConfig {
+class GatewayPanelSecurityConfig(private val panelRememberMeServices: PanelRememberMeServices) {
 
     // @Order MUSI być na metodzie @Bean, nie na klasie @Configuration — Spring
     // Security sortuje wstrzykiwaną `List<SecurityFilterChain>` przez
@@ -40,6 +41,12 @@ class GatewayPanelSecurityConfig {
             formLogin { disable() }
             httpBasic { disable() }
             logout { disable() }
+            // Jak `Auth::attempt($credentials, true)` w PHP — patrz uzasadnienie w
+            // StorefrontPanelSecurityConfig (identyczna konfiguracja, w tym `key`).
+            rememberMe {
+                rememberMeServices = panelRememberMeServices
+                key = panelRememberMeServices.key
+            }
         }
         return http.build()
     }

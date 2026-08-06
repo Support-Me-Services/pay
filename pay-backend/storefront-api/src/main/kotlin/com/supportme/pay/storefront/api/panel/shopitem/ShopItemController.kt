@@ -53,23 +53,36 @@ class ShopItemController(
         @RequestParam(required = false) description: String?,
         @RequestParam(required = false) tagUid: String?,
         @RequestParam(required = false, defaultValue = "0") sort: Int,
-        @RequestParam(required = false, defaultValue = "true") active: Boolean,
+        @RequestParam(required = false, defaultValue = "false") active: Boolean,
         @RequestParam(required = false, defaultValue = "false") isDefault: Boolean,
         @RequestParam(required = false) imageFile: MultipartFile?,
     ): ResponseEntity<Any> {
         val userId = currentUserId() ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
         val owner = userRepository.findById(userId).orElseThrow()
 
+        if (pricePln < MIN_PRICE_PLN || pricePln > MAX_PRICE_PLN) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Cena musi być między $MIN_PRICE_PLN a $MAX_PRICE_PLN zł."))
+        }
+        if (imageFile != null && !imageFile.isEmpty && imageFile.size > MAX_IMAGE_BYTES) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Grafika może mieć maksymalnie 5 MB."))
+        }
+
         val finalSlug = (slug?.takeIf { it.isNotBlank() } ?: name).let(::slugify)
         if (shopItemRepository.findAllByOwnerOrderBySortAscIdAsc(owner).any { it.slug == finalSlug }) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Produkt o tym slugu już istnieje."))
+        }
+        val finalTagUid = tagUid?.ifBlank { null }
+        // Unikalność tag_uid jest GLOBALNA (nie per-user) — jak `Rule::unique('shop_items','tag_uid')`
+        // bez `->where('user_id',...)`, w odróżnieniu od sluga.
+        if (finalTagUid != null && shopItemRepository.findByTagUid(finalTagUid) != null) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Ten tag NFC jest już przypisany do innego produktu."))
         }
 
         val priceGrosze = pricePln * 100
         val image = imageFile?.takeIf { !it.isEmpty }?.let { fileStorageService.storePublic(it, "shop-items") }
 
         val item = shopItemRepository.save(
-            ShopItem(owner = owner, slug = finalSlug, name = name, image = image, minAmount = priceGrosze, price = priceGrosze, description = description, tagUid = tagUid?.ifBlank { null }, active = active, sort = sort, isDefault = isDefault),
+            ShopItem(owner = owner, slug = finalSlug, name = name, image = image, minAmount = priceGrosze, price = priceGrosze, description = description, tagUid = finalTagUid, active = active, sort = sort, isDefault = isDefault),
         )
         applyDefault(owner.id!!, item.id!!, isDefault)
 
@@ -85,21 +98,36 @@ class ShopItemController(
         @RequestParam(required = false) description: String?,
         @RequestParam(required = false) tagUid: String?,
         @RequestParam(required = false, defaultValue = "0") sort: Int,
-        @RequestParam(required = false, defaultValue = "true") active: Boolean,
+        @RequestParam(required = false, defaultValue = "false") active: Boolean,
         @RequestParam(required = false, defaultValue = "false") isDefault: Boolean,
         @RequestParam(required = false) imageFile: MultipartFile?,
     ): ResponseEntity<Any> {
         val userId = currentUserId() ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        val item = shopItemRepository.findByOwnerAndId(userRepository.findById(userId).orElseThrow(), id)
-            ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        val item = findOwned(id, userId) ?: return notFoundOrForbidden(id)
+
+        if (pricePln < MIN_PRICE_PLN || pricePln > MAX_PRICE_PLN) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Cena musi być między $MIN_PRICE_PLN a $MAX_PRICE_PLN zł."))
+        }
+        if (imageFile != null && !imageFile.isEmpty && imageFile.size > MAX_IMAGE_BYTES) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Grafika może mieć maksymalnie 5 MB."))
+        }
+
+        val finalSlug = slug?.takeIf { it.isNotBlank() }?.let(::slugify) ?: item.slug
+        if (finalSlug != item.slug && shopItemRepository.findAllByOwnerOrderBySortAscIdAsc(item.owner!!).any { it.id != id && it.slug == finalSlug }) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Produkt o tym slugu już istnieje."))
+        }
+        val finalTagUid = tagUid?.ifBlank { null }
+        if (finalTagUid != null && finalTagUid != item.tagUid && shopItemRepository.findByTagUid(finalTagUid) != null) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(mapOf("error" to "Ten tag NFC jest już przypisany do innego produktu."))
+        }
 
         item.name = name
-        slug?.takeIf { it.isNotBlank() }?.let { item.slug = slugify(it) }
+        item.slug = finalSlug
         val priceGrosze = pricePln * 100
         item.price = priceGrosze
         item.minAmount = priceGrosze
         item.description = description
-        item.tagUid = tagUid?.ifBlank { null }
+        item.tagUid = finalTagUid
         item.sort = sort
         item.active = active
         imageFile?.takeIf { !it.isEmpty }?.let { item.image = fileStorageService.storePublic(it, "shop-items") }
@@ -112,8 +140,7 @@ class ShopItemController(
     @PostMapping("/{id}/toggle")
     fun toggle(@PathVariable id: Long): ResponseEntity<Any> {
         val userId = currentUserId() ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        val item = shopItemRepository.findByOwnerAndId(userRepository.findById(userId).orElseThrow(), id)
-            ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        val item = findOwned(id, userId) ?: return notFoundOrForbidden(id)
         item.active = !item.active
         shopItemRepository.save(item)
         return ResponseEntity.ok(mapOf("active" to item.active))
@@ -122,11 +149,17 @@ class ShopItemController(
     @DeleteMapping("/{id}")
     fun destroy(@PathVariable id: Long): ResponseEntity<Any> {
         val userId = currentUserId() ?: return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        val item = shopItemRepository.findByOwnerAndId(userRepository.findById(userId).orElseThrow(), id)
-            ?: return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
+        val item = findOwned(id, userId) ?: return notFoundOrForbidden(id)
         shopItemRepository.delete(item)
         return ResponseEntity.noContent().build()
     }
+
+    private fun findOwned(id: Long, userId: Long): ShopItem? =
+        shopItemRepository.findByOwnerAndId(userRepository.findById(userId).orElseThrow(), id)
+
+    /** 404 dla nieistniejącego id, 403 dla istniejącego-ale-cudzego — jak route-model-binding + `guard()` w PHP. */
+    private fun notFoundOrForbidden(id: Long): ResponseEntity<Any> =
+        if (shopItemRepository.existsById(id)) ResponseEntity.status(HttpStatus.FORBIDDEN).build() else ResponseEntity.notFound().build()
 
     /** Tylko jeden produkt może być domyślny — odpowiednik `ShopItemController::applyDefault`. */
     private fun applyDefault(ownerId: Long, itemId: Long, isDefault: Boolean) {
@@ -145,4 +178,10 @@ class ShopItemController(
     private fun summarize(item: ShopItem) = ShopItemPanelSummary(
         item.id!!, item.name, item.slug, item.description, item.pricePln(), item.minAmountPln(), item.tagUid, item.sort, item.isDefault, item.active, item.image,
     )
+
+    companion object {
+        private const val MIN_PRICE_PLN = 1
+        private const val MAX_PRICE_PLN = 5000
+        private const val MAX_IMAGE_BYTES = 5 * 1024 * 1024L
+    }
 }

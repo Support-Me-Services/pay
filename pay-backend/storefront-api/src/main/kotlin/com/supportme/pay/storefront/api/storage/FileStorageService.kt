@@ -33,6 +33,9 @@ class FileStorageService(private val properties: StorageProperties) {
 
     fun readPrivate(relativePath: String): ByteArray = Files.readAllBytes(Path.of(properties.privateRoot, relativePath))
 
+    /** Jak `Storage::disk('local')->exists(...)` w PHP — sprawdzane PRZED odczytem, żeby dać 404, nie 500. */
+    fun existsPrivate(relativePath: String): Boolean = Files.exists(Path.of(properties.privateRoot, relativePath))
+
     fun deletePrivate(relativePath: String) {
         runCatching { Files.deleteIfExists(Path.of(properties.privateRoot, relativePath)) }
     }

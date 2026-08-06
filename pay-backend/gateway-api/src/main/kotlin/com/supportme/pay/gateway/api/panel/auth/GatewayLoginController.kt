@@ -30,8 +30,8 @@ class GatewayLoginController(private val panelAuthService: PanelAuthService) {
     }
 
     @PostMapping("/logout")
-    fun logout(request: HttpServletRequest): ResponseEntity<Void> {
-        panelAuthService.logout(request)
+    fun logout(request: HttpServletRequest, response: HttpServletResponse): ResponseEntity<Void> {
+        panelAuthService.logout(request, response)
         return ResponseEntity.noContent().build()
     }
 }
