@@ -132,27 +132,40 @@ class PayUProvider implements PaymentProviderInterface
      */
     public function payByLinks(): array
     {
-        return Cache::remember('payu_paybylinks', 3600, function () {
-            $response = $this->request()->get($this->baseUrl . '/api/v2_1/paymethods', ['lang' => 'pl']);
+        $cached = Cache::get('payu_paybylinks');
+        if ($cached !== null) {
+            return $cached;
+        }
 
-            $banks = [];
-            foreach ($response->json('payByLinks', []) as $method) {
-                if (($method['status'] ?? '') !== 'ENABLED') {
-                    continue;
-                }
-                // blik ma własną ścieżkę; 'b' = przelew tradycyjny (wolny) — pomijamy
-                if (in_array($method['value'], ['blik', 'b', 'dpp', 'dpt', 'c'])) {
-                    continue;
-                }
-                $banks[] = [
-                    'value' => $method['value'],
-                    'name' => $method['name'],
-                    'image' => $method['brandImageUrl'] ?? null,
-                ];
+        $response = $this->request()->get($this->baseUrl . '/api/v2_1/paymethods', ['lang' => 'pl']);
+
+        // Błąd przejściowy (np. limit żądań, chwilowa niedostępność) — nie
+        // cache'ujemy, żeby nie zablokować listy banków na godzinę.
+        if (! $response->successful()) {
+            Log::warning('PayU: pobranie metod PBL nieudane', ['http' => $response->status()]);
+
+            return [];
+        }
+
+        $banks = [];
+        foreach ($response->json('payByLinks', []) as $method) {
+            if (($method['status'] ?? '') !== 'ENABLED') {
+                continue;
             }
+            // blik ma własną ścieżkę; 'b' = przelew tradycyjny (wolny) — pomijamy
+            if (in_array($method['value'], ['blik', 'b', 'dpp', 'dpt', 'c'])) {
+                continue;
+            }
+            $banks[] = [
+                'value' => $method['value'],
+                'name' => $method['name'],
+                'image' => $method['brandImageUrl'] ?? null,
+            ];
+        }
 
-            return $banks;
-        });
+        Cache::put('payu_paybylinks', $banks, 3600);
+
+        return $banks;
     }
 
     public function getRedirectUrl(Transaction $transaction): string
