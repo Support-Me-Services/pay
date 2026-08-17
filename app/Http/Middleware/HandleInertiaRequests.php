@@ -75,7 +75,6 @@ class HandleInertiaRequests extends Middleware
                 'investors' => route('investors'),
                 'regulamin' => route('regulamin'),
                 'thanks' => route('thanks'),
-                'docs' => route('docs'),
             ] : null,
 
             // Nawigacja panelu + liczniki — tylko na trasach panelu (lazy).

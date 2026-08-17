@@ -16,31 +16,6 @@ use Inertia\Inertia;
 // Migracja React/Inertia: strony statyczne dokładają własny CSS przez prop `css`.
 $css = fn (string $file) => asset("css/{$file}") . '?v=' . substr(md5_file(public_path("css/{$file}")), 0, 10);
 
-// Treść dużych stron statycznych (docs/samouczek) trzymana verbatim w
-// resources/inertia-content/*.html (renderowana w React przez dangerouslySetInnerHTML).
-// Figury (screeny) rozstrzygane serwerowo: gdy public/img/docs/{slug}.{png,jpg,webp}
-// istnieje — wstawiamy <img src>, w przeciwnym razie usuwamy całą <figure> (obraz
-// „pojawia się automatycznie" po wrzuceniu pliku). Placeholdery __DATE__/__ROUTE_DOCS__.
-$docHtml = function (string $name): string {
-    $html = file_get_contents(resource_path("inertia-content/{$name}.html"));
-    $html = preg_replace_callback('/<figure\b[^>]*\bdata-fig="([^"]+)"[^>]*>.*?<\/figure>/s', function ($m) {
-        $slug = $m[1];
-        foreach (['png', 'jpg', 'webp'] as $e) {
-            if (is_file(public_path("img/docs/{$slug}.{$e}"))) {
-                return str_replace("__FIG:{$slug}__", asset("img/docs/{$slug}.{$e}"), $m[0]);
-            }
-        }
-
-        return '';
-    }, $html);
-
-    return str_replace(
-        ['__DATE__', '__ROUTE_DOCS__'],
-        [now()->translatedFormat('j F Y'), route('docs')],
-        $html
-    );
-};
-
 // Strona główna „/" — model darowiznowy (produkty konta głównego, kwota ≥ min).
 Route::get('/', [CompanyStoreController::class, 'index'])->name('home');
 // Landing „Technologia, która pomaga czynić dobro" — pod /main.
@@ -108,21 +83,6 @@ Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
     'pageDescription' => 'Inwestorzy i akcjonariusze SupportMe — wierzymy, że kapitał może służyć dobru.',
 ]))->name('investors');
 
-// Dokumentacja projektu — przegląd wszystkich modułów i funkcji
-Route::get('/docs', fn () => Inertia::render('Storefront/Docs', [
-    'css' => $css('docs.css'),
-    'html' => $docHtml('docs'),
-    'pageTitle' => 'Dokumentacja techniczna — SupportME',
-    'pageDescription' => 'Pełna dokumentacja techniczna platformy SupportME — moduł po module: trasy, metody, pola, tabele i przepływy.',
-]))->name('docs');
-
-// Samouczek — jak modyfikować podstrony z Claude (dostęp, Figma, prompty)
-Route::get('/samouczek', fn () => Inertia::render('Storefront/Samouczek', [
-    'css' => $css('docs.css'),
-    'html' => $docHtml('samouczek'),
-    'pageTitle' => 'Samouczek — modyfikacja stron z Claude · SupportME',
-    'pageDescription' => 'Jak modyfikować podstrony SupportME z pomocą Claude: dostęp do serwera (SSH/Google Cloud), konfiguracja Figmy (Dev Mode + MCP) i pisanie promptów.',
-]))->name('samouczek');
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
 Route::get('/p/{slug}', [StorefrontController::class, 'show'])->name('product.show');
 Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('product.buy');
