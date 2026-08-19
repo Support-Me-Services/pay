@@ -107,9 +107,13 @@ class PaymentController extends Controller
             return response()->json(['status' => $transaction->status, 'redirect' => route('pay.return', $transaction->id)]);
         }
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge($this->buyerRules(), [
             'code' => ['required', 'regex:/^\d{6}$/'],
-        ], ['code.regex' => 'Kod BLIK to 6 cyfr.', 'code.required' => 'Wpisz kod BLIK.']);
+        ]), array_merge($this->buyerMessages(), [
+            'code.regex' => 'Kod BLIK to 6 cyfr.', 'code.required' => 'Wpisz kod BLIK.',
+        ]));
+
+        $transaction->update($this->buyerAttributes($data));
 
         try {
             $dto = $this->provider->createTransaction($transaction, $request->ip(), [
@@ -159,9 +163,13 @@ class PaymentController extends Controller
         $allowed = collect($this->provider instanceof \App\Modules\Gateway\Payments\PayUProvider ? $this->provider->payByLinks() : [])
             ->pluck('value')->all();
 
-        $data = $request->validate([
+        $data = $request->validate(array_merge($this->buyerRules(), [
             'method' => ['required', 'string', \Illuminate\Validation\Rule::in($allowed)],
-        ], ['method.in' => 'Wybierz bank z listy.', 'method.required' => 'Wybierz bank.']);
+        ]), array_merge($this->buyerMessages(), [
+            'method.in' => 'Wybierz bank z listy.', 'method.required' => 'Wybierz bank.',
+        ]));
+
+        $transaction->update($this->buyerAttributes($data));
 
         try {
             $dto = $this->provider->createTransaction($transaction, $request->ip(), [
@@ -208,6 +216,9 @@ class PaymentController extends Controller
             return redirect()->away($transaction->provider_redirect_url);
         }
 
+        $data = $request->validate($this->buyerRules(), $this->buyerMessages());
+        $transaction->update($this->buyerAttributes($data));
+
         try {
             $dto = $this->provider->createTransaction($transaction, $request->ip(), [
                 'classic' => true,
@@ -232,6 +243,36 @@ class PaymentController extends Controller
         ]);
 
         return redirect()->away($dto->redirectUrl);
+    }
+
+    /** Reguły walidacji danych darczyńcy — wymóg PayU dla płatności app2app. */
+    private function buyerRules(): array
+    {
+        return [
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255'],
+        ];
+    }
+
+    private function buyerMessages(): array
+    {
+        return [
+            'first_name.required' => 'Podaj imię.',
+            'last_name.required' => 'Podaj nazwisko.',
+            'email.required' => 'Podaj adres e-mail.',
+            'email.email' => 'Podaj poprawny adres e-mail.',
+        ];
+    }
+
+    /** Mapuje zwalidowane pola formularza na atrybuty modelu Transaction. */
+    private function buyerAttributes(array $data): array
+    {
+        return [
+            'buyer_first_name' => $data['first_name'],
+            'buyer_last_name' => $data['last_name'],
+            'buyer_email' => $data['email'],
+        ];
     }
 
     /** Serializacja transakcji dla ekranów płatności (React). */

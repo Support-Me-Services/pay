@@ -18,6 +18,7 @@ class Transaction extends Model
     protected $fillable = [
         'shop_id', 'tag_id', 'product_external_id', 'product_name', 'amount',
         'currency', 'status', 'mode', 'return_url', 'notify_url',
+        'buyer_first_name', 'buyer_last_name', 'buyer_email',
         'provider_order_id', 'provider_redirect_url', 'paid_at', 'created_at',
     ];
 

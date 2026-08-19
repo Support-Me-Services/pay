@@ -42,6 +42,17 @@ class PayUProvider implements PaymentProviderInterface
             ]],
         ];
 
+        // Dane darczyńcy (imię, nazwisko, e-mail) — wymóg PayU dla płatności
+        // app2app; zebrane i zapisane na transakcji przed jej utworzeniem u operatora.
+        if ($transaction->buyer_email) {
+            $payload['buyer'] = [
+                'email' => $transaction->buyer_email,
+                'firstName' => $transaction->buyer_first_name,
+                'lastName' => $transaction->buyer_last_name,
+                'language' => 'pl',
+            ];
+        }
+
         $blikCode = preg_replace('/\D/', '', (string) ($context['blik_code'] ?? ''));
         $pbl = (string) ($context['pbl'] ?? '');
 
@@ -55,12 +66,6 @@ class PayUProvider implements PaymentProviderInterface
         } elseif ($blikCode !== '') {
             // BLIK Level 0: kod wpisany na hostowanej stronie bramki — zamówienie
             // autoryzuje się w tle, klient potwierdza push w aplikacji banku.
-            // BLIK wymaga obiektu buyer z e-mailem; nie zbieramy danych klienta,
-            // więc używamy syntetycznego adresu per transakcja.
-            $payload['buyer'] = [
-                'email' => 'klient+' . substr($transaction->id, 0, 8) . '@pay.please-support-me.com',
-                'language' => 'pl',
-            ];
             $payload['payMethods'] = [
                 'payMethod' => ['type' => 'BLIK_AUTHORIZATION_CODE', 'value' => $blikCode],
             ];

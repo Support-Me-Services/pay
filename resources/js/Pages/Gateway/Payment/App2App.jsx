@@ -43,6 +43,13 @@ const PAGE_CSS = `
 .sm-bank-btn:hover{ border-color:var(--sm-blue-b); background:#fff; }
 .sm-bank-btn img{ max-height:26px; max-width:100%; object-fit:contain; }
 .sm-err{ color:#c0143c; font-size:.85rem; margin:6px 0; }
+.sm-donor{ display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.sm-donor-row{ display:flex; gap:8px; }
+.sm-donor-row .sm-field{ flex:1; min-width:0; }
+.sm-field label{ display:block; font-size:.78rem; font-weight:600; color:#5b6b80; margin-bottom:4px; }
+.sm-field input{ width:100%; border:1.5px solid var(--sm-line); border-radius:10px; padding:10px 12px;
+    font-size:.92rem; color:var(--sm-ink); box-sizing:border-box; }
+.sm-field input:focus{ outline:none; border-color:var(--sm-blue-b); }
 .pay-foot{ color:#90a0b3; font-size:.8rem; margin-top:14px; text-align:center; }
 .sm-spin{ width:34px; height:34px; border:4px solid #dbe4ee; border-top-color:var(--sm-blue-b);
     border-radius:50%; animation:smspin .8s linear infinite; margin:12px auto 0; }
@@ -63,7 +70,21 @@ export default function App2App() {
     const [code, setCode] = useState('')
     const [codeError, setCodeError] = useState('')
     const [bankError, setBankError] = useState('')
+    const [firstName, setFirstName] = useState('')
+    const [lastName, setLastName] = useState('')
+    const [email, setEmail] = useState('')
+    const [donorError, setDonorError] = useState('')
     const pollingRef = useRef(false)
+
+    // Dane darczyńcy wymagane przed dowolną metodą płatności (wymóg PayU).
+    const validateDonor = () => {
+        if (!firstName.trim()) return 'Podaj imię.'
+        if (!lastName.trim()) return 'Podaj nazwisko.'
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Podaj poprawny adres e-mail.'
+        return ''
+    }
+
+    const donorFields = () => ({ first_name: firstName.trim(), last_name: lastName.trim(), email: email.trim() })
 
     // Polling statusu — po opłaceniu wraca do sklepu (redirect z serwera).
     const poll = useCallback(() => {
@@ -84,21 +105,34 @@ export default function App2App() {
     const showError = (which, msg) => {
         setView('methods')
         if (which === 'code') setCodeError(msg)
+        else if (which === 'donor') setDonorError(msg)
         else setBankError(msg)
     }
 
+    // Błędy walidacji z serwera (422) — dane darczyńcy mają pierwszeństwo,
+    // bo dotyczą wszystkich metod płatności, nie tylko wybranej.
+    const applyServerErrors = (d, fallbackWhich, fallbackMsg) => {
+        const errs = d && d.errors
+        const donorMsg = errs && (errs.first_name?.[0] || errs.last_name?.[0] || errs.email?.[0])
+        if (donorMsg) { showError('donor', donorMsg); return }
+        showError(fallbackWhich, (d && d.error) || (errs && Object.values(errs)[0]?.[0]) || fallbackMsg)
+    }
+
     const payBank = (method) => {
+        const donorErr = validateDonor()
+        if (donorErr) { showError('donor', donorErr); return }
         setBankError('')
+        setDonorError('')
         setView('processing')
         fetch(urls.bank, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrf_token, Accept: 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ method }),
+            body: JSON.stringify({ method, ...donorFields() }),
         })
             .then(async (r) => {
                 const d = await r.json()
                 if (r.ok && d.redirect) window.location.href = d.redirect
-                else showError('bank', d.error || 'Nie udało się rozpocząć płatności. Spróbuj ponownie.')
+                else applyServerErrors(d, 'bank', 'Nie udało się rozpocząć płatności. Spróbuj ponownie.')
             })
             .catch(() => showError('bank', 'Błąd połączenia. Spróbuj ponownie.'))
     }
@@ -106,17 +140,20 @@ export default function App2App() {
     const payBlik = () => {
         const clean = code.replace(/\s/g, '')
         if (!/^\d{6}$/.test(clean)) { showError('code', 'Wpisz 6 cyfr kodu BLIK.'); return }
+        const donorErr = validateDonor()
+        if (donorErr) { showError('donor', donorErr); return }
         setCodeError('')
+        setDonorError('')
         setView('processing')
         fetch(urls.blik, {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrf_token, Accept: 'application/json', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: clean }),
+            body: JSON.stringify({ code: clean, ...donorFields() }),
         })
             .then(async (r) => {
                 const d = await r.json()
                 if (r.ok) { d.redirect ? (window.location.href = d.redirect) : poll() }
-                else showError('code', d.error || d.errors?.code?.[0] || 'Nie udało się rozpocząć płatności.')
+                else applyServerErrors(d, 'code', 'Nie udało się rozpocząć płatności.')
             })
             .catch(() => showError('code', 'Błąd połączenia. Spróbuj ponownie.'))
     }
@@ -124,6 +161,14 @@ export default function App2App() {
     const goBack = () => {
         if (window.history.length > 1) window.history.back()
         else window.location.href = '/'
+    }
+
+    // Natywny submit (pełne przeładowanie na PayU) — dane darczyńcy walidujemy
+    // przed wysłaniem, tak samo jak przy BLIK-u/wyborze banku.
+    const onOnlineSubmit = (e) => {
+        const donorErr = validateDonor()
+        if (donorErr) { e.preventDefault(); showError('donor', donorErr); return }
+        setDonorError('')
     }
 
     return (
@@ -143,6 +188,32 @@ export default function App2App() {
 
                 {view === 'methods' && (
                     <div id="payMethods">
+                        {/* Dane darczyńcy — wymagane dla każdej metody płatności */}
+                        <section className="pay-method">
+                            <h4>Twoje dane</h4>
+                            <p className="hint">Potrzebne do wystawienia potwierdzenia wpłaty.</p>
+                            <div className="sm-donor">
+                                <div className="sm-donor-row">
+                                    <div className="sm-field">
+                                        <label htmlFor="donor-first-name">Imię</label>
+                                        <input id="donor-first-name" type="text" name="firstName" autoComplete="given-name"
+                                            value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                                    </div>
+                                    <div className="sm-field">
+                                        <label htmlFor="donor-last-name">Nazwisko</label>
+                                        <input id="donor-last-name" type="text" name="lastName" autoComplete="family-name"
+                                            value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                                    </div>
+                                </div>
+                                <div className="sm-field">
+                                    <label htmlFor="donor-email">E-mail</label>
+                                    <input id="donor-email" type="email" name="email" autoComplete="email" inputMode="email"
+                                        value={email} onChange={(e) => setEmail(e.target.value)} />
+                                </div>
+                            </div>
+                            {donorError && <div className="sm-err">{donorError}</div>}
+                        </section>
+
                         {/* BLIK */}
                         <section className="pay-method">
                             <h4>Zapłać kodem BLIK</h4>
@@ -176,8 +247,11 @@ export default function App2App() {
                                 </div>
                             )}
                             {/* Natywny POST → redirect()->away() na PayU (pełne przeładowanie), nie Inertia */}
-                            <form method="POST" action={urls.online}>
+                            <form method="POST" action={urls.online} onSubmit={onOnlineSubmit}>
                                 <input type="hidden" name="_token" value={csrf_token} />
+                                <input type="hidden" name="first_name" value={firstName.trim()} />
+                                <input type="hidden" name="last_name" value={lastName.trim()} />
+                                <input type="hidden" name="email" value={email.trim()} />
                                 <button type="submit" className="sm-btn sm-btn-outline">Inny bank lub karta &rarr; przejdź do PayU</button>
                             </form>
                         </section>
