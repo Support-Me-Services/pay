@@ -32,7 +32,8 @@ export default function Form({ product, images, notes: initialNotes, statuses, v
         e.preventDefault()
         const opts = { forceFormData: true }
         if (editing) {
-            form.transform((d) => ({ ...d, _method: 'put' })).post(urls.update, opts)
+            form.transform((d) => ({ ...d, _method: 'put' }))
+            form.post(urls.update, opts)
         } else {
             form.post(urls.store, opts)
         }

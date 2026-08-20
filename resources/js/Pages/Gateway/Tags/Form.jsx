@@ -14,8 +14,12 @@ export default function Form({ shop, tag, urls }) {
 
     const submit = (e) => {
         e.preventDefault()
-        if (editing) form.transform((d) => ({ ...d, _method: 'put' })).post(urls.update)
-        else form.post(urls.store)
+        if (editing) {
+            form.transform((d) => ({ ...d, _method: 'put' }))
+            form.post(urls.update)
+        } else {
+            form.post(urls.store)
+        }
     }
 
     return (

@@ -23,7 +23,8 @@ export default function Form({ item, storeUrl, indexUrl }) {
         e.preventDefault()
         // Upload pliku wymaga multipart; edycja przez spoofing metody PUT (POST + _method).
         if (editing) {
-            form.transform((d) => ({ ...d, _method: 'put' })).post(item.update_url, { forceFormData: true })
+            form.transform((d) => ({ ...d, _method: 'put' }))
+            form.post(item.update_url, { forceFormData: true })
         } else {
             form.post(storeUrl, { forceFormData: true })
         }
