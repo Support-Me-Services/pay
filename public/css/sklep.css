@@ -91,8 +91,6 @@
 .fnd__nav{ flex:0 0 auto; width:30px; height:30px; border-radius:50%; border:1px solid #d4deea; background:#fff;
     color:#1473C0; font-size:18px; line-height:1; cursor:pointer; }
 .fnd__nav:hover{ background:#eef4fb; }
-.fnd--locked .fnd__item{ cursor:default; pointer-events:none; }
-.fnd--locked .fnd__nav{ cursor:default; opacity:.4; pointer-events:none; }
 /* przycisk Wesprzyj — ikona + tekst */
 .paywin__btn{ display:flex; align-items:center; justify-content:center; gap:9px; }
 @media (max-height:680px){ .paywin__support{ gap:6px; } .fnd__item{ height:46px; } .fnd__logo img{ max-height:34px; } }

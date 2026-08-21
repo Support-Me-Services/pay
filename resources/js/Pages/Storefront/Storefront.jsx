@@ -13,9 +13,6 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
     const csrf = page.csrf_token
     const serverErr = page.errors?.amount_pln || page.flash?.error || null
 
-    // TODO: przywrócić wybór fundacji — tymczasowo wyłączony (mechanizm zostaje, tylko blokada UI)
-    const FND_SELECTION_LOCKED = true
-
     const [idx, setIdx] = useState(startIdx || 0)
     const [amount, setAmount] = useState(items[startIdx || 0]?.min ?? '')
     const [fIdx, setFIdx] = useState(0)
@@ -126,12 +123,12 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
                 <div className="paywin__support">
                     <p className="paywin__support-label">Dochód przeznaczamy na wsparcie:</p>
-                    <div className={`fnd${FND_SELECTION_LOCKED ? ' fnd--locked' : ''}`} onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
-                        <button className="fnd__nav fnd__nav--prev" type="button" aria-label="Poprzednia fundacja" disabled={FND_SELECTION_LOCKED} onClick={() => !FND_SELECTION_LOCKED && setFIdx((i) => Math.max(0, i - 1))}>&lsaquo;</button>
+                    <div className="fnd" onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
+                        <button className="fnd__nav fnd__nav--prev" type="button" aria-label="Poprzednia fundacja" onClick={() => setFIdx((i) => Math.max(0, i - 1))}>&lsaquo;</button>
                         <div className="fnd__viewport" ref={fndVpRef}>
                             <div className="fnd__track" style={{ transform: `translateX(${fndShift}px)` }}>
                                 {foundations.map((f, i) => (
-                                    <div key={f.slug} className={`fnd__item${i === fIdx ? ' is-active' : ''}`} title={f.name} onClick={() => !FND_SELECTION_LOCKED && setFIdx(i)}>
+                                    <div key={f.slug} className={`fnd__item${i === fIdx ? ' is-active' : ''}`} title={f.name} onClick={() => setFIdx(i)}>
                                         <div className="fnd__logo">
                                             {f.logo ? <img src={f.logo} alt={f.name} /> : <span className="fnd__name">{f.name}</span>}
                                         </div>
@@ -139,7 +136,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                                 ))}
                             </div>
                         </div>
-                        <button className="fnd__nav fnd__nav--next" type="button" aria-label="Następna fundacja" disabled={FND_SELECTION_LOCKED} onClick={() => !FND_SELECTION_LOCKED && setFIdx((i) => Math.min(foundations.length - 1, i + 1))}>&rsaquo;</button>
+                        <button className="fnd__nav fnd__nav--next" type="button" aria-label="Następna fundacja" onClick={() => setFIdx((i) => Math.min(foundations.length - 1, i + 1))}>&rsaquo;</button>
                     </div>
                 </div>
 
