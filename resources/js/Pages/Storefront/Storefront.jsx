@@ -122,7 +122,8 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                 <p className="paywin__err" role="alert" hidden={!err}>{err}</p>
 
                 <div className="paywin__support">
-                    <p className="paywin__support-label">Dochód przeznaczamy na wsparcie:</p>
+                    <p className="paywin__support-label">Pieniądze trafią na konto fundacji Support Me</p>
+                    {/* Wybór fundacji — tymczasowo wyłączony (kod zostaje, tylko wykomentowany)
                     <div className="fnd" onTouchStart={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
                         <button className="fnd__nav fnd__nav--prev" type="button" aria-label="Poprzednia fundacja" onClick={() => setFIdx((i) => Math.max(0, i - 1))}>&lsaquo;</button>
                         <div className="fnd__viewport" ref={fndVpRef}>
@@ -138,6 +139,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                         </div>
                         <button className="fnd__nav fnd__nav--next" type="button" aria-label="Następna fundacja" onClick={() => setFIdx((i) => Math.min(foundations.length - 1, i + 1))}>&rsaquo;</button>
                     </div>
+                    */}
                 </div>
 
                 <div className="paywin__dots" aria-hidden="true">
