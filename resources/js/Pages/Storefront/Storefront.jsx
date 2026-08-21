@@ -142,9 +142,11 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                     */}
                 </div>
 
+                {/* Kropki karuzeli produktów — tymczasowo wyłączone (kod zostaje, tylko wykomentowany)
                 <div className="paywin__dots" aria-hidden="true">
                     {items.map((_, i) => <span key={i} className={`paywin__dot${i === idx ? ' is-on' : ''}`} />)}
                 </div>
+                */}
 
                 <form method="POST" action={it.action} className="paywin__form" onSubmit={onSubmit}>
                     <input type="hidden" name="_token" value={csrf} />
@@ -157,7 +159,9 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
                 <p className="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Politykę prywatności (PDF)</a> i <a href={regulaminUrl} target="_blank" rel="noopener noreferrer">Regulamin</a></p>
 
+                {/* Podpowiedź „przesuń, aby zmienić produkt” — tymczasowo wyłączona (kod zostaje, tylko wykomentowany)
                 <div className="paywin__hint">‹ przesuń, aby zmienić produkt ›</div>
+                */}
             </div>
         </>
     )
