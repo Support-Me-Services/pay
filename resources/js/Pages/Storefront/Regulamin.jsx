@@ -1,6 +1,6 @@
 import StorefrontLayout from '@/Layouts/StorefrontLayout'
 
-const M = 'mailto:marcin.lula@please-support-me.com'
+const M = 'mailto:founder@please-support-me.com'
 
 /** Regulamin Serwisu Internetowego i Przekazywania Darowizn Fundacji SUPPORT ME HAVEN & HEAVEN (treść z PDF, obowiązuje od 29.07.2026). */
 export default function Regulamin() {
@@ -34,7 +34,7 @@ export default function Regulamin() {
                                     <br />dalej zwana „Fundacją".
                                 </li>
                                 <li>Fundacja jest usługodawcą świadczącym usługi drogą elektroniczną w rozumieniu ustawy z dnia 18 lipca 2002 r. o świadczeniu usług drogą elektroniczną.</li>
-                                <li>Kontakt z Fundacją możliwy jest pod adresem e-mail: <a href={M}>marcin.lula@please-support-me.com</a>.</li>
+                                <li>Kontakt z Fundacją możliwy jest pod adresem e-mail: <a href={M}>founder@please-support-me.com</a>.</li>
                                 <li>Organami sprawującymi nadzór nad Fundacją są Minister Zdrowia oraz Prezydent Miasta Pruszkowa.</li>
                                 <li>
                                     Wszelkie wpłaty realizowane za pośrednictwem Serwisu stanowią darowizny w rozumieniu art. 888 i następnych Kodeksu cywilnego i przeznaczane są na realizację celów statutowych Fundacji, w szczególności:
@@ -126,7 +126,7 @@ export default function Regulamin() {
                             <ol>
                                 <li>Umowa darowizny nie stanowi umowy sprzedaży ani umowy o świadczenie usług zawieranej z konsumentem w rozumieniu przepisów ustawy o prawach konsumenta. W związku z tym prawo odstąpienia od umowy zawartej na odległość nie ma zastosowania.</li>
                                 <li>W przypadku błędów technicznych przy realizacji płatności lub omyłkowego przekazania środków Darczyńca może złożyć reklamację.</li>
-                                <li>Reklamacje dotyczące funkcjonowania Serwisu lub świadczonych usług drogą elektroniczną mogą być składane drogą elektroniczną na adres: <a href={M}>marcin.lula@please-support-me.com</a>.</li>
+                                <li>Reklamacje dotyczące funkcjonowania Serwisu lub świadczonych usług drogą elektroniczną mogą być składane drogą elektroniczną na adres: <a href={M}>founder@please-support-me.com</a>.</li>
                                 <li>
                                     Reklamacja powinna zawierać:
                                     <ul>
