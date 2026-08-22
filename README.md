@@ -55,3 +55,5 @@ Webhook wychodzący do sklepu: `POST {notify_url}` z `{uuid, status, paid_at}`, 
 Dashboard (globalnie + per sklep), Sklepy (dodawanie generuje api_key pokazywany raz),
 Tagi per sklep, Statystyki (filtrowanie sklep/tag, wykres 30 dni), Leady (eksport CSV),
 AntiTheft (moduł FIKCYJNY — wyłącznie UI demo, brak realnej detekcji).
+
+<!-- test: weryfikacja push Claude Code (2026-08-22) -->
