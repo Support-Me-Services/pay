@@ -42,6 +42,8 @@ Route::prefix('panel')->name('panel.')->group(function () {
 
         Route::get('/stats', [Panel\StatsController::class, 'index'])->name('stats');
 
+        Route::get('/transactions', [Panel\TransactionController::class, 'index'])->name('transactions');
+
         Route::get('/leads', [Panel\LeadController::class, 'index'])->name('leads');
         Route::get('/leads/export', [Panel\LeadController::class, 'exportCsv'])->name('leads.export');
 

@@ -115,6 +115,7 @@ class HandleInertiaRequests extends Middleware
                 ['label' => 'Dashboard', 'href' => route('panel.dashboard'), 'active' => $request->routeIs('panel.dashboard')],
                 ['label' => 'Sklepy', 'href' => route('panel.shops.index'), 'active' => $request->routeIs('panel.shops.*') || $request->routeIs('panel.tags.*')],
                 ['label' => 'Statystyki', 'href' => route('panel.stats'), 'active' => $request->routeIs('panel.stats')],
+                ['label' => 'Płatności', 'href' => route('panel.transactions'), 'active' => $request->routeIs('panel.transactions')],
                 ['label' => 'Leady', 'href' => route('panel.leads'), 'active' => $request->routeIs('panel.leads')],
                 ['label' => 'AntiTheft', 'href' => route('panel.antitheft'), 'active' => $request->routeIs('panel.antitheft')],
                 ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')],
