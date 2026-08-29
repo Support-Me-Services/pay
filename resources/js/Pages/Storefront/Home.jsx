@@ -120,8 +120,8 @@ export default function Home({ beneficiariesUrl, showThanks, mecenasLogo, mecena
                         </svg>
                         <h2 className="ty-title" id="tyTitle">Dziękujemy za Twoje wsparcie!</h2>
                         <div className="ty-body">
-                            <p>Jesteśmy wdzięczni, że wspierasz fundację <strong>LegalSight Polska</strong> — która wspiera ubogich seniorów w pomocy prawnej.</p>
-                            <p>Dzięki Tobie Mecenasi LegalSight dodatkowo przekażą datek na rzecz fundacji.</p>
+                            <p>Jesteśmy wdzięczni za Twoje wsparcie parafii <strong>Żbików</strong>.</p>
+                            <p>Dzięki Tobie Mecenasi parafii Żbików dodatkowo przekażą datek na rzecz parafii.</p>
                             <p>Pozostajemy w kontakcie.<br />Będziemy nadal Cię wspierać w pomaganiu.</p>
                             <p className="ty-sign">Zespół Support Me</p>
                         </div>
