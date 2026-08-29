@@ -7,10 +7,8 @@ use App\Modules\Gateway\Models\Event;
 use App\Modules\Gateway\Models\Shop;
 use App\Modules\Gateway\Models\Tag;
 use App\Modules\Gateway\Models\Transaction;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class GatewaySeeder extends Seeder
@@ -26,11 +24,6 @@ class GatewaySeeder extends Seeder
 
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'm@suli.pl'],
-            ['name' => 'Michał', 'password' => Hash::make('pay3322')]
-        );
-
         $shops = [
             ['slug' => 'shop1', 'name' => 'Sklep Demo 1 (classic)', 'base_url' => 'https://please-support-me.com', 'payment_mode' => 'classic'],
         ];

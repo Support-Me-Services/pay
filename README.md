@@ -11,7 +11,7 @@ cp .env.example .env && php artisan key:generate
 php artisan migrate --seed
 ```
 
-Seeder tworzy: konto panelu `admin@local` / `admin123` (do lokalnego logowania na `/panel/login`), użytkownika `m@suli.pl` / `pay3322`, sklep demo `shop1` (classic) z kluczem API, 5 tagów (`TAG-S1-001…005`) oraz dane statystyczne demo za 30 dni.
+Seeder tworzy: konto panelu `admin@local` / `admin123` (do lokalnego logowania na `/panel/login`), sklep demo `shop1` (classic) z kluczem API, 5 tagów (`TAG-S1-001…005`) oraz dane statystyczne demo za 30 dni.
 
 Klucz API sklepu (do `.env` instancji sklepu): `SELECT slug, api_key FROM shops;`
 

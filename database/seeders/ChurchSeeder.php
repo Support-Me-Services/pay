@@ -5,10 +5,8 @@ namespace Database\Seeders;
 use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Product;
-use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -16,11 +14,6 @@ class ChurchSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            ['email' => 'm@suli.pl'],
-            ['name' => 'Michał', 'password' => Hash::make('pay3322')]
-        );
-
         foreach ($this->parishes() as $i => $data) {
             $svg = $this->stainedGlassSvg($data['palette']);
             $path = sprintf('parishes/parafia-%d.svg', $i + 1);
