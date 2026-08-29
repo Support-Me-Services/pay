@@ -58,7 +58,7 @@ class OrderReturnController extends Controller
             return Inertia::render('Storefront/ReturnFailure', [
                 'orderId' => $order->id,
                 'retryUrl' => route('product.show', $order->product->slug),
-                'categoryUrl' => route('beneficiaries'),
+                'cancelUrl' => route('main'),
             ]);
         }
 

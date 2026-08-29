@@ -1,7 +1,7 @@
 import StorefrontPublicLayout from '@/Layouts/StorefrontPublicLayout'
 
 /** Ekran nieudanej wpłaty (tryb bare). */
-export default function ReturnFailure({ orderId, retryUrl, categoryUrl }) {
+export default function ReturnFailure({ orderId, retryUrl, cancelUrl }) {
     return (
         <div className="status-screen failure">
             <svg className="mark-svg" viewBox="0 0 56 56" aria-hidden="true">
@@ -15,7 +15,7 @@ export default function ReturnFailure({ orderId, retryUrl, categoryUrl }) {
 
             <div className="actions">
                 <a href={retryUrl} className="btn btn-gold">Spróbuj ponownie</a>
-                <a href={categoryUrl} className="btn btn-ghost" style={{ borderColor: '#e0d4b0', color: '#f1e8d2' }}>Inna parafia</a>
+                <a href={cancelUrl} className="btn btn-ghost" style={{ borderColor: '#e0d4b0', color: '#f1e8d2' }}>Anuluj</a>
             </div>
 
             <div className="order-no">Potwierdzenie nr {orderId}</div>
