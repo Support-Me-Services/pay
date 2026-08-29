@@ -14,18 +14,16 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 /**
- * „Praca" globalna (/praca) — oferty właściciela głównego (root owner).
- * Odpowiednik per-konto: UserCareersController pod /people/{handle}/praca.
+ * „Praca" per-konto (/people/{handle}/praca) — odpowiednik globalnego
+ * CareersController, scoped przez właściciela wskazanego handle.
  */
-class CareersController extends Controller
+class UserCareersController extends Controller
 {
-    /** Hashowany URL wspólnego arkusza podstron (cache-bust). */
     private function subpagesCss(): string
     {
         return asset('css/subpages.css') . '?v=' . substr(md5_file(public_path('css/subpages.css')), 0, 10);
     }
 
-    /** Czy oferta jest zdalna/hybrydowa (model nie ma pola — wykrywamy z tekstu). */
     private function isRemote(JobPosition $p): bool
     {
         $haystack = mb_strtolower(trim(($p->location ?? '') . ' ' . ($p->employment_type ?? '')));
@@ -33,20 +31,17 @@ class CareersController extends Controller
         return $haystack !== '' && Str::contains($haystack, ['zdaln', 'remote', 'hybryd']);
     }
 
-    /**
-     * GET /praca — lista aktywnych stanowisk pracy.
-     */
-    public function index()
+    /** GET /people/{handle}/praca — lista aktywnych stanowisk tego właściciela. */
+    public function index(string $handle)
     {
-        $owner = User::rootOwner();
-        $positions = $owner
-            ? JobPosition::forUser($owner->id)->where('active', true)->orderBy('sort')->orderBy('id')->get()
-            : collect();
+        $owner = User::where('handle', $handle)->firstOrFail();
+        $positions = JobPosition::forUser($owner->id)->where('active', true)
+            ->orderBy('sort')->orderBy('id')->get();
 
         $fallback = 'Dołącz do zespołu, który tworzy płatności NFC dla dobra wspólnego — technologię wspierającą parafie, fundacje i lokalne inicjatywy. Szukamy osób, które chcą łączyć nowoczesne rozwiązania z realnym wpływem na ludzi.';
 
         return Inertia::render('Storefront/Praca', [
-            'positions' => $positions->map(function (JobPosition $p) use ($fallback) {
+            'positions' => $positions->map(function (JobPosition $p) use ($fallback, $handle) {
                 $short = trim((string) $p->short_description);
 
                 return [
@@ -56,22 +51,20 @@ class CareersController extends Controller
                     'location' => $p->location,
                     'is_remote' => $this->isRemote($p),
                     'excerpt' => $short !== '' ? $short : $fallback,
-                    'show_url' => route('careers.show', $p),
+                    'show_url' => route('user.careers.show', [$handle, $p]),
                 ];
             })->values(),
             'css' => $this->subpagesCss(),
-            'pageTitle' => 'Praca — ' . config('shop.name'),
-            'pageDescription' => 'Dołącz do zespołu — aktualne oferty pracy i wolontariatu.',
+            'pageTitle' => 'Praca — ' . $owner->name,
+            'pageDescription' => 'Dołącz do zespołu ' . $owner->name . ' — aktualne oferty pracy i wolontariatu.',
         ]);
     }
 
-    /**
-     * GET /praca/oferta/{position} — pojedyncza oferta pracy na osobnej podstronie.
-     */
-    public function show(JobPosition $position)
+    /** GET /people/{handle}/praca/oferta/{position} — pojedyncza oferta. */
+    public function show(string $handle, JobPosition $position)
     {
-        $owner = User::rootOwner();
-        abort_unless($position->active && $owner && (int) $position->user_id === $owner->id, 404);
+        $owner = User::where('handle', $handle)->firstOrFail();
+        abort_unless($position->active && (int) $position->user_id === $owner->id, 404);
 
         $others = JobPosition::forUser($owner->id)->where('active', true)
             ->where('id', '!=', $position->id)
@@ -86,62 +79,62 @@ class CareersController extends Controller
                 'location' => trim((string) $position->location),
                 'is_remote' => $this->isRemote($position),
                 'description_html' => $plain !== '' ? $position->description_html : null,
-                'apply_url' => route('careers.apply', $position),
+                'apply_url' => route('user.careers.apply', [$handle, $position]),
             ],
             'others' => $others->map(fn (JobPosition $o) => [
                 'title' => $o->title,
                 'meta' => collect([$o->employment_type, $o->location])->filter()->implode(' · ') ?: 'Zobacz szczegóły',
-                'show_url' => route('careers.show', $o),
+                'show_url' => route('user.careers.show', [$handle, $o]),
             ])->values(),
-            'careersUrl' => route('careers'),
+            'careersUrl' => route('user.careers', $handle),
             'css' => $this->subpagesCss(),
-            'pageTitle' => $position->title . ' — Praca — SupportME',
-            'pageDescription' => Str::limit($plain, 150) ?: 'Dołącz do zespołu SupportME — technologia, która pomaga czynić dobro.',
+            'pageTitle' => $position->title . ' — Praca — ' . $owner->name,
+            'pageDescription' => Str::limit($plain, 150) ?: 'Dołącz do zespołu ' . $owner->name . '.',
         ]);
     }
 
     /**
-     * GET /praca/aplikuj — formularz aplikacji spontanicznej (bez oferty).
-     * GET /praca/{position}/aplikuj — formularz aplikacji na konkretną ofertę.
+     * GET /people/{handle}/praca/aplikuj — formularz spontaniczny.
+     * GET /people/{handle}/praca/{position}/aplikuj — formularz na konkretną ofertę.
      */
-    public function applyForm(?JobPosition $position = null)
+    public function applyForm(string $handle, ?JobPosition $position = null)
     {
+        $owner = User::where('handle', $handle)->firstOrFail();
         $hasPosition = $position && $position->exists;
         if ($hasPosition) {
-            $owner = User::rootOwner();
-            abort_unless($owner && (int) $position->user_id === $owner->id, 404);
+            abort_unless((int) $position->user_id === $owner->id, 404);
         }
 
         return Inertia::render('Storefront/Aplikuj', [
             'position' => $hasPosition ? ['title' => $position->title] : null,
-            'storeUrl' => $hasPosition ? route('careers.apply.store', $position) : route('careers.apply.general.store'),
-            'careersUrl' => route('careers'),
+            'storeUrl' => $hasPosition ? route('user.careers.apply.store', [$handle, $position]) : route('user.careers.apply.general.store', $handle),
+            'careersUrl' => route('user.careers', $handle),
             'css' => $this->subpagesCss(),
-            'pageTitle' => ($hasPosition ? 'Aplikuj: ' . $position->title : 'Aplikacja spontaniczna') . ' — ' . config('shop.name'),
+            'pageTitle' => ($hasPosition ? 'Aplikuj: ' . $position->title : 'Aplikacja spontaniczna') . ' — ' . $owner->name,
             'pageDescription' => 'Wyślij swoje zgłoszenie rekrutacyjne wraz z CV.',
         ]);
     }
 
     /**
-     * POST /praca/aplikuj oraz POST /praca/{position}/aplikuj — zapis zgłoszenia.
-     * CV przechowywane jest na PRYWATNYM dysku (storage/app/private/cv).
+     * POST /people/{handle}/praca/aplikuj oraz .../{position}/aplikuj — zapis zgłoszenia.
+     * Mirror CareersController::applyStore, scoped przez handle.
      */
-    public function applyStore(Request $request, ?JobPosition $position = null)
+    public function applyStore(Request $request, string $handle, ?JobPosition $position = null)
     {
-        // Honeypot antyspamowy — boty wypełniają ukryte pole "website".
-        // Udajemy sukces (bez zapisu pliku/wpisu/maila), by nie zdradzać mechanizmu.
+        $owner = User::where('handle', $handle)->firstOrFail();
+        $hasPosition = $position && $position->exists;
+        if ($hasPosition) {
+            abort_unless((int) $position->user_id === $owner->id, 404);
+        }
+
         if ($request->filled('website')) {
-            return ($position && $position->exists
-                ? redirect()->route('careers.apply', $position)
-                : redirect()->route('careers.apply.general'))
+            return ($hasPosition
+                ? redirect()->route('user.careers.apply', [$handle, $position])
+                : redirect()->route('user.careers.apply.general', $handle))
                 ->with('success', 'Dziękujemy za zgłoszenie — odezwiemy się.')
                 ->with('apply_done', true);
         }
 
-        // Walidacja serwerowa (nie polegamy tylko na atrybutach HTML):
-        //  - CV WYMAGANE, wyłącznie PDF/DOC/DOCX (rozszerzenie + MIME), max 5 MB,
-        //  - zgoda RODO musi być zaznaczona (accepted),
-        //  - ochrona przed niedozwolonymi plikami: mimes + mimetypes.
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
@@ -153,7 +146,6 @@ class CareersController extends Controller
                 'mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             ],
             'rodo' => ['accepted'],
-            // Nieobowiązkowa zgoda na przyszłe rekrutacje (checkbox — 0/1).
             'future_consent' => ['nullable', 'boolean'],
         ], [
             'cv.required' => 'Załącz plik CV (PDF, DOC lub DOCX).',
@@ -170,19 +162,14 @@ class CareersController extends Controller
         ]);
 
         $file = $request->file('cv');
-        // Dysk 'local' (storage/app/private) — pliki NIE są publicznie dostępne.
         $cvPath = Storage::disk('local')->putFile('cv', $file);
         $cvOriginalName = $file->getClientOriginalName();
 
-        // Nieobowiązkowa zgoda na przyszłe rekrutacje — zapisujemy fakt zgody
-        // wraz z datą jej udzielenia (potrzebna do liczenia okresu 24 mies.).
         $futureConsent = $request->boolean('future_consent');
 
-        $owner = $position && $position->exists ? $position->owner : User::rootOwner();
-
         JobApplication::create([
-            'user_id' => $owner?->id,
-            'job_position_id' => $position && $position->exists ? $position->id : null,
+            'user_id' => $hasPosition ? $position->user_id : $owner->id,
+            'job_position_id' => $hasPosition ? $position->id : null,
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
@@ -193,24 +180,19 @@ class CareersController extends Controller
             'future_recruitment_consent_at' => $futureConsent ? now() : null,
         ]);
 
-        // Wyślij zgłoszenie z CV w załączniku na skonfigurowany adres rekrutacji.
-        // Wysyłamy tylko gdy skonfigurowany jest PRAWDZIWY mailer (nie 'log'/'array') —
-        // dzięki temu w trybie „tylko panel" nie zaśmiecamy logów załącznikami CV.
-        // Po ustawieniu MAIL_MAILER=smtp (+ dane SMTP) maile zaczną wychodzić automatycznie.
-        // Błąd wysyłki NIE blokuje zgłoszenia — jest już zapisane w bazie i panelu.
         if (! in_array(config('mail.default'), ['log', 'array', null], true)) {
             try {
                 Mail::to(config('shop.careers_email'))->send(new JobApplicationReceived(
-                data: [
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                    'phone' => $data['phone'] ?? null,
-                    'message' => $data['message'] ?? null,
-                    'position' => $position && $position->exists ? $position->title : null,
-                ],
-                cvAbsolutePath: Storage::disk('local')->path($cvPath),
-                cvOriginalName: $cvOriginalName,
-            ));
+                    data: [
+                        'name' => $data['name'],
+                        'email' => $data['email'],
+                        'phone' => $data['phone'] ?? null,
+                        'message' => $data['message'] ?? null,
+                        'position' => $hasPosition ? $position->title : null,
+                    ],
+                    cvAbsolutePath: Storage::disk('local')->path($cvPath),
+                    cvOriginalName: $cvOriginalName,
+                ));
             } catch (\Throwable $e) {
                 Log::error('Rekrutacja: nie udało się wysłać maila ze zgłoszeniem', [
                     'error' => $e->getMessage(),
@@ -219,12 +201,9 @@ class CareersController extends Controller
             }
         }
 
-        // Powrót na stronę formularza aplikacji z potwierdzeniem (aplikuj.blade
-        // renderuje session('success')). Aplikacja jest składana na osobnej
-        // podstronie /praca/{position}/aplikuj — tam pokazujemy „Dziękujemy".
-        $redirect = $position && $position->exists
-            ? redirect()->route('careers.apply', $position)
-            : redirect()->route('careers.apply.general');
+        $redirect = $hasPosition
+            ? redirect()->route('user.careers.apply', [$handle, $position])
+            : redirect()->route('user.careers.apply.general', $handle);
 
         return $redirect
             ->with('success', 'Dziękujemy za zgłoszenie — odezwiemy się.')

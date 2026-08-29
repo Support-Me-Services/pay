@@ -16,6 +16,11 @@ use Inertia\Inertia;
  */
 class ShopItemController extends Controller
 {
+    public function __construct()
+    {
+        abort_unless(Auth::user()->canSee('shop-items'), 403);
+    }
+
     public function index()
     {
         $items = ShopItem::forUser(Auth::id())->ordered()->get();

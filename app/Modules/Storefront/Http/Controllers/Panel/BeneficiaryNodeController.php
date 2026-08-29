@@ -5,19 +5,26 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\BeneficiaryNode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 /**
  * Panel: edytor podstrony „Wspieramy" — węzły (nagłówek + grafika + tekst).
  * Kolejność ustawiana przeciąganiem (reorder). Grafika i treść (Quill) jak
- * w edytorze produktów.
+ * w edytorze produktów. Sekcja per‑konto — każdy właściciel zarządza tylko
+ * swoimi węzłami (jak Sklep).
  */
 class BeneficiaryNodeController extends Controller
 {
+    public function __construct()
+    {
+        abort_unless(Auth::user()->canSee('beneficiaries'), 403);
+    }
+
     public function index()
     {
-        $nodes = BeneficiaryNode::ordered()->get();
+        $nodes = BeneficiaryNode::forUser(Auth::id())->ordered()->get();
 
         return Inertia::render('Panel/Beneficiaries/Index', [
             'nodes' => $nodes->map(fn (BeneficiaryNode $n) => $this->present($n))->values(),
@@ -53,8 +60,9 @@ class BeneficiaryNodeController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
+        $data['user_id'] = Auth::id();
         $data['image'] = $this->storeImage($request);
-        $data['position'] = (int) BeneficiaryNode::max('position') + 1;
+        $data['position'] = (int) BeneficiaryNode::forUser(Auth::id())->max('position') + 1;
 
         BeneficiaryNode::create($data);
 
@@ -63,6 +71,7 @@ class BeneficiaryNodeController extends Controller
 
     public function update(Request $request, BeneficiaryNode $node)
     {
+        $this->guard($node);
         $data = $this->validated($request);
 
         if ($img = $this->storeImage($request)) {
@@ -84,6 +93,7 @@ class BeneficiaryNodeController extends Controller
 
     public function destroy(BeneficiaryNode $node)
     {
+        $this->guard($node);
         if ($node->image) {
             Storage::disk('public')->delete($node->image);
         }
@@ -97,10 +107,16 @@ class BeneficiaryNodeController extends Controller
     {
         $ids = (array) $request->input('order', []);
         foreach (array_values($ids) as $i => $id) {
-            BeneficiaryNode::whereKey((int) $id)->update(['position' => $i]);
+            BeneficiaryNode::forUser(Auth::id())->whereKey((int) $id)->update(['position' => $i]);
         }
 
         return response()->json(['ok' => true]);
+    }
+
+    /** Tylko właściciel może edytować/usuwać swój węzeł. */
+    private function guard(BeneficiaryNode $node): void
+    {
+        abort_unless((int) $node->user_id === (int) Auth::id(), 403);
     }
 
     /** Walidacja pól węzła (bez grafiki/pozycji — te obsłużone osobno). */

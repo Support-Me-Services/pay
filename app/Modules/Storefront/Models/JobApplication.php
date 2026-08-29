@@ -2,11 +2,17 @@
 
 namespace App\Modules\Storefront\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
+/**
+ * Zgłoszenie rekrutacyjne. Należy do właściciela (`user_id`) — ustawiony
+ * bezpośrednio (nie tylko przez `job_position_id`), bo aplikacja spontaniczna
+ * (bez oferty) też musi mieć właściciela.
+ */
 class JobApplication extends Model
 {
     public $timestamps = false;
@@ -22,12 +28,13 @@ class JobApplication extends Model
     public const FUTURE_CONSENT_MONTHS = 24;
 
     protected $fillable = [
-        'job_position_id', 'name', 'email', 'phone', 'message',
+        'user_id', 'job_position_id', 'name', 'email', 'phone', 'message',
         'cv_path', 'cv_original_name', 'is_read', 'status', 'created_at',
         'future_recruitment_consent', 'future_recruitment_consent_at',
     ];
 
     protected $casts = [
+        'user_id' => 'integer',
         'is_read' => 'boolean',
         'created_at' => 'datetime',
         'future_recruitment_consent' => 'boolean',
@@ -60,6 +67,18 @@ class JobApplication extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(JobPosition::class, 'job_position_id');
+    }
+
+    /** Właściciel zgłoszenia (konto). */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /** Zgłoszenia danego właściciela. */
+    public function scopeForUser(Builder $query, int $userId): Builder
+    {
+        return $query->where('user_id', $userId);
     }
 
     /** Data wygaśnięcia zgody na przyszłe rekrutacje (null = brak zgody). */

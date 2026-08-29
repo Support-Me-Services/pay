@@ -25,6 +25,8 @@ class User extends Authenticatable
         'email',
         'password',
         'handle',
+        'is_admin',
+        'enabled_sections',
     ];
 
     /**
@@ -47,7 +49,44 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_admin' => 'boolean',
+            'enabled_sections' => 'array',
         ];
+    }
+
+    /**
+     * Sekcje panelu sterowane widocznością przez super-usera (poza tym
+     * zakresem: „Parafie” i „Zmiana hasła” — zawsze widoczne).
+     */
+    public const SECTIONS = [
+        'beneficiaries' => 'O nas',
+        'shop-items' => 'Sklep',
+        'positions' => 'Praca',
+        'applications' => 'Aplikacje / Baza kandydatów',
+    ];
+
+    /**
+     * Czy to konto widzi daną sekcję panelu. `enabled_sections === null`
+     * oznacza „wszystko widoczne” (domyślne, dotychczasowe zachowanie).
+     */
+    public function canSee(string $section): bool
+    {
+        return $this->is_admin
+            || $this->enabled_sections === null
+            || in_array($section, $this->enabled_sections, true);
+    }
+
+    /**
+     * Domyślny właściciel danych na globalnych, wspólnych stronach publicznych
+     * (/, /beneficiaries, /praca) — sprzed wprowadzenia samoobsługowej
+     * rejestracji istniało tylko jedno konto, więc te strony pozostają
+     * przypięte do niego zamiast pokazywać zbiorczo dane wszystkich kont.
+     */
+    public static function rootOwner(): ?self
+    {
+        return static::where('email', 'marcin.lula@please-support-me.com')->first()
+            ?? static::where('handle', 'lula-marcin')->first()
+            ?? static::orderBy('id')->first();
     }
 
     protected static function booted(): void

@@ -13,7 +13,7 @@ export default function Beneficiaries({ nodes }) {
     return (
         <main className="ben">
             <style>{CSS}</style>
-            <div className="ben__head"><h1>Wspieramy</h1></div>
+            <div className="ben__head"><h1>O nas</h1></div>
             <BeneficiaryNodes nodes={nodes} />
         </main>
     )

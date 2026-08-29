@@ -5,13 +5,20 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\JobPosition;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
+/** Panel: oferty pracy (sekcja „Praca") — per‑konto, jak Sklep. */
 class PositionController extends Controller
 {
+    public function __construct()
+    {
+        abort_unless(Auth::user()->canSee('positions'), 403);
+    }
+
     public function index()
     {
-        $positions = JobPosition::withCount('applications')
+        $positions = JobPosition::forUser(Auth::id())->withCount('applications')
             ->orderBy('sort')->orderBy('id')->get();
 
         return Inertia::render('Panel/Positions/Index', [
@@ -31,13 +38,15 @@ class PositionController extends Controller
 
     public function store(Request $request)
     {
-        JobPosition::create($this->validated($request));
+        JobPosition::create($this->validated($request) + ['user_id' => Auth::id()]);
 
         return redirect()->route('panel.positions.index')->with('success', 'Stanowisko dodane.');
     }
 
     public function edit(JobPosition $position)
     {
+        $this->guard($position);
+
         return Inertia::render('Panel/Positions/Form', [
             'item' => $this->present($position),
             'storeUrl' => route('panel.positions.store'),
@@ -68,6 +77,7 @@ class PositionController extends Controller
 
     public function update(Request $request, JobPosition $position)
     {
+        $this->guard($position);
         $position->update($this->validated($request));
 
         return redirect()->route('panel.positions.index')->with('success', 'Stanowisko zapisane.');
@@ -75,6 +85,7 @@ class PositionController extends Controller
 
     public function toggle(JobPosition $position)
     {
+        $this->guard($position);
         $position->update(['active' => ! $position->active]);
 
         return back()->with('success', $position->active ? 'Stanowisko aktywowane.' : 'Stanowisko dezaktywowane.');
@@ -82,9 +93,16 @@ class PositionController extends Controller
 
     public function destroy(JobPosition $position)
     {
+        $this->guard($position);
         $position->delete();
 
         return redirect()->route('panel.positions.index')->with('success', 'Stanowisko usunięte.');
+    }
+
+    /** Tylko właściciel może edytować/usuwać swoją ofertę. */
+    private function guard(JobPosition $position): void
+    {
+        abort_unless((int) $position->user_id === (int) Auth::id(), 403);
     }
 
     private function validated(Request $request): array

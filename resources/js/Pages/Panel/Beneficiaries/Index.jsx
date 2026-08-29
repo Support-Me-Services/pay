@@ -54,7 +54,7 @@ export default function Index({ nodes, urls }) {
     return (
         <>
             <div className="panel-title">
-                <h1>Wspieramy — edytor podstrony</h1>
+                <h1>O nas — edytor podstrony</h1>
                 <a href={urls.public} target="_blank" rel="noreferrer" className="btn btn-secondary">Podgląd strony ↗</a>
             </div>
 
@@ -292,4 +292,4 @@ const CSS = `
 .crop-row output{ width:54px; text-align:right; font-variant-numeric:tabular-nums; font-size:13px; color:#334155; }
 `
 
-Index.layout = (page) => <PanelLayout title="Wspieramy">{page}</PanelLayout>
+Index.layout = (page) => <PanelLayout title="O nas">{page}</PanelLayout>

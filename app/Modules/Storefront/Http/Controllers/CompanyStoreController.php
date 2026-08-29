@@ -116,8 +116,6 @@ class CompanyStoreController extends Controller
     /** Konto główne (właściciel produktów widocznych na „/"). */
     private function owner(): ?User
     {
-        return User::where('email', 'marcin.lula@please-support-me.com')->first()
-            ?? User::where('handle', 'lula-marcin')->first()
-            ?? User::orderBy('id')->first();
+        return User::rootOwner();
     }
 }

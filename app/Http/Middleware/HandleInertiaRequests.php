@@ -88,20 +88,48 @@ class HandleInertiaRequests extends Middleware
         ];
     }
 
-    /** Nawigacja panelu sklepu (storefront). */
+    /** Nawigacja panelu sklepu (storefront) — pozycje filtrowane widocznością sekcji per-konto. */
     private function storefrontPanel(Request $request): array
     {
+        $user = $request->user();
+
+        // Trasy panelu dostępne dla gościa (login, register) też pasują do
+        // 'panel.*' — bez zalogowanego konta nie ma czego filtrować.
+        if (! $user) {
+            return [
+                'brand' => config('shop.name', 'SupportME'),
+                'nav' => [],
+                'logoutUrl' => route('panel.logout'),
+            ];
+        }
+
+        $nav = [
+            ['label' => 'Parafie', 'href' => route('panel.products.index'), 'active' => $request->routeIs('panel.products.*') || $request->routeIs('panel.parishes.*')],
+        ];
+
+        if ($user->canSee('beneficiaries')) {
+            $nav[] = ['label' => 'O nas', 'href' => route('panel.beneficiaries.index'), 'active' => $request->routeIs('panel.beneficiaries.*')];
+        }
+        if ($user->canSee('shop-items')) {
+            $nav[] = ['label' => 'Sklep', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')];
+        }
+        if ($user->canSee('positions')) {
+            $nav[] = ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')];
+        }
+        if ($user->canSee('applications')) {
+            $nav[] = ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*') && ! $request->routeIs('panel.applications.consents'), 'badge' => \App\Modules\Storefront\Models\JobApplication::forUser($user->id)->where('is_read', false)->count() ?: null];
+            $nav[] = ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')];
+        }
+
+        $nav[] = ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')];
+
+        if ($user->is_admin) {
+            $nav[] = ['label' => 'Użytkownicy', 'href' => route('panel.users.index'), 'active' => $request->routeIs('panel.users.*')];
+        }
+
         return [
             'brand' => config('shop.name', 'SupportME'),
-            'nav' => [
-                ['label' => 'Parafie', 'href' => route('panel.products.index'), 'active' => $request->routeIs('panel.products.*') || $request->routeIs('panel.parishes.*')],
-                ['label' => 'Wspieramy', 'href' => route('panel.beneficiaries.index'), 'active' => $request->routeIs('panel.beneficiaries.*')],
-                ['label' => 'Sklep', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')],
-                ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')],
-                ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*') && ! $request->routeIs('panel.applications.consents'), 'badge' => \App\Modules\Storefront\Models\JobApplication::where('is_read', false)->count() ?: null],
-                ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')],
-                ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')],
-            ],
+            'nav' => $nav,
             'logoutUrl' => route('panel.logout'),
         ];
     }

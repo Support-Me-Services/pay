@@ -6,11 +6,18 @@ use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\JobApplication;
 use App\Modules\Storefront\Models\JobPosition;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
+/** Panel: zgłoszenia rekrutacyjne (sekcje „Aplikacje” / „Baza kandydatów") — per‑konto. */
 class ApplicationController extends Controller
 {
+    public function __construct()
+    {
+        abort_unless(Auth::user()->canSee('applications'), 403);
+    }
+
     /**
      * Skrzynka zgłoszeń rekrutacyjnych — najnowsze na górze.
      * Opcjonalny filtr po ofercie: ?position=ID.
@@ -21,7 +28,7 @@ class ApplicationController extends Controller
         $status = in_array($request->query('status'), array_keys(JobApplication::STATUSES), true)
             ? $request->query('status') : null;
 
-        $query = JobApplication::with('position')->orderByDesc('id');
+        $query = JobApplication::forUser(Auth::id())->with('position')->orderByDesc('id');
         if ($positionId) {
             $query->where('job_position_id', $positionId);
         }
@@ -30,12 +37,12 @@ class ApplicationController extends Controller
         }
 
         $applications = $query->get();
-        $unread = JobApplication::where('is_read', false)->count();
+        $unread = JobApplication::forUser(Auth::id())->where('is_read', false)->count();
         // Liczniki per status (z uwzględnieniem filtra oferty).
-        $statusCounts = JobApplication::query()
+        $statusCounts = JobApplication::forUser(Auth::id())
             ->when($positionId, fn ($q) => $q->where('job_position_id', $positionId))
             ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
-        $filterPosition = $positionId ? JobPosition::find($positionId) : null;
+        $filterPosition = $positionId ? JobPosition::forUser(Auth::id())->find($positionId) : null;
 
         $base = $positionId ? ['position' => $positionId] : [];
         $total = (int) $statusCounts->sum();
@@ -90,7 +97,7 @@ class ApplicationController extends Controller
      */
     public function consents()
     {
-        $items = JobApplication::with('position')
+        $items = JobApplication::forUser(Auth::id())->with('position')
             ->activeFutureConsent()
             ->orderByDesc('future_recruitment_consent_at')
             ->get();
@@ -107,6 +114,7 @@ class ApplicationController extends Controller
      */
     public function updateStatus(Request $request, JobApplication $application)
     {
+        $this->guard($application);
         $data = $request->validate([
             'status' => ['required', 'string', 'in:' . implode(',', array_keys(JobApplication::STATUSES))],
         ]);
@@ -121,6 +129,7 @@ class ApplicationController extends Controller
      */
     public function show(JobApplication $application)
     {
+        $this->guard($application);
         if (! $application->is_read) {
             $application->update(['is_read' => true]);
         }
@@ -140,6 +149,7 @@ class ApplicationController extends Controller
      */
     public function cv(JobApplication $application)
     {
+        $this->guard($application);
         abort_unless($application->cv_path && Storage::disk('local')->exists($application->cv_path), 404);
 
         return Storage::disk('local')->download(
@@ -153,6 +163,7 @@ class ApplicationController extends Controller
      */
     public function destroy(JobApplication $application)
     {
+        $this->guard($application);
         if ($application->cv_path) {
             Storage::disk('local')->delete($application->cv_path);
         }
@@ -160,5 +171,11 @@ class ApplicationController extends Controller
         $application->delete();
 
         return redirect()->route('panel.applications.index')->with('success', 'Zgłoszenie usunięte.');
+    }
+
+    /** Tylko właściciel może otwierać/zarządzać swoim zgłoszeniem. */
+    private function guard(JobApplication $application): void
+    {
+        abort_unless((int) $application->user_id === (int) Auth::id(), 403);
     }
 }

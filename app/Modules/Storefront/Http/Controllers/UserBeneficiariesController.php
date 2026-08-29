@@ -7,18 +7,15 @@ use App\Modules\Storefront\Models\BeneficiaryNode;
 use Inertia\Inertia;
 
 /**
- * Publiczna podstrona „Wspieramy" (/beneficiaries) — lista węzłów właściciela
- * głównego (root owner). Odpowiednik per-konto: UserBeneficiariesController
- * pod /people/{handle}/wspieramy.
+ * Podstrona „Wspieramy" per-konto (/people/{handle}/wspieramy) — odpowiednik
+ * globalnej BeneficiariesController, scoped przez właściciela wskazanego handle.
  */
-class BeneficiariesController extends Controller
+class UserBeneficiariesController extends Controller
 {
-    public function index()
+    public function index(string $handle)
     {
-        $owner = User::rootOwner();
-        $nodes = $owner
-            ? BeneficiaryNode::forUser($owner->id)->active()->ordered()->get()
-            : collect();
+        $owner = User::where('handle', $handle)->firstOrFail();
+        $nodes = BeneficiaryNode::forUser($owner->id)->active()->ordered()->get();
 
         return Inertia::render('Storefront/Beneficiaries', [
             'nodes' => $nodes->map(fn (BeneficiaryNode $n) => [
@@ -32,8 +29,8 @@ class BeneficiariesController extends Controller
                 'image_right' => $n->imageRight(),
                 'body_html' => $n->body_html ?? '',
             ])->values(),
-            'pageTitle' => 'O nas — ' . config('shop.name'),
-            'pageDescription' => 'Kogo i jak wspieramy — SupportMe łączy ludzi, wartości i nowoczesne płatności.',
+            'pageTitle' => 'O nas — ' . $owner->name,
+            'pageDescription' => 'Kogo i jak wspiera ' . $owner->name . ' — SupportMe łączy ludzi, wartości i nowoczesne płatności.',
         ]);
     }
 }
