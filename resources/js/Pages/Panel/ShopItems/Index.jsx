@@ -11,7 +11,7 @@ export default function Index({ items, createUrl }) {
     return (
         <>
             <div className="panel-title">
-                <h1>Sklep — produkty (NFC)</h1>
+                <h1>Zbiórki</h1>
                 <Link href={createUrl} className="btn btn-primary btn-sm">+ Dodaj produkt</Link>
             </div>
 
@@ -60,4 +60,4 @@ export default function Index({ items, createUrl }) {
     )
 }
 
-Index.layout = (page) => <PanelLayout title="Sklep — produkty">{page}</PanelLayout>
+Index.layout = (page) => <PanelLayout title="Zbiórki — produkty">{page}</PanelLayout>

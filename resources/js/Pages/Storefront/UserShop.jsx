@@ -33,7 +33,7 @@ export default function UserShop({ items, ownerName }) {
         <main className="shop">
             <style>{CSS}</style>
             <div className="shop__head">
-                <h1>Sklep — {ownerName}</h1>
+                <h1>Zbiórki — {ownerName}</h1>
                 <p>Gadżety i tagi NFC — dodaj do koszyka i zapłać online.</p>
             </div>
 

@@ -111,7 +111,7 @@ class HandleInertiaRequests extends Middleware
             $nav[] = ['label' => 'O nas', 'href' => route('panel.beneficiaries.index'), 'active' => $request->routeIs('panel.beneficiaries.*')];
         }
         if ($user->canSee('shop-items')) {
-            $nav[] = ['label' => 'Sklep', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')];
+            $nav[] = ['label' => 'Zbiórki', 'href' => route('panel.shop-items.index'), 'active' => $request->routeIs('panel.shop-items.*')];
         }
         if ($user->canSee('positions')) {
             $nav[] = ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')];

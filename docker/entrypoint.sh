@@ -16,6 +16,10 @@ grep -q '^APP_KEY=base64:' .env || php artisan key:generate --force
 mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache
 chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 
+# symlink public/storage -> storage/app/public (bez niego grafiki wgrane
+# przez panel — produkty, węzły "O nas" — nie są publicznie dostępne, 404)
+[ -L public/storage ] || php artisan storage:link
+
 # schemat sklepu (storefront -> baza nfc_shop1 wg TENANT z .env).
 # Migrujemy tylko ścieżkę storefront: w prod schemat budowany jest Liquibase,
 # nie artisanem — patrz LOCAL.md.

@@ -30,7 +30,7 @@ class UserShopController extends Controller
             'ownerName' => $owner->name,
             'shopHandle' => $handle,
             'cartCount' => array_sum((array) session("cart.$handle", [])),
-            'pageTitle' => 'Sklep — ' . $owner->name,
+            'pageTitle' => 'Zbiórki — ' . $owner->name,
             'pageDescription' => 'Sklep ' . $owner->name . ' — gadżety i tagi NFC. Dodaj do koszyka i zapłać online.',
         ]);
     }

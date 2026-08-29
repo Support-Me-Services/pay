@@ -60,7 +60,7 @@ class User extends Authenticatable
      */
     public const SECTIONS = [
         'beneficiaries' => 'O nas',
-        'shop-items' => 'Sklep',
+        'shop-items' => 'Zbiórki',
         'positions' => 'Praca',
         'applications' => 'Aplikacje / Baza kandydatów',
     ];
