@@ -2,10 +2,10 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Storefront\Mail\JobApplicationReceived;
 use App\Modules\Storefront\Models\JobApplication;
 use App\Modules\Storefront\Models\JobPosition;
+use App\Modules\Storefront\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -38,9 +38,9 @@ class CareersController extends Controller
      */
     public function index()
     {
-        $owner = User::rootOwner();
+        $owner = Organization::rootOrganization();
         $positions = $owner
-            ? JobPosition::forUser($owner->id)->where('active', true)->orderBy('sort')->orderBy('id')->get()
+            ? JobPosition::forOrganization($owner->id)->where('active', true)->orderBy('sort')->orderBy('id')->get()
             : collect();
 
         $fallback = 'Dołącz do zespołu, który tworzy płatności NFC dla dobra wspólnego — technologię wspierającą parafie, fundacje i lokalne inicjatywy. Szukamy osób, które chcą łączyć nowoczesne rozwiązania z realnym wpływem na ludzi.';
@@ -70,10 +70,10 @@ class CareersController extends Controller
      */
     public function show(JobPosition $position)
     {
-        $owner = User::rootOwner();
-        abort_unless($position->active && $owner && (int) $position->user_id === $owner->id, 404);
+        $owner = Organization::rootOrganization();
+        abort_unless($position->active && $owner && (int) $position->organization_id === $owner->id, 404);
 
-        $others = JobPosition::forUser($owner->id)->where('active', true)
+        $others = JobPosition::forOrganization($owner->id)->where('active', true)
             ->where('id', '!=', $position->id)
             ->orderBy('sort')->orderBy('id')->limit(3)->get();
 
@@ -108,8 +108,8 @@ class CareersController extends Controller
     {
         $hasPosition = $position && $position->exists;
         if ($hasPosition) {
-            $owner = User::rootOwner();
-            abort_unless($owner && (int) $position->user_id === $owner->id, 404);
+            $owner = Organization::rootOrganization();
+            abort_unless($owner && (int) $position->organization_id === $owner->id, 404);
         }
 
         return Inertia::render('Storefront/Aplikuj', [
@@ -178,10 +178,10 @@ class CareersController extends Controller
         // wraz z datą jej udzielenia (potrzebna do liczenia okresu 24 mies.).
         $futureConsent = $request->boolean('future_consent');
 
-        $owner = $position && $position->exists ? $position->owner : User::rootOwner();
+        $owner = $position && $position->exists ? $position->organization : Organization::rootOrganization();
 
         JobApplication::create([
-            'user_id' => $owner?->id,
+            'organization_id' => $owner?->id,
             'job_position_id' => $position && $position->exists ? $position->id : null,
             'name' => $data['name'],
             'email' => $data['email'],

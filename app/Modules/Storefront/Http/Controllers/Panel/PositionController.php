@@ -4,21 +4,25 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\JobPosition;
+use App\Modules\Storefront\Models\Organization;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
-/** Panel: oferty pracy (sekcja „Praca") — per‑konto, jak Sklep. */
+/** Panel: oferty pracy (sekcja „Praca") — per‑organizacja (aktywna organizacja usera). */
 class PositionController extends Controller
 {
-    public function __construct()
+    private Organization $org;
+
+    public function __construct(Request $request)
     {
-        abort_unless(Auth::user()->canSee('positions'), 403);
+        $org = $request->user()->activeOrganization($request);
+        abort_unless($org && $org->canSee('positions'), 403);
+        $this->org = $org;
     }
 
     public function index()
     {
-        $positions = JobPosition::forUser(Auth::id())->withCount('applications')
+        $positions = JobPosition::forOrganization($this->org->id)->withCount('applications')
             ->orderBy('sort')->orderBy('id')->get();
 
         return Inertia::render('Panel/Positions/Index', [
@@ -38,7 +42,7 @@ class PositionController extends Controller
 
     public function store(Request $request)
     {
-        JobPosition::create($this->validated($request) + ['user_id' => Auth::id()]);
+        JobPosition::create($this->validated($request) + ['organization_id' => $this->org->id]);
 
         return redirect()->route('panel.positions.index')->with('success', 'Stanowisko dodane.');
     }
@@ -99,10 +103,10 @@ class PositionController extends Controller
         return redirect()->route('panel.positions.index')->with('success', 'Stanowisko usunięte.');
     }
 
-    /** Tylko właściciel może edytować/usuwać swoją ofertę. */
+    /** Tylko aktywna organizacja może edytować/usuwać swoją ofertę. */
     private function guard(JobPosition $position): void
     {
-        abort_unless((int) $position->user_id === (int) Auth::id(), 403);
+        abort_unless((int) $position->organization_id === $this->org->id, 403);
     }
 
     private function validated(Request $request): array

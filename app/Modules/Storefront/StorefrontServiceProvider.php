@@ -24,12 +24,6 @@ class StorefrontServiceProvider extends ServiceProvider
         // Migracje ładowane bezwarunkowo — `migrate` z TENANT=please-support-me.com
         // utworzy tabele sklepu w wybranej bazie.
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');
-
-        // Alias zgodności: część widoków panelu odwołuje się do
-        // \App\Services\ShopStatsService — klasa żyje w module Storefront.
-        if (! class_exists(\App\Services\ShopStatsService::class, false)) {
-            class_alias(Services\ShopStatsService::class, \App\Services\ShopStatsService::class);
-        }
     }
 
     /**

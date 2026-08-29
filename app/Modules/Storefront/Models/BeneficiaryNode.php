@@ -2,21 +2,20 @@
 
 namespace App\Modules\Storefront\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Węzeł podstrony „Wspieramy" — nagłówek + grafika (lewo/prawo) + tekst (HTML).
- * Należy do właściciela (`user_id`) — sekcja per‑konto, jak `ShopItem`.
+ * Węzeł podstrony „O nas" — nagłówek + grafika (lewo/prawo) + tekst (HTML).
+ * Należy do organizacji (`organization_id`) — sekcja per‑organizacja, jak `ShopItem`.
  */
 class BeneficiaryNode extends Model
 {
-    protected $fillable = ['user_id', 'heading', 'image', 'image_side', 'image_scale', 'image_x', 'image_y', 'text_align', 'body_html', 'position', 'active'];
+    protected $fillable = ['organization_id', 'heading', 'image', 'image_side', 'image_scale', 'image_x', 'image_y', 'text_align', 'body_html', 'position', 'active'];
 
     protected $casts = [
-        'user_id' => 'integer',
+        'organization_id' => 'integer',
         'active' => 'boolean',
         'position' => 'integer',
         'image_scale' => 'integer',
@@ -34,16 +33,16 @@ class BeneficiaryNode extends Model
         'active' => true,
     ];
 
-    /** Właściciel węzła (konto). */
-    public function owner(): BelongsTo
+    /** Organizacja, do której należy węzeł. */
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Organization::class);
     }
 
-    /** Węzły danego właściciela. */
-    public function scopeForUser(Builder $query, int $userId): Builder
+    /** Węzły danej organizacji. */
+    public function scopeForOrganization(Builder $query, int $organizationId): Builder
     {
-        return $query->where('user_id', $userId);
+        return $query->where('organization_id', $organizationId);
     }
 
     public function scopeActive(Builder $query): Builder

@@ -77,10 +77,6 @@ Route::get('/fundacje', fn () => Inertia::render('Storefront/Fundacje', [
     'pageTitle' => 'Fundacje — SupportME',
     'pageDescription' => 'Support Me pomaga fundacjom i organizacjom społecznym zwiększać skuteczność pozyskiwania darowizn dzięki tagom NFC i nowoczesnym płatnościom bezgotówkowym.',
 ]))->name('fundacje');
-Route::get('/parafie', fn () => Inertia::render('Storefront/Parafie', [
-    'pageTitle' => 'Parafie — SupportME',
-    'pageDescription' => 'Support Me pomaga parafiom zwiększyć dostępność darowizn bezgotówkowych dzięki tagom NFC na tacach. Prosty, bezpieczny sposób na wsparcie kościoła telefonem.',
-]))->name('parafie');
 Route::get('/szkoly', fn () => Inertia::render('Storefront/Szkoly', [
     'pageTitle' => 'Szkoły — SupportME',
     'pageDescription' => 'SupportME rozwiązuje problem braku gotówki podczas szkolnych pikników i wydarzeń. Dzięki technologii NFC uczniowie i szkoły skutecznie zbierają środki bezgotówkowo.',
@@ -97,8 +93,6 @@ Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
 ]))->name('investors');
 
 Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
-Route::get('/p/{slug}', [StorefrontController::class, 'show'])->name('product.show');
-Route::post('/p/{slug}/kup', [StorefrontController::class, 'buy'])->name('product.buy');
 
 // Praca (kariera) — publiczna lista stanowisk
 Route::get('/praca', [CareersController::class, 'index'])->name('careers');
@@ -133,27 +127,21 @@ Route::prefix('panel')->name('panel.')->group(function () {
         ->middleware('throttle:panel-register')->name('register.post');
 
     Route::middleware('auth')->group(function () {
-        // Dashboard usunięty — wejście na /panel przenosi na pierwszą pozostałą sekcję.
-        Route::get('/', fn () => redirect()->route('panel.products.index'))->name('dashboard');
+        // Dashboard usunięty — wejście na /panel renderuje wprost „Moje
+        // organizacje" (jedyna trasa panelu gwarantowanie dostępna niezależnie
+        // od tego, które sekcje organizacja ma dziś włączone). WAŻNE: to musi
+        // być bezpośrednie wywołanie kontrolera, nie redirect() na
+        // panel.organizations.index — redirect-przez-redirect gubi flash
+        // (`->with('success', ...)`) ustawiony przez wywołujących (Register,
+        // Login, OrganizationsController::switchTo), bo sesyjny flash
+        // przeżywa tylko JEDEN dodatkowy hop.
+        Route::get('/', [Panel\OrganizationsController::class, 'index'])->name('dashboard');
 
         // Zmiana hasła zalogowanego konta.
         Route::get('/password', [Panel\PasswordController::class, 'edit'])->name('password.edit');
         Route::put('/password', [Panel\PasswordController::class, 'update'])->name('password.update');
 
-        Route::get('/products', [Panel\ProductController::class, 'index'])->name('products.index');
-        Route::get('/products/create', [Panel\ProductController::class, 'create'])->name('products.create');
-        Route::post('/products', [Panel\ProductController::class, 'store'])->name('products.store');
-        Route::get('/products/{product}/edit', [Panel\ProductController::class, 'edit'])->name('products.edit');
-        Route::put('/products/{product}', [Panel\ProductController::class, 'update'])->name('products.update');
-        Route::post('/products/{product}/toggle', [Panel\ProductController::class, 'toggle'])->name('products.toggle');
-        Route::delete('/products/{product}/images/{imageId}', [Panel\ProductController::class, 'deleteImage'])->name('products.images.delete');
-        Route::get('/products/{product}/stats', [Panel\ProductController::class, 'stats'])->name('products.stats');
-        Route::post('/upload-editor-image', [Panel\ProductController::class, 'uploadEditorImage'])->name('products.editor-upload');
-
-        // CRM parafii — szybka zmiana statusu i notatki (AJAX). Aliasy panel.parishes.*.
-        Route::post('/parishes/{product}/status', [Panel\ProductController::class, 'status'])->name('parishes.status');
-        Route::post('/parishes/{product}/notes', [Panel\ProductController::class, 'storeNote'])->name('parishes.notes.store');
-        Route::delete('/parishes/{product}/notes/{note}', [Panel\ProductController::class, 'destroyNote'])->name('parishes.notes.destroy');
+        Route::post('/upload-editor-image', [Panel\BeneficiaryNodeController::class, 'uploadEditorImage'])->name('editor-upload');
 
         // Podstrona „Wspieramy" — węzły (nagłówek + grafika + tekst); kolejność drag&drop
         Route::get('/beneficiaries', [Panel\BeneficiaryNodeController::class, 'index'])->name('beneficiaries.index');
@@ -190,8 +178,18 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::post('/applications/{application}/status', [Panel\ApplicationController::class, 'updateStatus'])->name('applications.status');
         Route::delete('/applications/{application}', [Panel\ApplicationController::class, 'destroy'])->name('applications.destroy');
 
-        // Super-user: widoczność sekcji panelu per-konto (bramkowane is_admin w kontrolerze).
+        // Super-user: globalny podgląd/nadzór nad WSZYSTKIMI organizacjami
+        // (bezpiecznik, bramkowane is_admin w kontrolerze) — nie główny mechanizm.
         Route::get('/uzytkownicy', [Panel\UsersController::class, 'index'])->name('users.index');
-        Route::post('/uzytkownicy/{user}/sekcje', [Panel\UsersController::class, 'updateSections'])->name('users.sections');
+        Route::post('/uzytkownicy/{organization}/sekcje', [Panel\UsersController::class, 'updateSections'])->name('users.sections');
+        Route::post('/uzytkownicy/{organization}/wlasciciel', [Panel\UsersController::class, 'updateOwner'])->name('users.owner');
+
+        // Moje organizacje — lista/przełącznik aktywnej, zakładanie nowej,
+        // self-service włącz/wyłącz sekcji AKTYWNEJ organizacji.
+        Route::get('/organizacje', [Panel\OrganizationsController::class, 'index'])->name('organizations.index');
+        Route::post('/organizacje', [Panel\OrganizationsController::class, 'store'])->name('organizations.store');
+        Route::post('/organizacje/przelacz', [Panel\OrganizationsController::class, 'switchTo'])->name('organizations.switch');
+        Route::get('/organizacje/ustawienia', [Panel\OrganizationsController::class, 'settings'])->name('organizations.settings');
+        Route::post('/organizacje/ustawienia', [Panel\OrganizationsController::class, 'updateSettings'])->name('organizations.settings.update');
     });
 });

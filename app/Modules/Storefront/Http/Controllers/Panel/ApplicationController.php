@@ -5,17 +5,21 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\JobApplication;
 use App\Modules\Storefront\Models\JobPosition;
+use App\Modules\Storefront\Models\Organization;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
-/** Panel: zgłoszenia rekrutacyjne (sekcje „Aplikacje” / „Baza kandydatów") — per‑konto. */
+/** Panel: zgłoszenia rekrutacyjne (sekcje „Aplikacje” / „Baza kandydatów") — per‑organizacja. */
 class ApplicationController extends Controller
 {
-    public function __construct()
+    private Organization $org;
+
+    public function __construct(Request $request)
     {
-        abort_unless(Auth::user()->canSee('applications'), 403);
+        $org = $request->user()->activeOrganization($request);
+        abort_unless($org && $org->canSee('applications'), 403);
+        $this->org = $org;
     }
 
     /**
@@ -28,7 +32,7 @@ class ApplicationController extends Controller
         $status = in_array($request->query('status'), array_keys(JobApplication::STATUSES), true)
             ? $request->query('status') : null;
 
-        $query = JobApplication::forUser(Auth::id())->with('position')->orderByDesc('id');
+        $query = JobApplication::forOrganization($this->org->id)->with('position')->orderByDesc('id');
         if ($positionId) {
             $query->where('job_position_id', $positionId);
         }
@@ -37,12 +41,12 @@ class ApplicationController extends Controller
         }
 
         $applications = $query->get();
-        $unread = JobApplication::forUser(Auth::id())->where('is_read', false)->count();
+        $unread = JobApplication::forOrganization($this->org->id)->where('is_read', false)->count();
         // Liczniki per status (z uwzględnieniem filtra oferty).
-        $statusCounts = JobApplication::forUser(Auth::id())
+        $statusCounts = JobApplication::forOrganization($this->org->id)
             ->when($positionId, fn ($q) => $q->where('job_position_id', $positionId))
             ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
-        $filterPosition = $positionId ? JobPosition::forUser(Auth::id())->find($positionId) : null;
+        $filterPosition = $positionId ? JobPosition::forOrganization($this->org->id)->find($positionId) : null;
 
         $base = $positionId ? ['position' => $positionId] : [];
         $total = (int) $statusCounts->sum();
@@ -97,7 +101,7 @@ class ApplicationController extends Controller
      */
     public function consents()
     {
-        $items = JobApplication::forUser(Auth::id())->with('position')
+        $items = JobApplication::forOrganization($this->org->id)->with('position')
             ->activeFutureConsent()
             ->orderByDesc('future_recruitment_consent_at')
             ->get();
@@ -173,9 +177,9 @@ class ApplicationController extends Controller
         return redirect()->route('panel.applications.index')->with('success', 'Zgłoszenie usunięte.');
     }
 
-    /** Tylko właściciel może otwierać/zarządzać swoim zgłoszeniem. */
+    /** Tylko aktywna organizacja może otwierać/zarządzać swoim zgłoszeniem. */
     private function guard(JobApplication $application): void
     {
-        abort_unless((int) $application->user_id === (int) Auth::id(), 403);
+        abort_unless((int) $application->organization_id === $this->org->id, 403);
     }
 }

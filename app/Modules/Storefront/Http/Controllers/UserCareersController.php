@@ -2,10 +2,10 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Storefront\Mail\JobApplicationReceived;
 use App\Modules\Storefront\Models\JobApplication;
 use App\Modules\Storefront\Models\JobPosition;
+use App\Modules\Storefront\Models\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -34,8 +34,8 @@ class UserCareersController extends Controller
     /** GET /people/{handle}/praca — lista aktywnych stanowisk tego właściciela. */
     public function index(string $handle)
     {
-        $owner = User::where('handle', $handle)->firstOrFail();
-        $positions = JobPosition::forUser($owner->id)->where('active', true)
+        $org = Organization::where('handle', $handle)->firstOrFail();
+        $positions = JobPosition::forOrganization($org->id)->where('active', true)
             ->orderBy('sort')->orderBy('id')->get();
 
         $fallback = 'Dołącz do zespołu, który tworzy płatności NFC dla dobra wspólnego — technologię wspierającą parafie, fundacje i lokalne inicjatywy. Szukamy osób, które chcą łączyć nowoczesne rozwiązania z realnym wpływem na ludzi.';
@@ -55,18 +55,18 @@ class UserCareersController extends Controller
                 ];
             })->values(),
             'css' => $this->subpagesCss(),
-            'pageTitle' => 'Praca — ' . $owner->name,
-            'pageDescription' => 'Dołącz do zespołu ' . $owner->name . ' — aktualne oferty pracy i wolontariatu.',
+            'pageTitle' => 'Praca — ' . $org->name,
+            'pageDescription' => 'Dołącz do zespołu ' . $org->name . ' — aktualne oferty pracy i wolontariatu.',
         ]);
     }
 
     /** GET /people/{handle}/praca/oferta/{position} — pojedyncza oferta. */
     public function show(string $handle, JobPosition $position)
     {
-        $owner = User::where('handle', $handle)->firstOrFail();
-        abort_unless($position->active && (int) $position->user_id === $owner->id, 404);
+        $org = Organization::where('handle', $handle)->firstOrFail();
+        abort_unless($position->active && (int) $position->organization_id === $org->id, 404);
 
-        $others = JobPosition::forUser($owner->id)->where('active', true)
+        $others = JobPosition::forOrganization($org->id)->where('active', true)
             ->where('id', '!=', $position->id)
             ->orderBy('sort')->orderBy('id')->limit(3)->get();
 
@@ -88,8 +88,8 @@ class UserCareersController extends Controller
             ])->values(),
             'careersUrl' => route('user.careers', $handle),
             'css' => $this->subpagesCss(),
-            'pageTitle' => $position->title . ' — Praca — ' . $owner->name,
-            'pageDescription' => Str::limit($plain, 150) ?: 'Dołącz do zespołu ' . $owner->name . '.',
+            'pageTitle' => $position->title . ' — Praca — ' . $org->name,
+            'pageDescription' => Str::limit($plain, 150) ?: 'Dołącz do zespołu ' . $org->name . '.',
         ]);
     }
 
@@ -99,10 +99,10 @@ class UserCareersController extends Controller
      */
     public function applyForm(string $handle, ?JobPosition $position = null)
     {
-        $owner = User::where('handle', $handle)->firstOrFail();
+        $org = Organization::where('handle', $handle)->firstOrFail();
         $hasPosition = $position && $position->exists;
         if ($hasPosition) {
-            abort_unless((int) $position->user_id === $owner->id, 404);
+            abort_unless((int) $position->organization_id === $org->id, 404);
         }
 
         return Inertia::render('Storefront/Aplikuj', [
@@ -110,7 +110,7 @@ class UserCareersController extends Controller
             'storeUrl' => $hasPosition ? route('user.careers.apply.store', [$handle, $position]) : route('user.careers.apply.general.store', $handle),
             'careersUrl' => route('user.careers', $handle),
             'css' => $this->subpagesCss(),
-            'pageTitle' => ($hasPosition ? 'Aplikuj: ' . $position->title : 'Aplikacja spontaniczna') . ' — ' . $owner->name,
+            'pageTitle' => ($hasPosition ? 'Aplikuj: ' . $position->title : 'Aplikacja spontaniczna') . ' — ' . $org->name,
             'pageDescription' => 'Wyślij swoje zgłoszenie rekrutacyjne wraz z CV.',
         ]);
     }
@@ -121,10 +121,10 @@ class UserCareersController extends Controller
      */
     public function applyStore(Request $request, string $handle, ?JobPosition $position = null)
     {
-        $owner = User::where('handle', $handle)->firstOrFail();
+        $org = Organization::where('handle', $handle)->firstOrFail();
         $hasPosition = $position && $position->exists;
         if ($hasPosition) {
-            abort_unless((int) $position->user_id === $owner->id, 404);
+            abort_unless((int) $position->organization_id === $org->id, 404);
         }
 
         if ($request->filled('website')) {
@@ -168,7 +168,7 @@ class UserCareersController extends Controller
         $futureConsent = $request->boolean('future_consent');
 
         JobApplication::create([
-            'user_id' => $hasPosition ? $position->user_id : $owner->id,
+            'organization_id' => $hasPosition ? $position->organization_id : $org->id,
             'job_position_id' => $hasPosition ? $position->id : null,
             'name' => $data['name'],
             'email' => $data['email'],

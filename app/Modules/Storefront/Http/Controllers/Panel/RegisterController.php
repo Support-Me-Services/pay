@@ -14,10 +14,12 @@ use Inertia\Inertia;
 /**
  * Samodzielne zakładanie konta sklepu (panel storefront).
  *
- * Konto od razu dostaje własny `handle` (generowany z nazwy przez User::booted),
- * więc po rejestracji sklep jest dostępny publicznie pod /people/{handle}.
- * Bez weryfikacji e-mail — kolumna email_verified_at pozostaje nieużywana,
- * tak jak w reszcie aplikacji.
+ * Konto NIE dostaje automatycznie organizacji — może ją sobie założyć
+ * samoobsługowo (patrz Panel\OrganizationsController, „Moje organizacje")
+ * albo poprosić administratora o przypisanie istniejącej (super-user,
+ * patrz Panel\UsersController::updateOwner). Jedno konto może zarządzać
+ * wieloma organizacjami. Bez weryfikacji e-mail — kolumna email_verified_at
+ * pozostaje nieużywana, tak jak w reszcie aplikacji.
  */
 class RegisterController extends Controller
 {
@@ -71,6 +73,6 @@ class RegisterController extends Controller
         $request->session()->regenerate();
 
         return redirect()->route('panel.dashboard')
-            ->with('success', 'Konto zostało założone. Twój sklep jest pod adresem /people/'.$user->handle);
+            ->with('success', 'Konto zostało założone. Załóż organizację albo poproś administratora o przypisanie istniejącej.');
     }
 }

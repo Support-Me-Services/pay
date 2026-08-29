@@ -2,20 +2,20 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Storefront\Models\BeneficiaryNode;
+use App\Modules\Storefront\Models\Organization;
 use Inertia\Inertia;
 
 /**
- * Podstrona „Wspieramy" per-konto (/people/{handle}/wspieramy) — odpowiednik
- * globalnej BeneficiariesController, scoped przez właściciela wskazanego handle.
+ * Podstrona „O nas" per-organizacja (/people/{handle}/wspieramy) — odpowiednik
+ * globalnej BeneficiariesController, scoped przez organizację wskazaną handle.
  */
 class UserBeneficiariesController extends Controller
 {
     public function index(string $handle)
     {
-        $owner = User::where('handle', $handle)->firstOrFail();
-        $nodes = BeneficiaryNode::forUser($owner->id)->active()->ordered()->get();
+        $org = Organization::where('handle', $handle)->firstOrFail();
+        $nodes = BeneficiaryNode::forOrganization($org->id)->active()->ordered()->get();
 
         return Inertia::render('Storefront/Beneficiaries', [
             'nodes' => $nodes->map(fn (BeneficiaryNode $n) => [
@@ -29,8 +29,8 @@ class UserBeneficiariesController extends Controller
                 'image_right' => $n->imageRight(),
                 'body_html' => $n->body_html ?? '',
             ])->values(),
-            'pageTitle' => 'O nas — ' . $owner->name,
-            'pageDescription' => 'Kogo i jak wspiera ' . $owner->name . ' — SupportMe łączy ludzi, wartości i nowoczesne płatności.',
+            'pageTitle' => 'O nas — ' . $org->name,
+            'pageDescription' => 'Kogo i jak wspiera ' . $org->name . ' — SupportMe łączy ludzi, wartości i nowoczesne płatności.',
         ]);
     }
 }

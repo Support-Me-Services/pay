@@ -12,13 +12,13 @@ class Order extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['product_id', 'transaction_id', 'amount', 'status', 'paid_at', 'created_at'];
+    protected $fillable = ['shop_item_id', 'transaction_id', 'amount', 'status', 'paid_at', 'created_at'];
 
     protected $casts = ['amount' => 'integer', 'paid_at' => 'datetime', 'created_at' => 'datetime'];
 
-    public function product(): BelongsTo
+    public function shopItem(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(ShopItem::class);
     }
 
     public function amountPln(): string

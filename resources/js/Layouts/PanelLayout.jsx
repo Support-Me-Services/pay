@@ -27,6 +27,11 @@ export default function PanelLayout({ title, children }) {
 
             <aside className="panel-sidebar">
                 <div className="brand">{panel.brand || 'SupportME'}<span className="dot">.</span></div>
+                {panel.activeOrganization && (
+                    <div className="text-muted" style={{ fontSize: '.82rem', margin: '-8px 0 12px' }}>
+                        Organizacja: <strong>{panel.activeOrganization.name}</strong>
+                    </div>
+                )}
                 <nav className="panel-nav">
                     {nav.map((it) => (
                         <a key={it.href} href={it.href} className={it.active ? 'active' : ''}>

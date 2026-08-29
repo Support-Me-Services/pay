@@ -2,25 +2,25 @@
 
 namespace App\Modules\Storefront\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * Produkt sklepu NFC — np. „Serduszko", „Brelok", „Kubek".
- * Należy do właściciela (`user_id`) — sklepy per‑konto (/user/{handle}).
+ * Należy do organizacji (`organization_id`) — sklepy per‑organizacja (/people/{handle}).
  * W trybie sklepowym obowiązuje STAŁA cena `price` (z fallbackiem do
  * `min_amount`); `min_amount` używany w prezentacji darowiznowej na `/`.
  */
 class ShopItem extends Model
 {
     protected $fillable = [
-        'user_id', 'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'tag_uid', 'active', 'sort',
+        'organization_id', 'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'tag_uid', 'active', 'sort',
+        'thank_you_heading', 'thank_you_body', 'thank_you_image', 'mecenas_organization_id',
     ];
 
     protected $casts = [
-        'user_id'    => 'integer',
+        'organization_id' => 'integer',
         'min_amount' => 'integer',
         'price'      => 'integer',
         'is_default' => 'boolean',
@@ -28,16 +28,22 @@ class ShopItem extends Model
         'sort'       => 'integer',
     ];
 
-    /** Właściciel produktu (konto). */
-    public function owner(): BelongsTo
+    /** Organizacja, do której należy produkt. */
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Organization::class);
     }
 
-    /** Produkty danego właściciela. */
-    public function scopeForUser(Builder $query, int $userId): Builder
+    /** Organizacja-mecenas wybrana dla strony podziękowania (opcjonalna). */
+    public function mecenasOrganization(): BelongsTo
     {
-        return $query->where('user_id', $userId);
+        return $this->belongsTo(Organization::class, 'mecenas_organization_id');
+    }
+
+    /** Produkty danej organizacji. */
+    public function scopeForOrganization(Builder $query, int $organizationId): Builder
+    {
+        return $query->where('organization_id', $organizationId);
     }
 
     /** Kolejność: sort, potem id. */

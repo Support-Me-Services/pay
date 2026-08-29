@@ -2,7 +2,6 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Services\GatewayClient;
 use Inertia\Inertia;
@@ -21,43 +20,25 @@ class OrderReturnController extends Controller
     {
         // PayU podpiete, ale pomijamy weryfikacje statusu - od razu podziekowanie.
         if (config('payment.return_bypass')) {
-            return redirect()->route('main', ['dzieki' => 1]);
+            return redirect()->route('main', ['thank-you-page' => 1]);
         }
 
-        $order = Order::with('product.images')->findOrFail($orderId);
+        $order = Order::findOrFail($orderId);
 
         $this->syncStatusFromGateway($order);
 
         if ($order->status === 'paid') {
-            $product = $order->product;
-
-            // Sklep parafialny (Taca) nie ma odbioru towaru — pomijamy logikę pickup.
-            if (config('platform.shop_kind') === 'church') {
-                // Podziekowanie pokazujemy jako modal na stronie glownej (/main).
-                return redirect()->route('main', ['dzieki' => 1]);
-            }
-
-            // Animacja linki dla produktów zabezpieczonych linką;
-            // numer stanowiska dla instrukcji wskazujących stojak.
-            $instruction = (string) $product->pickup_instruction;
-            $showTether = str_contains(mb_strtolower($instruction), 'link');
-            $standNo = (str_contains($instruction, 'stojaka nr') || str_contains(mb_strtolower($instruction), 'stanowis'))
-                ? random_int(1, 6)
-                : null;
-
-            return Inertia::render('Storefront/ReturnSuccess', [
-                'amount' => $order->amountPln(),
-                'productName' => $product->name,
-                'productCity' => $product->city,
-                'orderId' => $order->id,
-                'categoryUrl' => route('beneficiaries'),
-            ]);
+            // Podziekowanie pokazujemy jako modal na stronie glownej (/main),
+            // ze wlasna trescia danego produktu, jesli znane (shop_item_id).
+            return redirect()->route('main', array_filter(['thank-you-page' => 1, 'item' => $order->shop_item_id]));
         }
 
         if ($order->status === 'failed') {
+            $org = $order->shopItem?->organization;
+
             return Inertia::render('Storefront/ReturnFailure', [
                 'orderId' => $order->id,
-                'retryUrl' => route('product.show', $order->product->slug),
+                'retryUrl' => $org ? route('user.shop', $org->handle) : route('home'),
                 'cancelUrl' => route('main'),
             ]);
         }
@@ -84,7 +65,6 @@ class OrderReturnController extends Controller
 
     /**
      * Pobiera status z bramki i aktualizuje zamówienie (idempotentnie).
-     * Event purchase logowany wyłącznie przy przejściu pending → paid.
      */
     private function syncStatusFromGateway(Order $order): void
     {
@@ -100,7 +80,6 @@ class OrderReturnController extends Controller
 
         if ($transaction['status'] === 'paid') {
             $order->update(['status' => 'paid', 'paid_at' => $transaction['paid_at'] ?? now()]);
-            Event::create(['product_id' => $order->product_id, 'type' => 'purchase']);
         } elseif (in_array($transaction['status'], ['failed', 'abandoned'])) {
             $order->update(['status' => 'failed']);
         }

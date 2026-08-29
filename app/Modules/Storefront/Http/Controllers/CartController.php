@@ -2,8 +2,8 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Storefront\Models\Order;
+use App\Modules\Storefront\Models\Organization;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
@@ -70,7 +70,7 @@ class CartController extends Controller
     public function add(Request $request, string $handle, string $item)
     {
         $owner = $this->owner($handle);
-        $shopItem = ShopItem::forUser($owner->id)->where('id', (int) $item)->where('active', true)->firstOrFail();
+        $shopItem = ShopItem::forOrganization($owner->id)->where('id', (int) $item)->where('active', true)->firstOrFail();
 
         $cart = $this->cart($handle);
         $cart[$shopItem->id] = min(99, ($cart[$shopItem->id] ?? 0) + max(1, (int) $request->input('qty', 1)));
@@ -141,14 +141,20 @@ class CartController extends Controller
         }
         $total = $subtotal + (int) $shipMethod['price'];
 
+        // Koszyk z DOKŁADNIE jednym produktem -> wiadomo, czyją stronę
+        // podziękowania pokazać; wieloproduktowy koszyk zostaje bez zmian
+        // (fallback ogólny — nie zgadujemy, który produkt "wygrywa").
+        $distinctItemIds = $lines->pluck('item.id')->unique();
+        $singleItemId = $distinctItemIds->count() === 1 ? $distinctItemIds->first() : null;
+
         // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na podziekowanie.
         if (config('payment.bypass')) {
             $this->clear($handle);
 
-            return redirect()->route('main', ['dzieki' => 1]);
+            return redirect()->route('main', array_filter(['thank-you-page' => 1, 'item' => $singleItemId]));
         }
 
-        $order = Order::create(['product_id' => null, 'amount' => $total, 'status' => 'pending']);
+        $order = Order::create(['product_id' => null, 'shop_item_id' => $singleItemId, 'amount' => $total, 'status' => 'pending']);
         $names = $lines->map(fn ($l) => $l['item']->name.' ×'.$l['qty'])->implode(', ');
         $ship = $shipMethod['label'].($shipPoint ? ' ('.$shipPoint.')' : '');
 
@@ -173,10 +179,10 @@ class CartController extends Controller
         return redirect()->away($result['payment_url']);
     }
 
-    /** Właściciel sklepu po handle. */
-    private function owner(string $handle): User
+    /** Organizacja-właściciel sklepu po handle. */
+    private function owner(string $handle): Organization
     {
-        return User::where('handle', $handle)->firstOrFail();
+        return Organization::where('handle', $handle)->firstOrFail();
     }
 
     /** Klucz sesji koszyka danego sklepu. */
@@ -196,14 +202,14 @@ class CartController extends Controller
      *
      * @return array{0: \Illuminate\Support\Collection, 1: int} [$lines, $totalGrosze]
      */
-    private function resolve(User $owner, string $handle): array
+    private function resolve(Organization $owner, string $handle): array
     {
         $cart = $this->cart($handle);
         if (! $cart) {
             return [collect(), 0];
         }
 
-        $items = ShopItem::forUser($owner->id)->whereIn('id', array_keys($cart))->where('active', true)->get()->keyBy('id');
+        $items = ShopItem::forOrganization($owner->id)->whereIn('id', array_keys($cart))->where('active', true)->get()->keyBy('id');
 
         $lines = collect();
         foreach ($cart as $id => $qty) {

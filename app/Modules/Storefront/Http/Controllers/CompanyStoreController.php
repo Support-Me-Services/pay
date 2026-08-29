@@ -2,8 +2,8 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Storefront\Models\Order;
+use App\Modules\Storefront\Models\Organization;
 use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
@@ -22,7 +22,7 @@ class CompanyStoreController extends Controller
     {
         $owner = $this->owner();
         $items = $owner
-            ? ShopItem::forUser($owner->id)->where('active', true)->ordered()->get()->values()
+            ? ShopItem::forOrganization($owner->id)->where('active', true)->ordered()->get()->values()
             : collect();
         $default = $items->firstWhere('is_default', true) ?? $items->first();
 
@@ -70,15 +70,17 @@ class CompanyStoreController extends Controller
     /** POST /sklep/kup/{slug} — darowizna na wybraną kwotę (≥ min produktu). */
     public function purchase(Request $request, string $slug, GatewayClient $gateway)
     {
-        // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na podziekowanie.
-        if (config('payment.bypass')) {
-            return redirect()->route('main', ['dzieki' => 1]);
-        }
-
         $owner = $this->owner();
         $item = ShopItem::query()
-            ->when($owner, fn ($q) => $q->forUser($owner->id))
+            ->when($owner, fn ($q) => $q->forOrganization($owner->id))
             ->where('slug', $slug)->where('active', true)->firstOrFail();
+
+        // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na
+        // podziekowanie — ale nadal ze znanym produktem (wlasna tresc podziekowania).
+        if (config('payment.bypass')) {
+            return redirect()->route('main', ['thank-you-page' => 1, 'item' => $item->id]);
+        }
+
         $minPln = (int) max(1, ceil($item->min_amount / 100));
 
         $validated = $request->validate([
@@ -91,7 +93,7 @@ class CompanyStoreController extends Controller
 
         $amount = $validated['amount_pln'] * 100; // grosze
 
-        $order = Order::create(['product_id' => null, 'amount' => $amount, 'status' => 'pending']);
+        $order = Order::create(['product_id' => null, 'shop_item_id' => $item->id, 'amount' => $amount, 'status' => 'pending']);
 
         try {
             $result = $gateway->createTransaction([
@@ -113,9 +115,9 @@ class CompanyStoreController extends Controller
         return redirect()->away($result['payment_url']);
     }
 
-    /** Konto główne (właściciel produktów widocznych na „/"). */
-    private function owner(): ?User
+    /** Organizacja główna (właściciel produktów widocznych na „/"). */
+    private function owner(): ?Organization
     {
-        return User::rootOwner();
+        return Organization::rootOrganization();
     }
 }

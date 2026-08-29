@@ -2,7 +2,6 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Modules\Storefront\Models\Event;
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Services\GatewayClient;
 use Illuminate\Http\Request;
@@ -32,7 +31,6 @@ class GatewayWebhookController extends Controller
         if ($order && $order->status === 'pending') {
             if ($status === 'paid') {
                 $order->update(['status' => 'paid', 'paid_at' => $request->json('paid_at') ?? now()]);
-                Event::create(['product_id' => $order->product_id, 'type' => 'purchase']);
             } elseif (in_array($status, ['failed', 'abandoned'])) {
                 $order->update(['status' => 'failed']);
             }

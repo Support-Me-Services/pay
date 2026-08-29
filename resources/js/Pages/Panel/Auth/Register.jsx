@@ -33,7 +33,7 @@ export default function Register({ brand, postUrl, loginUrl }) {
                             <label htmlFor="name">Nazwa</label>
                             <input type="text" id="name" value={form.data.name}
                                 onChange={(e) => form.setData('name', e.target.value)} required autoFocus />
-                            <div className="form-hint">Widoczna nazwa Twojego sklepu — z niej powstanie jego adres.</div>
+                            <div className="form-hint">Imię i nazwisko lub nazwa firmy — do identyfikacji konta w panelu.</div>
                             {form.errors.name && <div className="form-error">{form.errors.name}</div>}
                         </div>
                         <div className="form-group">

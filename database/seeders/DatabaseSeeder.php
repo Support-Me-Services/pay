@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * Dyspozytor seedów zależny od roli wdrożenia (config/platform.php):
- *   - gateway                    => GatewaySeeder
- *   - storefront + products      => ProductsSeeder
- *   - storefront + church (Taca) => ChurchSeeder
+ *   - gateway    => GatewaySeeder
+ *   - storefront => tylko konto admina (dane demo Zbiórek/„O nas"/Pracy
+ *                   pochodzą z własnych migracji, niezależnie od tego seedera)
  *
  * Dzięki temu `php artisan db:seed` działa dla każdej roli bez modyfikacji.
  */
@@ -31,13 +31,6 @@ class DatabaseSeeder extends Seeder
 
         if (config('platform.role') === 'gateway') {
             $this->call(GatewaySeeder::class);
-
-            return;
         }
-
-        // storefront
-        $this->call(config('platform.shop_kind') === 'church'
-            ? ChurchSeeder::class
-            : ProductsSeeder::class);
     }
 }

@@ -2,22 +2,22 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
 use App\Modules\Storefront\Models\BeneficiaryNode;
+use App\Modules\Storefront\Models\Organization;
 use Inertia\Inertia;
 
 /**
- * Publiczna podstrona „Wspieramy" (/beneficiaries) — lista węzłów właściciela
- * głównego (root owner). Odpowiednik per-konto: UserBeneficiariesController
- * pod /people/{handle}/wspieramy.
+ * Publiczna podstrona „O nas" (/beneficiaries) — lista węzłów organizacji
+ * głównej (root organization). Odpowiednik per-organizacja:
+ * UserBeneficiariesController pod /people/{handle}/wspieramy.
  */
 class BeneficiariesController extends Controller
 {
     public function index()
     {
-        $owner = User::rootOwner();
-        $nodes = $owner
-            ? BeneficiaryNode::forUser($owner->id)->active()->ordered()->get()
+        $org = Organization::rootOrganization();
+        $nodes = $org
+            ? BeneficiaryNode::forOrganization($org->id)->active()->ordered()->get()
             : collect();
 
         return Inertia::render('Storefront/Beneficiaries', [

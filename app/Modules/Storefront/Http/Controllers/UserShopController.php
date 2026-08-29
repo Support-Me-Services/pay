@@ -2,20 +2,20 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Models\User;
+use App\Modules\Storefront\Models\Organization;
 use App\Modules\Storefront\Models\ShopItem;
 use Inertia\Inertia;
 
 /**
- * Sklep per‑konto pod /people/{handle} — model SKLEPOWY (siatka, stała cena,
- * koszyk). Produkty należą do właściciela wskazanego przez handle.
+ * Sklep per‑organizacja pod /people/{handle} — model SKLEPOWY (siatka, stała
+ * cena, koszyk). Produkty należą do organizacji wskazanej przez handle.
  */
 class UserShopController extends Controller
 {
     public function index(string $handle)
     {
-        $owner = User::where('handle', $handle)->firstOrFail();
-        $items = ShopItem::forUser($owner->id)->where('active', true)->ordered()->get();
+        $org = Organization::where('handle', $handle)->firstOrFail();
+        $items = ShopItem::forOrganization($org->id)->where('active', true)->ordered()->get();
 
         return Inertia::render('Storefront/UserShop', [
             'items' => $items->map(fn (ShopItem $i) => [
@@ -27,11 +27,11 @@ class UserShopController extends Controller
                 'price' => $i->pricePln(),
                 'add_url' => route('user.cart.add', [$handle, $i->id]),
             ])->values(),
-            'ownerName' => $owner->name,
+            'ownerName' => $org->name,
             'shopHandle' => $handle,
             'cartCount' => array_sum((array) session("cart.$handle", [])),
-            'pageTitle' => 'Zbiórki — ' . $owner->name,
-            'pageDescription' => 'Sklep ' . $owner->name . ' — gadżety i tagi NFC. Dodaj do koszyka i zapłać online.',
+            'pageTitle' => 'Zbiórki — ' . $org->name,
+            'pageDescription' => 'Sklep ' . $org->name . ' — gadżety i tagi NFC. Dodaj do koszyka i zapłać online.',
         ]);
     }
 }

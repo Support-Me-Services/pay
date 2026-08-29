@@ -2,26 +2,25 @@
 
 namespace App\Modules\Storefront\Models;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * Oferta pracy (sekcja „Praca"). Należy do właściciela (`user_id`) —
- * sekcja per‑konto, jak `ShopItem`.
+ * Oferta pracy (sekcja „Praca"). Należy do organizacji (`organization_id`) —
+ * sekcja per‑organizacja, jak `ShopItem`.
  */
 class JobPosition extends Model
 {
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id', 'title', 'location', 'employment_type', 'description_html', 'short_description', 'active', 'sort',
+        'organization_id', 'title', 'location', 'employment_type', 'description_html', 'short_description', 'active', 'sort',
     ];
 
     protected $casts = [
-        'user_id' => 'integer',
+        'organization_id' => 'integer',
         'active' => 'boolean',
         'sort' => 'integer',
         'created_at' => 'datetime',
@@ -35,15 +34,15 @@ class JobPosition extends Model
         return $this->hasMany(JobApplication::class, 'job_position_id');
     }
 
-    /** Właściciel oferty (konto). */
-    public function owner(): BelongsTo
+    /** Organizacja, do której należy oferta. */
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(Organization::class);
     }
 
-    /** Oferty danego właściciela. */
-    public function scopeForUser(Builder $query, int $userId): Builder
+    /** Oferty danej organizacji. */
+    public function scopeForOrganization(Builder $query, int $organizationId): Builder
     {
-        return $query->where('user_id', $userId);
+        return $query->where('organization_id', $organizationId);
     }
 }

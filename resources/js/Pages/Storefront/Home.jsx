@@ -37,7 +37,7 @@ const STEPS = [
 ]
 
 /** Strona główna marketingowa (/main) — kafelki kategorii + „Jak to działa" + modal podziękowania. */
-export default function Home({ beneficiariesUrl, showThanks, mecenasLogo, mecenasUrl, mainUrl }) {
+export default function Home({ beneficiariesUrl, showThanks, mecenasLogo, mecenasUrl, mainUrl, itemThanks }) {
     const [thanks, setThanks] = useState(showThanks)
 
     useEffect(() => {
@@ -118,18 +118,33 @@ export default function Home({ beneficiariesUrl, showThanks, mecenasLogo, mecena
                         <svg className="ty-heart" width="44" height="44" viewBox="0 0 24 24" aria-hidden="true">
                             <path d="M12 21s-7.4-4.55-9.9-9.2C.7 8.7 2.2 5 5.6 5c2 0 3.3 1.05 4.4 2.55C11.1 6.05 12.4 5 14.4 5c3.4 0 4.9 3.7 3.5 6.8C19.4 16.45 12 21 12 21z" fill="#1473C0" />
                         </svg>
-                        <h2 className="ty-title" id="tyTitle">Dziękujemy za Twoje wsparcie!</h2>
+                        <h2 className="ty-title" id="tyTitle">{itemThanks?.heading || 'Dziękujemy za Twoje wsparcie!'}</h2>
+                        {itemThanks?.image && (
+                            <img src={itemThanks.image} alt="" style={{ maxWidth: '100%', borderRadius: 12, marginBottom: 12 }} />
+                        )}
                         <div className="ty-body">
-                            <p>Jesteśmy wdzięczni za Twoje wsparcie parafii <strong>Żbików</strong>.</p>
-                            <p>Dzięki Tobie Mecenasi parafii Żbików dodatkowo przekażą datek na rzecz parafii.</p>
+                            {itemThanks?.body ? (
+                                itemThanks.body.map((p, i) => <p key={i}>{p}</p>)
+                            ) : (
+                                <>
+                                    <p>Jesteśmy wdzięczni za Twoje wsparcie parafii <strong>Żbików</strong>.</p>
+                                    <p>Dzięki Tobie Mecenasi parafii Żbików dodatkowo przekażą datek na rzecz parafii.</p>
+                                </>
+                            )}
                             <p>Pozostajemy w kontakcie.<br />Będziemy nadal Cię wspierać w pomaganiu.</p>
                             <p className="ty-sign">Zespół Support Me</p>
                         </div>
                         <div className="ty-patrons">
                             <span className="ty-patrons__label">Mecenasi</span>
-                            <a className="ty-patron" href={mecenasUrl} title="LokalnyRolnik">
-                                {mecenasLogo ? <img src={mecenasLogo} alt="LokalnyRolnik" /> : 'LokalnyRolnik'}
-                            </a>
+                            {itemThanks?.mecenasName ? (
+                                <a className="ty-patron" href={itemThanks.mecenasUrl || '#'} title={itemThanks.mecenasName}>
+                                    {itemThanks.mecenasLogo ? <img src={itemThanks.mecenasLogo} alt={itemThanks.mecenasName} /> : itemThanks.mecenasName}
+                                </a>
+                            ) : (
+                                <a className="ty-patron" href={mecenasUrl} title="LokalnyRolnik">
+                                    {mecenasLogo ? <img src={mecenasLogo} alt="LokalnyRolnik" /> : 'LokalnyRolnik'}
+                                </a>
+                            )}
                         </div>
                     </div>
                 </div>

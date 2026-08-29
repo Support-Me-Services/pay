@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Modules\Storefront\Models\ShopItem;
+use App\Modules\Storefront\Models\Organization;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,7 +26,6 @@ class User extends Authenticatable
         'password',
         'handle',
         'is_admin',
-        'enabled_sections',
     ];
 
     /**
@@ -50,30 +49,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
-            'enabled_sections' => 'array',
         ];
-    }
-
-    /**
-     * Sekcje panelu sterowane widocznością przez super-usera (poza tym
-     * zakresem: „Parafie” i „Zmiana hasła” — zawsze widoczne).
-     */
-    public const SECTIONS = [
-        'beneficiaries' => 'O nas',
-        'shop-items' => 'Zbiórki',
-        'positions' => 'Praca',
-        'applications' => 'Aplikacje / Baza kandydatów',
-    ];
-
-    /**
-     * Czy to konto widzi daną sekcję panelu. `enabled_sections === null`
-     * oznacza „wszystko widoczne” (domyślne, dotychczasowe zachowanie).
-     */
-    public function canSee(string $section): bool
-    {
-        return $this->is_admin
-            || $this->enabled_sections === null
-            || in_array($section, $this->enabled_sections, true);
     }
 
     /**
@@ -97,6 +73,17 @@ class User extends Authenticatable
                 $user->handle = static::uniqueHandle($user->name);
             }
         });
+
+        // Organizacja musi zawsze mieć jakiegoś użytkownika — usuwane konto
+        // przepina swoje organizacje na rootOwnera zamiast dopuścić, by
+        // zniknęły osierocone (FK na organizations.user_id nie ma już
+        // cascadeOnDelete — patrz migracja drop_cascade_from_organizations_user_id).
+        static::deleting(function (User $user) {
+            $root = static::rootOwner();
+            if ($root && $root->isNot($user)) {
+                $user->organizations()->update(['user_id' => $root->id]);
+            }
+        });
     }
 
     /** Unikalny handle konta (slug sklepu) z nazwy. */
@@ -112,9 +99,23 @@ class User extends Authenticatable
         return $handle;
     }
 
-    /** Produkty (sklep) tego konta. */
-    public function shopItems(): HasMany
+    /** Organizacje zarządzane przez to konto (jedno konto = wiele organizacji). */
+    public function organizations(): HasMany
     {
-        return $this->hasMany(ShopItem::class);
+        return $this->hasMany(Organization::class);
+    }
+
+    /**
+     * Aktywna organizacja w bieżącej sesji panelu — z niej czytają/piszą
+     * wszystkie kontrolery sekcji (O nas/Zbiórki/Praca/Aplikacje). Weryfikuje,
+     * że wskazana w sesji organizacja faktycznie należy do TEGO konta (nie da
+     * się podmienić session() na cudzą); fallback: pierwsza organizacja konta.
+     */
+    public function activeOrganization(\Illuminate\Http\Request $request): ?Organization
+    {
+        $id = $request->session()->get('active_organization_id');
+        $org = $id ? $this->organizations()->find($id) : null;
+
+        return $org ?? $this->organizations()->orderBy('id')->first();
     }
 }

@@ -4,34 +4,37 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\BeneficiaryNode;
+use App\Modules\Storefront\Models\Organization;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 /**
- * Panel: edytor podstrony „Wspieramy" — węzły (nagłówek + grafika + tekst).
+ * Panel: edytor podstrony „O nas" — węzły (nagłówek + grafika + tekst).
  * Kolejność ustawiana przeciąganiem (reorder). Grafika i treść (Quill) jak
- * w edytorze produktów. Sekcja per‑konto — każdy właściciel zarządza tylko
- * swoimi węzłami (jak Sklep).
+ * w edytorze produktów. Sekcja per‑organizacja (aktywna organizacja usera).
  */
 class BeneficiaryNodeController extends Controller
 {
-    public function __construct()
+    private Organization $org;
+
+    public function __construct(Request $request)
     {
-        abort_unless(Auth::user()->canSee('beneficiaries'), 403);
+        $org = $request->user()->activeOrganization($request);
+        abort_unless($org && $org->canSee('beneficiaries'), 403);
+        $this->org = $org;
     }
 
     public function index()
     {
-        $nodes = BeneficiaryNode::forUser(Auth::id())->ordered()->get();
+        $nodes = BeneficiaryNode::forOrganization($this->org->id)->ordered()->get();
 
         return Inertia::render('Panel/Beneficiaries/Index', [
             'nodes' => $nodes->map(fn (BeneficiaryNode $n) => $this->present($n))->values(),
             'urls' => [
                 'store' => route('panel.beneficiaries.store'),
                 'reorder' => route('panel.beneficiaries.reorder'),
-                'editorUpload' => route('panel.products.editor-upload'),
+                'editorUpload' => route('panel.editor-upload'),
                 'public' => route('beneficiaries'),
                 // Szablony (podmiana __ID__ po stronie React).
                 'update' => route('panel.beneficiaries.update', '__ID__'),
@@ -40,7 +43,7 @@ class BeneficiaryNodeController extends Controller
         ]);
     }
 
-    /** Serializacja węzła „Wspieramy" dla React. */
+    /** Serializacja węzła „O nas" dla React. */
     private function present(BeneficiaryNode $n): array
     {
         return [
@@ -60,9 +63,9 @@ class BeneficiaryNodeController extends Controller
     public function store(Request $request)
     {
         $data = $this->validated($request);
-        $data['user_id'] = Auth::id();
+        $data['organization_id'] = $this->org->id;
         $data['image'] = $this->storeImage($request);
-        $data['position'] = (int) BeneficiaryNode::forUser(Auth::id())->max('position') + 1;
+        $data['position'] = (int) BeneficiaryNode::forOrganization($this->org->id)->max('position') + 1;
 
         BeneficiaryNode::create($data);
 
@@ -107,16 +110,16 @@ class BeneficiaryNodeController extends Controller
     {
         $ids = (array) $request->input('order', []);
         foreach (array_values($ids) as $i => $id) {
-            BeneficiaryNode::forUser(Auth::id())->whereKey((int) $id)->update(['position' => $i]);
+            BeneficiaryNode::forOrganization($this->org->id)->whereKey((int) $id)->update(['position' => $i]);
         }
 
         return response()->json(['ok' => true]);
     }
 
-    /** Tylko właściciel może edytować/usuwać swój węzeł. */
+    /** Tylko aktywna organizacja może edytować/usuwać swój węzeł. */
     private function guard(BeneficiaryNode $node): void
     {
-        abort_unless((int) $node->user_id === (int) Auth::id(), 403);
+        abort_unless((int) $node->organization_id === $this->org->id, 403);
     }
 
     /** Walidacja pól węzła (bez grafiki/pozycji — te obsłużone osobno). */
@@ -155,5 +158,15 @@ class BeneficiaryNodeController extends Controller
         }
 
         return $request->file('image_file')->store('beneficiaries', 'public');
+    }
+
+    /** Upload zdjęcia z edytora WYSIWYG — zwraca URL do wstawienia w treść. */
+    public function uploadEditorImage(Request $request)
+    {
+        $request->validate(['image' => ['required', 'image', 'max:8192']]);
+
+        $path = $request->file('image')->store('products/editor', 'public');
+
+        return response()->json(['url' => asset('storage/' . $path)]);
     }
 }
