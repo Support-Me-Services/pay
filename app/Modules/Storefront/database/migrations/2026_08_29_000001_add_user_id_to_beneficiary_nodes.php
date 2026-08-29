@@ -17,9 +17,10 @@ return new class extends Migration
             $table->index('user_id');
         });
 
-        // Istniejące węzły -> właściciel admin (lula-marcin), fallback: pierwszy user.
-        $ownerId = DB::table('users')->where('handle', 'lula-marcin')->value('id')
-            ?? DB::table('users')->orderBy('id')->value('id');
+        // Istniejące węzły -> root owner (User::rootOwner() — patrz uwaga w
+        // 2026_08_29_000004: NIE zgaduj tu handle na sztywno, różni się między
+        // środowiskami (lokalnie „lula-marcin", produkcyjnie „marcin-lula").
+        $ownerId = \App\Models\User::rootOwner()?->id;
         if ($ownerId) {
             DB::table('beneficiary_nodes')->whereNull('user_id')->update(['user_id' => $ownerId]);
         }

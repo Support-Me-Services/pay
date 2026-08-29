@@ -21,8 +21,9 @@ return new class extends Migration
             $table->index('user_id');
         });
 
-        $rootOwnerId = DB::table('users')->where('handle', 'lula-marcin')->value('id')
-            ?? DB::table('users')->orderBy('id')->value('id');
+        // Root owner (User::rootOwner() — patrz uwaga w 2026_08_29_000004: NIE
+        // zgaduj tu handle na sztywno, różni się między środowiskami).
+        $rootOwnerId = \App\Models\User::rootOwner()?->id;
 
         // Bez surowego JOIN UPDATE (niezgodne między MySQL a PostgreSQL) —
         // mapa właścicieli ofert, potem prosty update po id (przenośne).
