@@ -32,7 +32,7 @@ const CATEGORIES = [
 const STEPS = [
     { num: 'KROK 1', g: 'g1', rev: false, body: <p><b>Zbliż telefon do znacznika NFC</b><br />W miejscu zbiórki, podczas wydarzenia, w organizacji lub przestrzeni publicznej zbliżasz telefon do oznaczonego punktu NFC.</p> },
     { num: 'KROK 2', g: 'g2', rev: true, body: <><p><b>Wybierz wsparcie</b><br />Automatycznie otwiera się bezpieczna strona płatności.</p><p>Zobaczysz:<br />• nazwę organizacji lub instytucji<br />• cel zbiórki<br />• sugerowaną kwotę wsparcia<br />• możliwość wpisania własnej kwoty</p></> },
-    { num: 'KROK 3', g: 'g3', rev: false, body: <p><b>Dokonaj płatności</b></p> },
+    { num: 'KROK 3', g: 'g3', rev: false, body: <p><b>Dokonaj płatności w wygodny dla Ciebie sposób</b></p> },
     { num: 'KROK 4', g: 'g4', rev: true, body: <><p><b>Otrzymujesz podziękowanie</b><br />Po zakończonej wpłacie trafiasz na specjalnie przygotowaną stronę podziękowania.</p><p><br />Może tam na Ciebie czekać:<br />• wiadomość od organizacji<br />• podziękowanie od zespołu lub opiekuna projektu<br />• zdjęcie z realizowanej inicjatywy<br />• informacja o wykorzystaniu środków<br />• inspirujący cytat lub krótka historia związana z projektem</p></> },
 ]
 
