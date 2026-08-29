@@ -14,6 +14,7 @@ export default function Form({ product, images, notes: initialNotes, statuses, v
 
     const form = useForm({
         name: product.name ?? '',
+        purpose: product.purpose ?? '',
         city: product.city ?? '',
         voivodeship: product.voivodeship ?? '',
         phone: product.phone ?? '',
@@ -74,6 +75,13 @@ export default function Form({ product, images, notes: initialNotes, statuses, v
                         <label htmlFor="name">Nazwa parafii *</label>
                         <input id="name" type="text" value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} required />
                         {err.name && <div className="form-error">{err.name}</div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="purpose">Cel zbiórki</label>
+                        <input id="purpose" type="text" value={form.data.purpose} onChange={(e) => form.setData('purpose', e.target.value)} placeholder="np. Renowacja ołtarza Wita Stwosza" />
+                        <div className="form-hint">Krótkie hasło widoczne na stronie parafii (np. „✦ Renowacja ołtarza”).</div>
+                        {err.purpose && <div className="form-error">{err.purpose}</div>}
                     </div>
 
                     <div className="d-flex gap-2" style={{ flexWrap: 'wrap' }}>

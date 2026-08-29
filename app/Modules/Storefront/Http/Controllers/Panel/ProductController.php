@@ -123,6 +123,7 @@ class ProductController extends Controller
                 'id' => $product->id,
                 'exists' => $exists,
                 'name' => $product->name,
+                'purpose' => $product->purpose,
                 'city' => $product->city,
                 'voivodeship' => $product->voivodeship,
                 'phone' => $product->phone,
@@ -299,6 +300,7 @@ class ProductController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'purpose' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'regex:/^\d{1,5}([.,]\d{1,2})?$/'],
             'tag_uid' => ['required', 'string', 'max:255', Rule::unique('products', 'tag_uid')->ignore($product?->id)],
@@ -310,7 +312,7 @@ class ProductController extends Controller
             'voivodeship' => ['nullable', 'string', 'max:255'],
             'status' => ['required', 'string', 'in:' . implode(',', array_keys(Product::STATUSES))],
         ], [], [
-            'name' => 'nazwa', 'price' => 'cena', 'tag_uid' => 'UID taga',
+            'name' => 'nazwa', 'purpose' => 'cel zbiórki', 'price' => 'cena', 'tag_uid' => 'UID taga',
             'pickup_instruction' => 'instrukcja odbioru', 'description_html' => 'opis',
             'phone' => 'telefon', 'website' => 'strona www', 'voivodeship' => 'województwo',
             'status' => 'status',
