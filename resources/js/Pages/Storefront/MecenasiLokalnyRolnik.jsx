@@ -34,30 +34,20 @@ export default function MecenasiLokalnyRolnik() {
             <style>{CSS}</style>
             <div className="mec-wrap">
                 <div className="mec-hero">
-                    <span className="mec-badge">Mecenas SupportME</span>
+                    <span className="mec-badge">Mecenas Parafii Żbików</span>
                     <div className="mec-logo"><img src="/img/mecenasi/lokalnyrolnik.svg" alt="LokalnyRolnik" /></div>
-                    <h1>LokalnyRolnik — Mecenas SupportME</h1>
-                    <p className="mec-lead">LokalnyRolnik dołącza do grona Mecenasów SupportME, wspierając dobre inicjatywy tak samo, jak na co dzień wspiera polskie rolnictwo i lokalną żywność.</p>
+                    <h1>LokalnyRolnik — Mecenas Parafii Żbików</h1>
+                    <p className="mec-lead">LokalnyRolnik jest Mecenasem Parafii Żbików na platformie SupportME, wspierając parafię tak samo, jak na co dzień wspiera polskie rolnictwo i lokalną żywność.</p>
                 </div>
 
                 <div className="mec-section">
                     <h2>Kim jest LokalnyRolnik?</h2>
-                    <p><strong>LokalnyRolnik</strong> to polska platforma e-commerce, która łączy klientów bezpośrednio z lokalnymi rolnikami oraz producentami żywności. Zamiast długiego, anonimowego łańcucha pośredników, platforma tworzy krótką i przejrzystą drogę „od pola do stołu" — kupujący zamawiają produkty wprost u sprawdzonych gospodarstw i wytwórców z najbliższej okolicy.</p>
-                    <p>Ideą stojącą za projektem jest wspieranie lokalnej, sezonowej i świadomej konsumpcji. Dzięki temu klienci zyskują dostęp do świeżych produktów o znanym pochodzeniu, a mali producenci — uczciwy kanał sprzedaży i bezpośredni kontakt z odbiorcami. To model, w którym wygrywa zarówno konsument, jak i rolnik: pieniądze trafiają tam, gdzie powstaje wartość, a żywność pokonuje krótszą drogę.</p>
-                    <p>LokalnyRolnik opiera się na wartościach, które są bliskie również SupportME: bliskości ludzi, zaufaniu, jawności i przekonaniu, że nowoczesna technologia powinna realnie ułatwiać codzienne, dobre wybory.</p>
+                    <p><strong>LokalnyRolnik</strong> to polska platforma e-commerce łącząca klientów bezpośrednio z lokalnymi rolnikami i producentami żywności — bez pośredników, „od pola do stołu": kupujący zamawiają produkty wprost u sprawdzonych gospodarstw z najbliższej okolicy.</p>
                 </div>
 
                 <div className="mec-card">
                     <h2>Na czym polega mecenat?</h2>
-                    <p>Jako <strong>Mecenas SupportME</strong>, LokalnyRolnik wspiera — poprzez platformę SupportME — cele fundacji oraz inicjatywy, którym SupportME pomaga zbierać środki. Mecenat oznacza, że marka świadomie staje po stronie pomagania i firmuje swoim imieniem ideę przekuwania dobrych intencji w realne wsparcie.</p>
-                    <p>W praktyce wsparcie Mecenasa wzmacnia efekt każdej wpłaty dokonanej za pośrednictwem SupportME. Kiedy darczyńca przekazuje środki na wybrany cel, obecność Mecenasów podkreśla, że za tą pomocą stoi szersza wspólnota — firmy i instytucje, które również chcą, aby dobro szło dalej.</p>
-                    <p>Dzięki takiemu partnerstwu wspieranie ważnych inicjatyw staje się prostsze, bardziej wiarygodne i bardziej widoczne — a darczyńcy zyskują pewność, że ich gest jest częścią większego, wspólnego działania.</p>
-                </div>
-
-                <div className="mec-section">
-                    <h2>Dlaczego to ma znaczenie?</h2>
-                    <p>Mecenat to nie tylko logo na stronie podziękowania. To deklaracja wartości. LokalnyRolnik, łącząc ludzi z lokalnymi producentami, na co dzień buduje społeczności oparte na zaufaniu i bliskości — dokładnie tych samych fundamentach, na których opiera się idea SupportME.</p>
-                    <p>Wspólnie pokazujemy, że technologia i biznes mogą służyć dobru: ułatwiać pomaganie, wzmacniać lokalne społeczności i sprawiać, że dobre intencje zamieniają się w konkretne, odczuwalne wsparcie.</p>
+                    <p>Jako <strong>Mecenas Parafii Żbików</strong>, LokalnyRolnik dodatkowo dokłada się — poprzez platformę SupportME — do wpłat przekazywanych na rzecz parafii. Dzięki temu każda wpłata darczyńcy zyskuje dodatkowe wsparcie od Mecenasa.</p>
                 </div>
 
                 <div className="mec-cta">

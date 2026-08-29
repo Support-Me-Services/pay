@@ -74,7 +74,7 @@ Route::get('/szkoly', fn () => Inertia::render('Storefront/Szkoly', [
 ]))->name('szkoly');
 Route::get('/mecenasi/lokalny-rolnik', fn () => Inertia::render('Storefront/MecenasiLokalnyRolnik', [
     'pageTitle' => 'Mecenas: LokalnyRolnik — SupportME',
-    'pageDescription' => 'LokalnyRolnik — Mecenas SupportME. Polska platforma e-commerce łącząca klientów z lokalnymi rolnikami i producentami żywności wspiera, poprzez SupportME, cele fundacji.',
+    'pageDescription' => 'LokalnyRolnik — Mecenas Parafii Żbików. Polska platforma e-commerce łącząca klientów z lokalnymi rolnikami i producentami żywności wspiera, poprzez SupportME, cele parafii.',
 ]))->name('mecenasi.lokalnyrolnik');
 // Inwestorzy i akcjonariusze (statyczna strona marketingowa wg Figmy „Inwestorzy")
 Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
