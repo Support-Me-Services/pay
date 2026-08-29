@@ -10,7 +10,9 @@ return [
     //                      NIE trzymamy go w repo. Dla modułu gateway = null.
     'map' => [
         // Rozwój lokalny (docker/) — localhost trafia na sklep church (baza nfc_shop1).
-        'localhost'                   => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => null],
+        // Klucz z GATEWAY_API_KEY_CHURCH (patrz .env.docker) — do pelnego mock-flow
+        // platnosci lokalnie (bez niego "Wesprzyj" konczy sie 401 z bramki).
+        'localhost'                   => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH')],
         'please-support-me.com'       => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH')],
         'stage.please-support-me.com' => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH')],
         'pay.please-support-me.com'   => ['module' => 'gateway',    'kind' => null,     'db' => 'nfc_pay',   'gateway_api_key' => null],

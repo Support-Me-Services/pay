@@ -31,8 +31,23 @@ Gdy w logu pojawi się `gotowe -> http://localhost:8000`, otwórz w przeglądarc
 - serwer `php artisan serve` na porcie 8000.
 
 `localhost` jest zmapowany na sklep w `config/tenants.php`, więc wchodzisz od razu
-na sklep. Płatności działają w trybie **bypass** (klik „Kupuję i płacę" → ekran
-podziękowania, bez realnej bramki PayU).
+na sklep.
+
+- Koszyk (`/user/{handle}/koszyk`) i darowizna na `/` działają w trybie **bypass**
+  (`PAYMENT_BYPASS=true`) — klik od razu kończy się ekranem podziękowania, bez
+  przechodzenia przez bramkę.
+- „Wesprzyj" na stronie parafii/produktu (`/p/{slug}`) NIE ma tego bypassu —
+  idzie przez prawdziwy moduł Gateway (`MockProvider`), więc pokazuje pełny
+  symulator PayU pod `/mockpay/{uuid}`: „Zapłać" (dowolny 6-cyfrowy kod → sukces
+  po 2 s) albo „Symuluj odmowę" (→ ekran `ReturnFailure`). Umożliwia to
+  `entrypoint.sh`, który przy starcie migruje schemat Gateway (baza `nfc_pay`) i
+  zakłada sklep testowy (`Shop` z kluczem z `GATEWAY_API_KEY_CHURCH`, patrz
+  `.env.docker`).
+- **Uwaga:** ten flow robi wewnętrzne wywołanie HTTP sklepu do własnego API
+  bramki (self-call). `php artisan serve` domyślnie obsługuje jedno połączenie
+  naraz i taki self-call blokowałby się na 10 s (timeout `GatewayClient`) —
+  dlatego `entrypoint.sh` uruchamia serwer z `--no-reload` i
+  `PHP_CLI_SERVER_WORKERS=4` (wymaga rozszerzenia `pcntl` w obrazie).
 
 ## Przydatne komendy
 
