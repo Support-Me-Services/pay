@@ -5,7 +5,7 @@ import { Head, useForm } from '@inertiajs/react'
  * Zawsze theme.css (style admina: auth-wrap/auth-card/form-group), niezależnie
  * od motywu publicznego hosta. Błędy walidacji przez współdzielone `errors`.
  */
-export default function Login({ brand, postUrl }) {
+export default function Login({ brand, postUrl, registerUrl }) {
     const form = useForm({ email: '', password: '' })
 
     const submit = (e) => {
@@ -42,6 +42,10 @@ export default function Login({ brand, postUrl }) {
                         </div>
                         <button type="submit" className="btn btn-primary btn-block" disabled={form.processing}>Zaloguj się</button>
                     </form>
+
+                    <p className="text-muted text-center mt-2 mb-0">
+                        Nie masz konta? <a href={registerUrl}>Załóż konto</a>
+                    </p>
                 </div>
             </div>
         </>

@@ -8,6 +8,8 @@ use App\Modules\Storefront\Http\Controllers\GatewayWebhookController;
 use App\Modules\Storefront\Http\Controllers\OrderReturnController;
 use App\Modules\Storefront\Http\Controllers\Panel;
 use App\Modules\Storefront\Http\Controllers\StorefrontController;
+use App\Modules\Storefront\Http\Controllers\UserBeneficiariesController;
+use App\Modules\Storefront\Http\Controllers\UserCareersController;
 use App\Modules\Storefront\Http\Controllers\UserShopController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -32,6 +34,17 @@ Route::post('/people/{handle}/koszyk/aktualizuj/{item}', [CartController::class,
 Route::post('/people/{handle}/koszyk/usun/{item}', [CartController::class, 'remove'])->name('user.cart.remove');
 Route::post('/people/{handle}/koszyk/dostawa', [CartController::class, 'setShipping'])->name('user.cart.shipping');
 Route::post('/people/{handle}/koszyk/kup', [CartController::class, 'checkout'])->name('user.cart.checkout');
+
+// Podstrona „Wspieramy" per-konto (odpowiednik globalnej /beneficiaries).
+Route::get('/people/{handle}/wspieramy', [UserBeneficiariesController::class, 'index'])->name('user.beneficiaries');
+
+// „Praca" per-konto (odpowiednik globalnego /praca).
+Route::get('/people/{handle}/praca', [UserCareersController::class, 'index'])->name('user.careers');
+Route::get('/people/{handle}/praca/oferta/{position}', [UserCareersController::class, 'show'])->name('user.careers.show');
+Route::get('/people/{handle}/praca/aplikuj', [UserCareersController::class, 'applyForm'])->name('user.careers.apply.general');
+Route::post('/people/{handle}/praca/aplikuj', [UserCareersController::class, 'applyStore'])->middleware('throttle:careers-apply')->name('user.careers.apply.general.store');
+Route::get('/people/{handle}/praca/{position}/aplikuj', [UserCareersController::class, 'applyForm'])->name('user.careers.apply');
+Route::post('/people/{handle}/praca/{position}/aplikuj', [UserCareersController::class, 'applyStore'])->middleware('throttle:careers-apply')->name('user.careers.apply.store');
 
 // Podstrona „Wspieramy" — węzły edytowalne w panelu
 Route::get('/beneficiaries', [BeneficiariesController::class, 'index'])->name('beneficiaries');
@@ -114,6 +127,11 @@ Route::prefix('panel')->name('panel.')->group(function () {
     Route::post('/login', [Panel\LoginController::class, 'login'])->name('login.post');
     Route::post('/logout', [Panel\LoginController::class, 'logout'])->name('logout');
 
+    // Samodzielne zakładanie konta sklepu (konto + własny handle od razu).
+    Route::get('/register', [Panel\RegisterController::class, 'show'])->name('register');
+    Route::post('/register', [Panel\RegisterController::class, 'store'])
+        ->middleware('throttle:panel-register')->name('register.post');
+
     Route::middleware('auth')->group(function () {
         // Dashboard usunięty — wejście na /panel przenosi na pierwszą pozostałą sekcję.
         Route::get('/', fn () => redirect()->route('panel.products.index'))->name('dashboard');
@@ -171,5 +189,9 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::get('/applications/{application}/cv', [Panel\ApplicationController::class, 'cv'])->name('applications.cv');
         Route::post('/applications/{application}/status', [Panel\ApplicationController::class, 'updateStatus'])->name('applications.status');
         Route::delete('/applications/{application}', [Panel\ApplicationController::class, 'destroy'])->name('applications.destroy');
+
+        // Super-user: widoczność sekcji panelu per-konto (bramkowane is_admin w kontrolerze).
+        Route::get('/uzytkownicy', [Panel\UsersController::class, 'index'])->name('users.index');
+        Route::post('/uzytkownicy/{user}/sekcje', [Panel\UsersController::class, 'updateSections'])->name('users.sections');
     });
 });

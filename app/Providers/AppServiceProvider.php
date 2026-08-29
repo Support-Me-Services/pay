@@ -58,5 +58,14 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perDay(20)->by($request->ip()),
             ];
         });
+
+        // Rejestracja kont w panelu sklepu — ochrona przed masowym zakładaniem
+        // kont przez boty. Limit per IP: krótkofalowy (burst) + dzienny.
+        RateLimiter::for('panel-register', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perDay(20)->by($request->ip()),
+            ];
+        });
     }
 }

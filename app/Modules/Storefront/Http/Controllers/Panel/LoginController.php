@@ -18,6 +18,7 @@ class LoginController extends Controller
         return Inertia::render('Panel/Auth/Login', [
             'brand' => config('shop.name', 'SupportME'),
             'postUrl' => route('panel.login.post'),
+            'registerUrl' => route('panel.register'),
         ]);
     }
 
