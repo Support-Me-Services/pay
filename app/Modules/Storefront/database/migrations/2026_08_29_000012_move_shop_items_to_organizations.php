@@ -17,9 +17,13 @@ return new class extends Migration
         DB::statement('UPDATE shop_items SET organization_id = (SELECT id FROM organizations WHERE organizations.user_id = shop_items.user_id)');
 
         Schema::table('shop_items', function (Blueprint $table) {
-            // dropIndex po nazwie (nie dropUnique) — przenośne (patrz uwaga
-            // w 2026_07_06_000011_add_user_id_to_shop_items.php o Postgresie).
-            $table->dropIndex('shop_items_user_id_slug_unique');
+            // UWAGA: w odróżnieniu od `shop_items_slug_unique` w
+            // 2026_07_06_000011 (ten był INDEKSEM z Liquibase), ten unique
+            // ZOSTAŁ utworzony przez Laravela (`$table->unique(...)` w tej
+            // samej migracji 000011) — na Postgresie to prawdziwy CONSTRAINT,
+            // więc trzeba dropUnique() (DROP CONSTRAINT), nie dropIndex()
+            // (DROP INDEX się nie uda: „constraint ... requires it").
+            $table->dropUnique('shop_items_user_id_slug_unique');
             $table->dropIndex(['user_id']);
             $table->dropColumn('user_id');
             $table->unique(['organization_id', 'slug']);
