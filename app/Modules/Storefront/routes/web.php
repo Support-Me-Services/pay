@@ -191,5 +191,6 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::post('/organizacje/przelacz', [Panel\OrganizationsController::class, 'switchTo'])->name('organizations.switch');
         Route::get('/organizacje/ustawienia', [Panel\OrganizationsController::class, 'settings'])->name('organizations.settings');
         Route::post('/organizacje/ustawienia', [Panel\OrganizationsController::class, 'updateSettings'])->name('organizations.settings.update');
+        Route::post('/organizacje/nazwa', [Panel\OrganizationsController::class, 'updateName'])->name('organizations.name');
     });
 });

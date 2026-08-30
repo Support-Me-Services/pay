@@ -69,10 +69,26 @@ class OrganizationsController extends Controller
 
         return Inertia::render('Panel/Organizations/Settings', [
             'organizationName' => $org->name,
+            'nameUpdateUrl' => route('panel.organizations.name'),
             'sections' => collect(Organization::SECTIONS)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
             'enabledSections' => $org->enabled_sections ?? array_keys(Organization::SECTIONS),
             'updateUrl' => route('panel.organizations.settings.update'),
         ]);
+    }
+
+    /** Self-service: zmiana nazwy AKTYWNEJ organizacji (handle/URL publiczny bez zmian). */
+    public function updateName(Request $request)
+    {
+        $org = $request->user()->activeOrganization($request);
+        abort_unless($org, 404);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+        ], [], ['name' => 'nazwa']);
+
+        $org->update(['name' => $data['name']]);
+
+        return back()->with('success', 'Nazwa organizacji zapisana.');
     }
 
     public function updateSettings(Request $request)
