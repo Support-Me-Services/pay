@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react'
+import { Head, usePage } from '@inertiajs/react'
 
 /**
  * Chrom panelu admina (sidebar + flash), odwzorowuje layouts/panel.blade.php.
@@ -10,11 +10,6 @@ export default function PanelLayout({ title, children }) {
     const panel = props.panel || {}
     const flash = props.flash || {}
     const nav = panel.nav || []
-
-    const logout = (e) => {
-        e.preventDefault()
-        router.post(panel.logoutUrl)
-    }
 
     return (
         <div className="panel-wrap">
@@ -38,8 +33,12 @@ export default function PanelLayout({ title, children }) {
                             {it.badge ? <span className="badge badge-brand" style={{ marginLeft: 6 }}>{it.badge}</span> : null}
                         </a>
                     ))}
-                    <div className="nav-sep" />
-                    <a href="#" onClick={logout}>Wyloguj</a>
+                    {panel.accountUrl && (
+                        <>
+                            <div className="nav-sep" />
+                            <a href={panel.accountUrl} className={panel.accountActive ? 'active' : ''}>Zarządzanie kontem</a>
+                        </>
+                    )}
                 </nav>
             </aside>
 

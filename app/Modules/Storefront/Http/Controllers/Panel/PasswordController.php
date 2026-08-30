@@ -10,9 +10,18 @@ use Inertia\Inertia;
 
 class PasswordController extends Controller
 {
-    public function edit()
+    /** Ekran „Zarządzanie kontem" — dane konta, zmiana hasła, wylogowanie. */
+    public function edit(Request $request)
     {
-        return Inertia::render('Panel/Auth/ChangePassword', [
+        $user = $request->user();
+
+        return Inertia::render('Panel/Account/Index', [
+            'account' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'isAdmin' => (bool) $user->is_admin,
+                'createdAt' => $user->created_at?->format('d.m.Y'),
+            ],
             'updateUrl' => route('panel.password.update'),
         ]);
     }
