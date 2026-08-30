@@ -45,5 +45,22 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo('/panel/login');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Wygasła sesja/token CSRF (np. formularz otwarty dłużej niż
+        // session.lifetime, albo zakładka sprzed deployu) kończyła się
+        // brzydkim, białym ekranem Laravela „419 | PAGE EXPIRED". Zamiast
+        // tego wracamy tam, skąd przyszło żądanie, z komunikatem flash —
+        // strona ładuje się na nowo ze świeżym tokenem, a komunikat trafia
+        // w istniejący slot flash.error (patrz np. Storefront/Storefront.jsx).
+        // UWAGA: Handler::prepareException() zamienia TokenMismatchException
+        // na HttpException(419, ...) ZANIM sprawdzane są te renderery — więc
+        // łapiemy HttpException i filtrujemy po kodzie (zwrot null dla
+        // innych kodów oddaje obsługę z powrotem domyślnemu mechanizmowi).
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, \Illuminate\Http\Request $request) {
+            if ($e->getStatusCode() !== 419) {
+                return null;
+            }
+
+            return redirect()->back()
+                ->with('error', 'Sesja wygasła — spróbuj ponownie.');
+        });
     })->create();
