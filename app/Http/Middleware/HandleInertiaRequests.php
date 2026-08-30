@@ -125,11 +125,11 @@ class HandleInertiaRequests extends Middleware
         if ($org) {
             $nav[] = ['label' => 'Ustawienia organizacji', 'href' => route('panel.organizations.settings'), 'active' => $request->routeIs('panel.organizations.settings*')];
         }
-        $nav[] = ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')];
-
         if ($user->is_admin) {
             $nav[] = ['label' => 'Wszystkie organizacje', 'href' => route('panel.users.index'), 'active' => $request->routeIs('panel.users.*')];
         }
+        // Ostatnia pozycja nawigacji — zawsze bezpośrednio nad "Wyloguj".
+        $nav[] = ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')];
 
         return [
             'brand' => config('shop.name', 'SupportME'),
