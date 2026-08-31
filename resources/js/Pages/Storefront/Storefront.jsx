@@ -34,6 +34,15 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
     const prevIt = items[(idx - 1 + items.length) % items.length] || {}
     const nextIt = items[(idx + 1) % items.length] || {}
 
+    // Kwota NIE zmienia się przy zmianie produktu (patrz onTrackTransitionEnd) —
+    // zamiast tego przycisk Wesprzyj włącza/wyłącza się wg tego, czy starcza na
+    // próg bieżącego produktu, a pod nim widać ile jeszcze brakuje.
+    const numAmount = amount === '' ? NaN : parseFloat(amount.replace(',', '.'))
+    const belowMin = isNaN(numAmount) || numAmount < it.min
+    const overMax = !isNaN(numAmount) && numAmount > 5000
+    const canSubmit = !belowMin && !overMax
+    const missing = belowMin ? Math.max(0, (it.min ?? 0) - (isNaN(numAmount) ? 0 : numAmount)) : 0
+
     const focusInput = () => {
         const el = inputRef.current
         if (!el) return
@@ -45,6 +54,9 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
         focusInput()
         const onKey = (e) => {
             if (e.key === 'Escape') close()
+            // Strzałki w polu kwoty mają przesuwać kursor tekstu, nie karuzelę
+            // — produkt zmienia się wyłącznie przez przytrzymanie + przesunięcie.
+            else if (e.target === inputRef.current) return
             else if (e.key === 'ArrowLeft') go(-1)
             else if (e.key === 'ArrowRight') go(1)
         }
@@ -77,22 +89,22 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
         if (decPart !== undefined) decPart = decPart.slice(0, 2)
         v = decPart !== undefined ? `${intPart},${decPart}` : intPart
         setAmount(v)
-        const num = parseFloat(v.replace(',', '.'))
-        if (v !== '' && !isNaN(num) && num >= it.min) setErr(null)
+        setErr(null)
     }
 
     const onSubmit = (e) => {
-        const v = parseFloat(amount.replace(',', '.'))
-        if (isNaN(v) || v < it.min) {
+        if (!canSubmit) {
             e.preventDefault()
-            setErr(`Minimalna kwota dla „${it.name}” to ${formatAmount(it.min)} zł.`)
-            focusInput()
-        } else if (v > 5000) {
-            e.preventDefault()
-            setErr('Maksymalna kwota to 5000 zł.')
             focusInput()
         }
         // w przeciwnym razie — natywny POST leci dalej (redirect do PayU)
+    }
+
+    // Dopełnia kwotę do progu bieżącego produktu (klik "+X zł" pod przyciskiem).
+    const topUp = () => {
+        setAmount(formatAmount(it.min))
+        setErr(null)
+        focusInput()
     }
 
     // Zmiana produktu wymaga najpierw przytrzymania go (HOLD_MS) — dopiero
@@ -143,12 +155,8 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
             // wyłączenie transition — wizualnie niezauważalny, „cichy" powrót
             // toru na pozycję środkową (teraz już z nowym produktem).
             setInstant(true)
-            setIdx((prev) => {
-                const next = (prev + delta + items.length) % items.length
-                setAmount(formatAmount(items[next].min))
-                setErr(null)
-                return next
-            })
+            setIdx((prev) => (prev + delta + items.length) % items.length)
+            setErr(null)
             setDragX(0)
             requestAnimationFrame(focusInput)
         }
@@ -207,7 +215,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                         style={{ transform: `translateX(calc(-33.3333% + ${dragX}px))`, transition: instant ? 'none' : undefined }}
                         onTransitionEnd={onTrackTransitionEnd}>
                         {[prevIt, it, nextIt].map((cardIt, i) => (
-                            <div key={i} className={`paywin__card is-in${i === 1 && unlocked ? ' is-unlocked' : ''}`}>
+                            <div key={i} className={`paywin__card${i === 1 && unlocked ? ' is-unlocked' : ''}`}>
                                 <div className={`paywin__visual${cardIt.is_svg ? ' is-svg' : ''}`}>
                                     <img src={cardIt.image} alt={cardIt.name} width="240" height="240"
                                         loading={i === 1 ? 'eager' : 'lazy'} fetchPriority={i === 1 ? 'high' : 'low'} decoding="async" />
@@ -236,10 +244,31 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                     <input type="hidden" name="_token" value={csrf} />
                     <input type="hidden" name="amount_pln" value={amount.replace(',', '.')} />
                     <input type="hidden" name="fundacja" value={foundations[fIdx]?.slug || ''} />
-                    <button type="submit" className="paywin__btn">Wesprzyj
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A" /><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" strokeWidth="1.5" strokeLinecap="round" /><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                    <button
+                        type="submit"
+                        className={`paywin__btn${belowMin ? ' paywin__btn--missing' : ''}`}
+                        disabled={overMax}
+                        onClick={(e) => {
+                            // Ważne: ZAWSZE type="submit" — nigdy nie przełączamy typu przycisku
+                            // w jego własnym onClick. Przeglądarka sprawdza type dopiero PO
+                            // wykonaniu handlerów, więc gdyby React zdążył przerenderować element
+                            // z type="button" na "submit" w tym samym kliknięciu, ten sam klik
+                            // wysyłałby od razu formularz (z jeszcze nieuzupełnioną kwotą).
+                            if (belowMin) { e.preventDefault(); topUp() }
+                        }}
+                    >
+                        {belowMin ? `Do wsparcia brakuje +${formatAmount(missing)} zł` : (
+                            <>
+                                Wesprzyj
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A" /><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" strokeWidth="1.5" strokeLinecap="round" /><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                            </>
+                        )}
                     </button>
                 </form>
+
+                {overMax && (
+                    <p className="paywin__missing">Maksymalna kwota to 5000 zł.</p>
+                )}
 
                 <div className="paywin__support">
                     <p className="paywin__support-label">Pieniądze trafią na konto fundacji Support Me</p>
