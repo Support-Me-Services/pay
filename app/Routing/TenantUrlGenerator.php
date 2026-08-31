@@ -12,6 +12,14 @@ use Illuminate\Routing\UrlGenerator;
  * Standardowo route() zwraca pierwszą trasę o danej nazwie niezależnie od hosta,
  * co generuje linki do nieprawidłowej domeny. Tutaj — przy kolizji nazw —
  * wybieramy trasę, której domena pasuje do hosta bieżącego żądania.
+ *
+ * Dodatkowo: lokalny dev rejestruje fallback `Route::domain('{host}')` dla
+ * dostępu z innego urządzenia w sieci (patrz StorefrontServiceProvider) —
+ * ten wzorzec nigdy nie pasuje dosłownie (`getDomain() === $host`), więc bez
+ * tego wszystkie linki spadałyby do PIERWSZEJ zarejestrowanej trasy o danej
+ * nazwie (czyli zawsze na „localhost"). Gdy nie ma dokładnego dopasowania,
+ * ale istnieje wariant `{host}`, generujemy go z hostem żądania jako
+ * parametrem domeny — link zostaje zgodny z adresem, pod którym otwarto stronę.
  */
 class TenantUrlGenerator extends UrlGenerator
 {
@@ -21,17 +29,30 @@ class TenantUrlGenerator extends UrlGenerator
             $host = $this->request?->getHost();
 
             if ($host !== null) {
-                $match = null;
+                $exactMatch = null;
+                $wildcardMatch = null;
 
                 foreach ($this->routes->getRoutes() as $route) {
-                    if ($route->getName() === $name && $route->getDomain() === $host) {
-                        $match = $route;
+                    if ($route->getName() !== $name) {
+                        continue;
+                    }
+                    if ($route->getDomain() === $host) {
+                        $exactMatch = $route;
                         break;
+                    }
+                    if ($route->getDomain() === '{host}') {
+                        $wildcardMatch = $route;
                     }
                 }
 
-                if ($match !== null) {
-                    return $this->toRoute($match, $parameters, $absolute);
+                if ($exactMatch !== null) {
+                    return $this->toRoute($exactMatch, $parameters, $absolute);
+                }
+
+                if ($wildcardMatch !== null) {
+                    $withHost = ['host' => $host] + (is_array($parameters) ? $parameters : [$parameters]);
+
+                    return $this->toRoute($wildcardMatch, $withHost, $absolute);
                 }
             }
         }

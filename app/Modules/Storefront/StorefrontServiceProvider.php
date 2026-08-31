@@ -21,6 +21,17 @@ class StorefrontServiceProvider extends ServiceProvider
             Route::domain($host)->middleware('web')->group(__DIR__.'/routes/web.php');
         }
 
+        // Lokalny dev: fallback dla dostępu z innego urządzenia w tej samej
+        // sieci (telefon po Wi-Fi pod adresem LAN zamiast "localhost") —
+        // bez tego Laravel nie dopasowuje ŻADNEJ trasy dla nieznanego hosta
+        // (404, zanim ResolveTenant zdąży cokolwiek zmapować). Rejestrowany
+        // JAKO OSTATNI, więc konkretne hosty (dopasowane wyżej) mają
+        // pierwszeństwo — to tylko fallback dla reszty. Tylko w local.
+        if ($this->app->environment('local')) {
+            Route::pattern('host', '.*');
+            Route::domain('{host}')->middleware('web')->group(__DIR__.'/routes/web.php');
+        }
+
         // Migracje ładowane bezwarunkowo — `migrate` z TENANT=please-support-me.com
         // utworzy tabele sklepu w wybranej bazie.
         $this->loadMigrationsFrom(__DIR__.'/database/migrations');

@@ -32,9 +32,20 @@ class ResolveTenant
     {
         $map = config('tenants.map');
 
-        // Brak/nieznany host => domyślny tenant (CLI lub nieobsługiwana domena).
-        if ($host === null || ! isset($map[$host])) {
+        if ($host === null) {
+            // Brak hosta (CLI) => domyślny tenant.
             $host = config('tenants.default');
+        } elseif (! isset($map[$host])) {
+            // Nieznany host: w środowisku lokalnym traktujemy to jak dostęp
+            // do sklepu z innego urządzenia w tej samej sieci (telefon po
+            // Wi-Fi pod adresem LAN, np. 192.168.x.x, zamiast "localhost") —
+            // zamiast 404/złego tenanta, mapujemy na ten sam tenant co
+            // localhost. Produkcja nigdy nie dostaje żądania na nieznany
+            // host (DNS wskazuje tylko znane domeny), więc to bezpieczne
+            // tylko w local. Poza local, nieznany host => domyślny tenant.
+            $host = app()->environment('local') && isset($map['localhost'])
+                ? 'localhost'
+                : config('tenants.default');
         }
 
         $tenant = $map[$host] ?? reset($map);
