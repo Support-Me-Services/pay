@@ -24,6 +24,8 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
     const IW = 150
 
     const it = items[idx] || {}
+    const prevIt = items[(idx - 1 + items.length) % items.length] || {}
+    const nextIt = items[(idx + 1) % items.length] || {}
 
     const focusInput = () => {
         const el = inputRef.current
@@ -57,16 +59,6 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
     const close = () => { window.location.href = mainUrl }
 
-    const go = (delta) => {
-        setIdx((prev) => {
-            const next = (prev + delta + items.length) % items.length
-            setAmount(items[next].min)
-            setErr(null)
-            return next
-        })
-        requestAnimationFrame(focusInput)
-    }
-
     const onAmount = (e) => {
         let v = e.target.value.replace(/\D+/g, '').replace(/^0+(?=\d)/, '')
         if (v.length > 4) v = v.slice(0, 4)
@@ -88,30 +80,133 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
         // w przeciwnym razie — natywny POST leci dalej (redirect do PayU)
     }
 
-    // Swipe produktów (touch) — próg = połowa mniejszej z (szerokość ekranu, 560).
+    // Zmiana produktu wymaga najpierw przytrzymania go (HOLD_MS) — dopiero
+    // po tym czasie (sygnalizowanym krótką wibracją i podświetleniem karty)
+    // przesunięcie w bok (dotyk lub mysz — Pointer Events obsługują oba
+    // jednym API) przełącza produkt. Próg przesunięcia jest celowo mały
+    // (SWIPE_PX) — samo przytrzymanie już chroni przed przypadkową zmianą,
+    // więc po odblokowaniu zmiana ma być łatwa i szybka, bez przeciągania
+    // przez cały ekran. Prawdziwa karuzela: tor z trzema kartami (poprzednia/
+    // bieżąca/następna) przesuwa się na żywo razem z gestem (dragX), a po
+    // puszczeniu płynnie dociąga do pełnego przejścia albo wraca do środka.
+    const HOLD_MS = 500
+    const SWIPE_PX = 40
+    const holdTimer = useRef(null)
     const swipe = useRef({ x: 0, active: false })
-    const onTouchStart = (e) => { swipe.current = { x: e.touches[0].clientX, active: true } }
-    const onTouchEnd = (e) => {
-        if (!swipe.current.active) return
-        const dx = e.changedTouches[0].clientX - swipe.current.x
-        const threshold = Math.min(window.innerWidth, 560) * 0.5
-        if (Math.abs(dx) >= threshold) go(dx < 0 ? 1 : -1)
-        swipe.current.active = false
+    const [unlocked, setUnlocked] = useState(false)
+
+    const trackRef = useRef(null)
+    const pendingDelta = useRef(0)
+    const [dragX, setDragX] = useState(0)
+    const [instant, setInstant] = useState(false)
+
+    const clearHold = () => {
+        if (holdTimer.current) { clearTimeout(holdTimer.current); holdTimer.current = null }
     }
+
+    useEffect(() => clearHold, [])
+
+    // Animuje tor do pełnego przejścia (delta=±1) albo z powrotem na środek
+    // (delta=0) — faktyczna zmiana idx następuje dopiero po zakończeniu tej
+    // animacji (patrz onTrackTransitionEnd), żeby przejście było widoczne.
+    const animateTo = (delta) => {
+        if (items.length < 2) return
+        const cardW = trackRef.current ? trackRef.current.clientWidth / 3 : window.innerWidth
+        pendingDelta.current = delta
+        setInstant(false)
+        setDragX(delta === 0 ? 0 : (delta > 0 ? -cardW : cardW))
+    }
+
+    const go = (delta) => animateTo(delta)
+
+    const onTrackTransitionEnd = (e) => {
+        if (e.target !== e.currentTarget) return
+        const delta = pendingDelta.current
+        pendingDelta.current = 0
+        if (delta !== 0) {
+            // Zawartość środkowej karty zmienia się w tym samym renderze co
+            // wyłączenie transition — wizualnie niezauważalny, „cichy" powrót
+            // toru na pozycję środkową (teraz już z nowym produktem).
+            setInstant(true)
+            setIdx((prev) => {
+                const next = (prev + delta + items.length) % items.length
+                setAmount(items[next].min)
+                setErr(null)
+                return next
+            })
+            setDragX(0)
+            requestAnimationFrame(focusInput)
+        }
+    }
+
+    const onStageDown = (e) => {
+        const x = e.clientX
+        const pointerId = e.pointerId
+        const target = e.currentTarget
+        clearHold()
+        holdTimer.current = setTimeout(() => {
+            swipe.current = { x, active: true }
+            setUnlocked(true)
+            setInstant(true)
+            if (navigator.vibrate) navigator.vibrate(200)
+            // Usztywnia element jako cel WSZYSTKICH kolejnych zdarzeń tego
+            // pointera — bez tego, przy przesuwaniu na spory dystans, naturalny
+            // gest łatwo "zjeżdża" pionowo poza wąski pas .paywin__stage (jego
+            // wysokość to tylko obrazek+nazwa, nie cały ekran), i pointerup
+            // gubi się na innym elemencie zamiast dotrzeć tutaj.
+            try { target.setPointerCapture(pointerId) } catch (err) { /* noop */ }
+        }, HOLD_MS)
+    }
+
+    const onStageMove = (e) => {
+        if (!swipe.current.active) return
+        setDragX(e.clientX - swipe.current.x)
+    }
+
+    const onStageUp = (e) => {
+        clearHold()
+        if (swipe.current.active) {
+            const dx = e.clientX - swipe.current.x
+            try { e.currentTarget.releasePointerCapture(e.pointerId) } catch (err) { /* noop */ }
+            animateTo(Math.abs(dx) >= SWIPE_PX ? (dx < 0 ? 1 : -1) : 0)
+        }
+        swipe.current.active = false
+        setUnlocked(false)
+    }
+
+    // Kursor/palec zjechał poza obszar produktu przed odblokowaniem — anuluj
+    // odliczanie (po odblokowaniu pointer capture sprawia, że to zdarzenie
+    // już się nie odpala mimo ruchu poza granice elementu).
+    const onStageLeave = () => { if (!swipe.current.active) clearHold() }
 
     return (
         <>
-            <div className="paywin" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+            <div className="paywin">
                 <button className="paywin__close" type="button" aria-label="Zamknij" onClick={close}>&times;</button>
 
-                <div className="paywin__stage">
-                    <div className="paywin__card is-in">
-                        <div className={`paywin__visual${it.is_svg ? ' is-svg' : ''}`}>
-                            <img src={it.image} alt={it.name} />
-                        </div>
-                        <div className="paywin__name">{it.name}</div>
+                <div className="paywin__stage" onPointerDown={onStageDown} onPointerMove={onStageMove} onPointerUp={onStageUp} onPointerLeave={onStageLeave}>
+                    {/* Tor z trzema kartami (poprzednia/bieżąca/następna) — podczas
+                        przeciągania przesuwa się na żywo razem z gestem (dragX),
+                        dając prawdziwy efekt karuzeli zamiast podmiany obrazka. */}
+                    <div ref={trackRef} className="paywin__track"
+                        style={{ transform: `translateX(calc(-33.3333% + ${dragX}px))`, transition: instant ? 'none' : undefined }}
+                        onTransitionEnd={onTrackTransitionEnd}>
+                        {[prevIt, it, nextIt].map((cardIt, i) => (
+                            <div key={i} className={`paywin__card is-in${i === 1 && unlocked ? ' is-unlocked' : ''}`}>
+                                <div className={`paywin__visual${cardIt.is_svg ? ' is-svg' : ''}`}>
+                                    <img src={cardIt.image} alt={cardIt.name} />
+                                </div>
+                                <div className="paywin__name">{cardIt.name}</div>
+                            </div>
+                        ))}
                     </div>
                 </div>
+
+                {items.length > 1 && (
+                    <div className="paywin__dots" aria-hidden="true">
+                        {items.map((_, i) => <span key={i} className={`paywin__dot${i === idx ? ' is-on' : ''}`} />)}
+                    </div>
+                )}
 
                 <label className="paywin__amount" htmlFor="payAmount">
                     <input id="payAmount" ref={inputRef} className="paywin__input" type="text" inputMode="numeric"
@@ -142,12 +237,6 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                     */}
                 </div>
 
-                {/* Kropki karuzeli produktów — tymczasowo wyłączone (kod zostaje, tylko wykomentowany)
-                <div className="paywin__dots" aria-hidden="true">
-                    {items.map((_, i) => <span key={i} className={`paywin__dot${i === idx ? ' is-on' : ''}`} />)}
-                </div>
-                */}
-
                 <form method="POST" action={it.action} className="paywin__form" onSubmit={onSubmit}>
                     <input type="hidden" name="_token" value={csrf} />
                     <input type="hidden" name="amount_pln" value={amount} />
@@ -159,9 +248,9 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
                 <p className="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Politykę prywatności (PDF)</a> i <a href={regulaminUrl} target="_blank" rel="noopener noreferrer">Regulamin</a></p>
 
-                {/* Podpowiedź „przesuń, aby zmienić produkt” — tymczasowo wyłączona (kod zostaje, tylko wykomentowany)
-                <div className="paywin__hint">‹ przesuń, aby zmienić produkt ›</div>
-                */}
+                {items.length > 1 && (
+                    <div className="paywin__hint">przytrzymaj produkt, aby zmienić</div>
+                )}
             </div>
         </>
     )
