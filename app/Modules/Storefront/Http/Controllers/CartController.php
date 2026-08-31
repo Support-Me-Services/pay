@@ -144,17 +144,17 @@ class CartController extends Controller
         // Koszyk z DOKŁADNIE jednym produktem -> wiadomo, czyją stronę
         // podziękowania pokazać; wieloproduktowy koszyk zostaje bez zmian
         // (fallback ogólny — nie zgadujemy, który produkt "wygrywa").
-        $distinctItemIds = $lines->pluck('item.id')->unique();
-        $singleItemId = $distinctItemIds->count() === 1 ? $distinctItemIds->first() : null;
+        $distinctItems = $lines->pluck('item')->unique('id');
+        $singleItem = $distinctItems->count() === 1 ? $distinctItems->first() : null;
 
         // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na podziekowanie.
         if (config('payment.bypass')) {
             $this->clear($handle);
 
-            return redirect()->route('main', array_filter(['thank-you-page' => 1, 'item' => $singleItemId]));
+            return redirect()->route('main', ['thank-you-page' => $singleItem?->slug ?? 1]);
         }
 
-        $order = Order::create(['product_id' => null, 'shop_item_id' => $singleItemId, 'amount' => $total, 'status' => 'pending']);
+        $order = Order::create(['product_id' => null, 'shop_item_id' => $singleItem?->id, 'amount' => $total, 'status' => 'pending']);
         $names = $lines->map(fn ($l) => $l['item']->name.' ×'.$l['qty'])->implode(', ');
         $ship = $shipMethod['label'].($shipPoint ? ' ('.$shipPoint.')' : '');
 

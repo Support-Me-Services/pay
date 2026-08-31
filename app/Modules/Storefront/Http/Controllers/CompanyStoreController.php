@@ -78,7 +78,7 @@ class CompanyStoreController extends Controller
         // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na
         // podziekowanie — ale nadal ze znanym produktem (wlasna tresc podziekowania).
         if (config('payment.bypass')) {
-            return redirect()->route('main', ['thank-you-page' => 1, 'item' => $item->id]);
+            return redirect()->route('main', ['thank-you-page' => $item->slug]);
         }
 
         $minPln = (int) max(1, ceil($item->min_amount / 100));

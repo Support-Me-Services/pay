@@ -28,14 +28,16 @@ class StorefrontController extends Controller
 
         return Inertia::render('Storefront/Home', [
             'beneficiariesUrl' => route('beneficiaries'),
-            // Modal „Dziękujemy" po powrocie z płatności (redirect ...?thank-you-page=1).
+            // Modal „Dziękujemy" po powrocie z płatności (redirect ...?thank-you-page=1
+            // dla ogólnego podziękowania, albo ...?thank-you-page={slug} dla konkretnego
+            // produktu — sama obecność parametru pokazuje modal).
             'showThanks' => (bool) request('thank-you-page'),
             'mecenasLogo' => $mecenasLogo,
             'mecenasUrl' => route('mecenasi.lokalnyrolnik'),
             'mainUrl' => route('main'),
-            // Wlasna tresc podziekowania danego produktu (Zbiorki), jesli znany
-            // (?item=ID) i ma cokolwiek zdefiniowane — inaczej null (fallback
-            // na dzisiejszy, sztywny tekst w Home.jsx).
+            // Wlasna tresc podziekowania danego produktu (Zbiorki), jesli
+            // wartoscia ?thank-you-page= jest jego slug i ma cokolwiek
+            // zdefiniowane — inaczej null (fallback na sztywny tekst w Home.jsx).
             'itemThanks' => $this->itemThanks(),
         ]);
     }
@@ -43,12 +45,12 @@ class StorefrontController extends Controller
     /** Definiowalna treść podziękowania konkretnego produktu (Zbiórki), jeśli ustawiona. */
     private function itemThanks(): ?array
     {
-        $itemId = request('item');
-        if (! $itemId) {
+        $slug = request('thank-you-page');
+        if (! $slug || $slug === '1') {
             return null;
         }
 
-        $item = ShopItem::with('mecenasOrganization')->find($itemId);
+        $item = ShopItem::with('mecenasOrganization')->where('slug', $slug)->first();
         if (! $item) {
             return null;
         }

@@ -29,8 +29,8 @@ class OrderReturnController extends Controller
 
         if ($order->status === 'paid') {
             // Podziekowanie pokazujemy jako modal na stronie glownej (/main),
-            // ze wlasna trescia danego produktu, jesli znane (shop_item_id).
-            return redirect()->route('main', array_filter(['thank-you-page' => 1, 'item' => $order->shop_item_id]));
+            // ze wlasna trescia danego produktu, jesli znany jego slug.
+            return redirect()->route('main', ['thank-you-page' => $order->shopItem?->slug ?? 1]);
         }
 
         if ($order->status === 'failed') {
