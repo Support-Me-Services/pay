@@ -9,6 +9,23 @@ const formatAmount = (n) => {
     return Number(n).toFixed(2).replace(/\.00$/, '').replace('.', ',')
 }
 
+// Pamięć ostatnio wpisanej kwoty per produkt (localStorage, po slug) — przy
+// wejściu/przełączeniu na dany produkt użytkownik widzi to, co ostatnio dla
+// niego wpisał, a nie zawsze próg minimalny. Owinięte w try/catch: podczas
+// SSR (Node) `window` w ogóle nie istnieje, a w trybie prywatnym przeglądarki
+// localStorage bywa niedostępny — w obu przypadkach po prostu brak pamięci.
+const AMOUNTS_KEY = 'paywin_amounts_v1'
+const loadAmounts = () => {
+    try { return JSON.parse(window.localStorage.getItem(AMOUNTS_KEY)) || {} } catch (e) { return {} }
+}
+const saveAmount = (slug, value) => {
+    try {
+        const all = loadAmounts()
+        all[slug] = value
+        window.localStorage.setItem(AMOUNTS_KEY, JSON.stringify(all))
+    } catch (e) { /* noop */ }
+}
+
 /**
  * Paywin „/" — darowizna na wybraną kwotę (model donacyjny).
  * WAŻNE (PayU): formularz to NATYWNY POST do shop.buy — pełne przeładowanie,
@@ -34,9 +51,10 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
     const prevIt = items[(idx - 1 + items.length) % items.length] || {}
     const nextIt = items[(idx + 1) % items.length] || {}
 
-    // Kwota NIE zmienia się przy zmianie produktu (patrz onTrackTransitionEnd) —
-    // zamiast tego przycisk Wesprzyj włącza/wyłącza się wg tego, czy starcza na
-    // próg bieżącego produktu, a pod nim widać ile jeszcze brakuje.
+    // Przycisk Wesprzyj włącza/wyłącza się wg tego, czy wpisana kwota starcza
+    // na próg bieżącego produktu (patrz niżej) — sama kwota zmienia się tylko
+    // przy przełączeniu produktu (onTrackTransitionEnd), i to na ostatnio
+    // zapamiętaną dla NIEGO wartość (loadAmounts), nie na sztywny próg.
     const numAmount = amount === '' ? NaN : parseFloat(amount.replace(',', '.'))
     const belowMin = isNaN(numAmount) || numAmount < it.min
     const overMax = !isNaN(numAmount) && numAmount > 5000
@@ -65,6 +83,16 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
+    // Stan początkowy `amount` musi być deterministyczny (identyczny na
+    // serwerze przy SSR i na kliencie przy pierwszym renderze) — dopiero PO
+    // hydracji, w efekcie (czyli tylko po stronie klienta), podmieniamy go na
+    // zapamiętaną kwotę dla startowego produktu, jeśli taka jest w pamięci.
+    useEffect(() => {
+        const remembered = loadAmounts()[it.slug]
+        if (remembered !== undefined) setAmount(remembered)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
     // Wyśrodkowanie aktywnej fundacji (transform track wg szerokości viewportu).
     useLayoutEffect(() => {
         const w = fndVpRef.current?.clientWidth || 0
@@ -78,6 +106,12 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
     const close = () => { window.location.href = mainUrl }
 
+    // Ustawia kwotę i zapamiętuje ją jako ostatnio wpisaną dla BIEŻĄCEGO produktu.
+    const setAmountRemembered = (v) => {
+        setAmount(v)
+        saveAmount(it.slug, v)
+    }
+
     const onAmount = (e) => {
         // Pozwól na grosze — przecinek (albo kropka, traktowana tak samo), max 2 cyfry po nim.
         let v = e.target.value.replace(/\./g, ',').replace(/[^\d,]/g, '')
@@ -88,7 +122,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
         if (intPart.length > 4) intPart = intPart.slice(0, 4)
         if (decPart !== undefined) decPart = decPart.slice(0, 2)
         v = decPart !== undefined ? `${intPart},${decPart}` : intPart
-        setAmount(v)
+        setAmountRemembered(v)
         setErr(null)
     }
 
@@ -102,7 +136,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
 
     // Dopełnia kwotę do progu bieżącego produktu (klik "+X zł" pod przyciskiem).
     const topUp = () => {
-        setAmount(formatAmount(it.min))
+        setAmountRemembered(formatAmount(it.min))
         setErr(null)
         focusInput()
     }
@@ -155,7 +189,14 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
             // wyłączenie transition — wizualnie niezauważalny, „cichy" powrót
             // toru na pozycję środkową (teraz już z nowym produktem).
             setInstant(true)
-            setIdx((prev) => (prev + delta + items.length) % items.length)
+            setIdx((prev) => {
+                const next = (prev + delta + items.length) % items.length
+                // Brak zapamiętanej kwoty dla nowego produktu -> zostaw to, co
+                // już było wpisane w polu, zamiast podstawiać jego próg minimalny.
+                const remembered = loadAmounts()[items[next].slug]
+                if (remembered !== undefined) setAmount(remembered)
+                return next
+            })
             setErr(null)
             setDragX(0)
             requestAnimationFrame(focusInput)

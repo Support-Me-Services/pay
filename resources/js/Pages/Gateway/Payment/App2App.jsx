@@ -56,6 +56,18 @@ const PAGE_CSS = `
 @keyframes smspin{ to{ transform:rotate(360deg); } }
 `
 
+// Pamięć danych darczyńcy (localStorage) — te same imię/nazwisko/e-mail przy
+// kolejnej wpłacie, bez przepisywania. Owinięte w try/catch: podczas SSR
+// (Node) `window` w ogóle nie istnieje, a w trybie prywatnym przeglądarki
+// localStorage bywa niedostępny — w obu przypadkach po prostu brak pamięci.
+const DONOR_KEY = 'paywin_donor_v1'
+const loadDonor = () => {
+    try { return JSON.parse(window.localStorage.getItem(DONOR_KEY)) || {} } catch (e) { return {} }
+}
+const saveDonor = (donor) => {
+    try { window.localStorage.setItem(DONOR_KEY, JSON.stringify(donor)) } catch (e) { /* noop */ }
+}
+
 /**
  * Hostowana strona płatności app2app (/pay/{uuid}) — BLIK Level 0 + pay-by-link (PBL).
  * Odwzorowuje payment/app2app.blade.php 1:1. Akcje BLIK/bank idą fetch-em (JSON) do
@@ -75,6 +87,16 @@ export default function App2App() {
     const [email, setEmail] = useState('')
     const [donorError, setDonorError] = useState('')
     const pollingRef = useRef(false)
+
+    // Stan początkowy pól musi być deterministyczny (identyczny na serwerze
+    // przy SSR i na kliencie przy pierwszym renderze) — dopiero PO hydracji,
+    // w efekcie (czyli tylko po stronie klienta), podstawiamy zapamiętane dane.
+    useEffect(() => {
+        const remembered = loadDonor()
+        if (remembered.firstName) setFirstName(remembered.firstName)
+        if (remembered.lastName) setLastName(remembered.lastName)
+        if (remembered.email) setEmail(remembered.email)
+    }, [])
 
     // Dane darczyńcy wymagane przed dowolną metodą płatności (wymóg PayU).
     const validateDonor = () => {
@@ -197,18 +219,18 @@ export default function App2App() {
                                     <div className="sm-field">
                                         <label htmlFor="donor-first-name">Imię</label>
                                         <input id="donor-first-name" type="text" name="firstName" autoComplete="given-name"
-                                            value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                                            value={firstName} onChange={(e) => { setFirstName(e.target.value); saveDonor({ firstName: e.target.value, lastName, email }) }} />
                                     </div>
                                     <div className="sm-field">
                                         <label htmlFor="donor-last-name">Nazwisko</label>
                                         <input id="donor-last-name" type="text" name="lastName" autoComplete="family-name"
-                                            value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                                            value={lastName} onChange={(e) => { setLastName(e.target.value); saveDonor({ firstName, lastName: e.target.value, email }) }} />
                                     </div>
                                 </div>
                                 <div className="sm-field">
                                     <label htmlFor="donor-email">E-mail</label>
                                     <input id="donor-email" type="email" name="email" autoComplete="email" inputMode="email"
-                                        value={email} onChange={(e) => setEmail(e.target.value)} />
+                                        value={email} onChange={(e) => { setEmail(e.target.value); saveDonor({ firstName, lastName, email: e.target.value }) }} />
                                 </div>
                             </div>
                             {donorError && <div className="sm-err">{donorError}</div>}
