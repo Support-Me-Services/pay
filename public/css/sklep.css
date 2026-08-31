@@ -72,8 +72,6 @@
 }
 .paywin__btn:hover{ filter:brightness(1.14); }
 
-.paywin__hint{ font-size:12px; color:#9aa7b6; letter-spacing:.02em; }
-
 /* niskie ekrany (klawiatura na telefonie) — kompaktowo, by KUP był widoczny */
 @media (max-height:680px){
     .paywin{ gap:12px; justify-content:flex-start; padding-top:max(16px,env(safe-area-inset-top)); }
@@ -85,7 +83,6 @@
 @media (max-height:540px){
     .paywin__visual{ width:96px; height:96px; }
     .paywin__input{ font-size:64px; }
-    .paywin__hint{ display:none; }
 }
 
 /* ---- Sekcja wsparcia + karuzela fundacji ---- */

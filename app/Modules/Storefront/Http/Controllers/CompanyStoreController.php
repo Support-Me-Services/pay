@@ -52,7 +52,7 @@ class CompanyStoreController extends Controller
             'items' => $items->map(fn (ShopItem $i) => [
                 'slug' => $i->slug,
                 'name' => $i->name,
-                'min' => $i->minAmountPln(),
+                'min' => round($i->min_amount / 100, 2),
                 'image' => asset($i->image),
                 'is_svg' => $i->isSvg(),
                 'action' => route('shop.buy', $i->slug),
@@ -81,17 +81,19 @@ class CompanyStoreController extends Controller
             return redirect()->route('main', ['thank-you-page' => $item->slug]);
         }
 
-        $minPln = (int) max(1, ceil($item->min_amount / 100));
+        $minPln = round(max(1, $item->min_amount) / 100, 2);
+        $minPlnLabel = rtrim(rtrim(number_format($minPln, 2, ',', ' '), '0'), ',');
 
         $validated = $request->validate([
-            'amount_pln' => ['required', 'integer', 'min:'.$minPln, 'max:5000'],
+            'amount_pln' => ['required', 'numeric', 'decimal:0,2', 'min:'.$minPln, 'max:5000'],
         ], [
-            'amount_pln.min' => "Minimalna kwota dla „{$item->name}” to {$minPln} zł.",
+            'amount_pln.min' => "Minimalna kwota dla „{$item->name}” to {$minPlnLabel} zł.",
             'amount_pln.required' => 'Podaj kwotę.',
-            'amount_pln.integer' => 'Kwota musi być liczbą całkowitą (zł).',
+            'amount_pln.numeric' => 'Kwota musi być liczbą.',
+            'amount_pln.decimal' => 'Kwota może mieć maksymalnie 2 miejsca po przecinku.',
         ]);
 
-        $amount = $validated['amount_pln'] * 100; // grosze
+        $amount = (int) round($validated['amount_pln'] * 100); // grosze
 
         $order = Order::create(['product_id' => null, 'shop_item_id' => $item->id, 'amount' => $amount, 'status' => 'pending']);
 

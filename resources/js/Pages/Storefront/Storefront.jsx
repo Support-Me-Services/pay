@@ -2,6 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { usePage } from '@inertiajs/react'
 import StorefrontLayout from '@/Layouts/StorefrontLayout'
 
+// Kwota wpisywana z przecinkiem (grosze) — 1,01 zł itd. Liczba -> tekst PL,
+// bez zbędnego ",00" dla kwot całkowitych.
+const formatAmount = (n) => {
+    if (n == null || isNaN(n)) return ''
+    return Number(n).toFixed(2).replace(/\.00$/, '').replace('.', ',')
+}
+
 /**
  * Paywin „/" — darowizna na wybraną kwotę (model donacyjny).
  * WAŻNE (PayU): formularz to NATYWNY POST do shop.buy — pełne przeładowanie,
@@ -14,7 +21,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
     const serverErr = page.errors?.amount_pln || page.flash?.error || null
 
     const [idx, setIdx] = useState(startIdx || 0)
-    const [amount, setAmount] = useState(items[startIdx || 0]?.min ?? '')
+    const [amount, setAmount] = useState(formatAmount(items[startIdx || 0]?.min))
     const [fIdx, setFIdx] = useState(0)
     const [err, setErr] = useState(serverErr)
 
@@ -60,17 +67,25 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
     const close = () => { window.location.href = mainUrl }
 
     const onAmount = (e) => {
-        let v = e.target.value.replace(/\D+/g, '').replace(/^0+(?=\d)/, '')
-        if (v.length > 4) v = v.slice(0, 4)
+        // Pozwól na grosze — przecinek (albo kropka, traktowana tak samo), max 2 cyfry po nim.
+        let v = e.target.value.replace(/\./g, ',').replace(/[^\d,]/g, '')
+        const firstComma = v.indexOf(',')
+        if (firstComma !== -1) v = v.slice(0, firstComma + 1) + v.slice(firstComma + 1).replace(/,/g, '')
+        let [intPart, decPart] = v.split(',')
+        intPart = intPart.replace(/^0+(?=\d)/, '')
+        if (intPart.length > 4) intPart = intPart.slice(0, 4)
+        if (decPart !== undefined) decPart = decPart.slice(0, 2)
+        v = decPart !== undefined ? `${intPart},${decPart}` : intPart
         setAmount(v)
-        if (v !== '' && parseInt(v, 10) >= it.min) setErr(null)
+        const num = parseFloat(v.replace(',', '.'))
+        if (v !== '' && !isNaN(num) && num >= it.min) setErr(null)
     }
 
     const onSubmit = (e) => {
-        const v = parseInt(amount, 10)
+        const v = parseFloat(amount.replace(',', '.'))
         if (isNaN(v) || v < it.min) {
             e.preventDefault()
-            setErr(`Minimalna kwota dla „${it.name}” to ${it.min} zł.`)
+            setErr(`Minimalna kwota dla „${it.name}” to ${formatAmount(it.min)} zł.`)
             focusInput()
         } else if (v > 5000) {
             e.preventDefault()
@@ -130,7 +145,7 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
             setInstant(true)
             setIdx((prev) => {
                 const next = (prev + delta + items.length) % items.length
-                setAmount(items[next].min)
+                setAmount(formatAmount(items[next].min))
                 setErr(null)
                 return next
             })
@@ -194,7 +209,8 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                         {[prevIt, it, nextIt].map((cardIt, i) => (
                             <div key={i} className={`paywin__card is-in${i === 1 && unlocked ? ' is-unlocked' : ''}`}>
                                 <div className={`paywin__visual${cardIt.is_svg ? ' is-svg' : ''}`}>
-                                    <img src={cardIt.image} alt={cardIt.name} />
+                                    <img src={cardIt.image} alt={cardIt.name} width="240" height="240"
+                                        loading={i === 1 ? 'eager' : 'lazy'} fetchPriority={i === 1 ? 'high' : 'low'} decoding="async" />
                                 </div>
                                 <div className="paywin__name">{cardIt.name}</div>
                             </div>
@@ -209,12 +225,21 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                 )}
 
                 <label className="paywin__amount" htmlFor="payAmount">
-                    <input id="payAmount" ref={inputRef} className="paywin__input" type="text" inputMode="numeric"
+                    <input id="payAmount" ref={inputRef} className="paywin__input" type="text" inputMode="decimal"
                         autoComplete="off" autoFocus value={amount} onChange={onAmount} aria-label="Kwota wsparcia w złotych" />
                     <span className="paywin__zl">zł</span>
                 </label>
 
                 <p className="paywin__err" role="alert" hidden={!err}>{err}</p>
+
+                <form method="POST" action={it.action} className="paywin__form" onSubmit={onSubmit}>
+                    <input type="hidden" name="_token" value={csrf} />
+                    <input type="hidden" name="amount_pln" value={amount.replace(',', '.')} />
+                    <input type="hidden" name="fundacja" value={foundations[fIdx]?.slug || ''} />
+                    <button type="submit" className="paywin__btn">Wesprzyj
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A" /><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" strokeWidth="1.5" strokeLinecap="round" /><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                    </button>
+                </form>
 
                 <div className="paywin__support">
                     <p className="paywin__support-label">Pieniądze trafią na konto fundacji Support Me</p>
@@ -237,23 +262,10 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                     */}
                 </div>
 
-                <form method="POST" action={it.action} className="paywin__form" onSubmit={onSubmit}>
-                    <input type="hidden" name="_token" value={csrf} />
-                    <input type="hidden" name="amount_pln" value={amount} />
-                    <input type="hidden" name="fundacja" value={foundations[fIdx]?.slug || ''} />
-                    <button type="submit" className="paywin__btn">Wesprzyj
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-6.7-4.35-9.33-8.04C.9 10.27 2.05 6.5 5.4 6.5c1.95 0 3.32 1.13 4.45 2.64C11.28 7.63 12.65 6.5 14.6 6.5c3.35 0 4.5 3.77 2.73 6.46C18.7 16.65 12 21 12 21z" fill="#FF5C9A" /><path d="M16.9 6.7a4.4 4.4 0 0 1 0 5.9" stroke="#FF5C9A" strokeWidth="1.5" strokeLinecap="round" /><path d="M18.9 5a6.9 6.9 0 0 1 0 9.3" stroke="#FFA8CC" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                    </button>
-                </form>
-
                 <p className="paywin__policy">Klikając „Wesprzyj" akceptujesz <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Politykę prywatności (PDF)</a> i <a href={regulaminUrl} target="_blank" rel="noopener noreferrer">Regulamin</a></p>
-
-                {items.length > 1 && (
-                    <div className="paywin__hint">przytrzymaj produkt, aby zmienić</div>
-                )}
             </div>
         </>
     )
 }
 
-Storefront.layout = (page) => <StorefrontLayout>{page}</StorefrontLayout>
+Storefront.layout = (page) => <StorefrontLayout needsDisplayFont={false}>{page}</StorefrontLayout>

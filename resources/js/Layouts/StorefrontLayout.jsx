@@ -21,6 +21,11 @@ export default function StorefrontLayout({ children, ...overrides }) {
     const title = overrides.title ?? page.pageTitle ?? DEFAULT_TITLE
     const metaDescription = overrides.metaDescription ?? page.pageDescription ?? DEFAULT_DESC
     const css = overrides.css ?? page.css ?? null
+    // Libre Baskerville jest używana wyłącznie w sekcjach marketingowych (lp-hero,
+    // lp-head, lp-step...) — strony bez takich sekcji (np. paywin) nie muszą jej
+    // pobierać. Domyślnie true, żeby nic nie przestało działać na stronach, które
+    // faktycznie jej używają.
+    const needsDisplayFont = overrides.needsDisplayFont ?? page.needsDisplayFont ?? true
     const shopHandle = overrides.shopHandle ?? page.shopHandle ?? null
     const ownerName = overrides.ownerName ?? page.ownerName ?? null
     const cartCount = overrides.cartCount ?? page.cartCount ?? 0
@@ -61,7 +66,7 @@ export default function StorefrontLayout({ children, ...overrides }) {
                 {seo.ogImage && <meta name="twitter:image" content={seo.ogImage} />}
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-                <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+                <link href={`https://fonts.googleapis.com/css2?${needsDisplayFont ? 'family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&' : ''}family=Inter:wght@400;500;600;700&display=swap`} rel="stylesheet" />
                 <link rel="stylesheet" href="/css/landing.css" />
                 {css && <link rel="stylesheet" href={css} />}
             </Head>
