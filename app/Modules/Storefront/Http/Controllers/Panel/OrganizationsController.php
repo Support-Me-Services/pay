@@ -2,31 +2,71 @@
 
 namespace App\Modules\Storefront\Http\Controllers\Panel;
 
+use App\Models\User;
 use App\Modules\Storefront\Http\Controllers\Controller;
 use App\Modules\Storefront\Models\Organization;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 /**
- * Panel: organizacje zalogowanego konta — lista/przełącznik aktywnej,
- * tworzenie nowej, oraz self-service włącz/wyłącz 5 sekcji AKTYWNEJ
- * organizacji (bez udziału super-usera — patrz też Panel\UsersController,
- * globalny podgląd nad wszystkimi organizacjami).
+ * Panel: jeden ekran „Organizacja" — łączy trzy dawniej osobne strony:
+ * lista/przełącznik organizacji konta + tworzenie nowej, self-service
+ * ustawienia AKTYWNEJ organizacji (nazwa + widoczność 5 sekcji), oraz —
+ * wyłącznie dla super-usera — globalny podgląd/nadzór nad WSZYSTKIMI
+ * organizacjami z możliwością przepięcia administratora (patrz
+ * Panel\UsersController::updateSections/updateOwner, akcje wywoływane
+ * z tego samego widoku).
  */
 class OrganizationsController extends Controller
 {
     public function index(Request $request)
     {
-        $active = $request->user()->activeOrganization($request);
+        $user = $request->user();
+        $active = $user->activeOrganization($request);
 
-        return Inertia::render('Panel/Organizations/Index', [
-            'organizations' => $request->user()->organizations()->orderBy('name')->get()
+        $data = [
+            'organizations' => $user->organizations()->orderBy('name')->get()
                 ->map(fn (Organization $o) => ['id' => $o->id, 'name' => $o->name, 'handle' => $o->handle])
                 ->values(),
             'activeId' => $active?->id,
             'switchUrl' => route('panel.organizations.switch'),
             'storeUrl' => route('panel.organizations.store'),
-        ]);
+            'activeOrg' => null,
+            'allOrganizations' => null,
+        ];
+
+        if ($active) {
+            $data['activeOrg'] = [
+                'name' => $active->name,
+                'nameUpdateUrl' => route('panel.organizations.name'),
+                'sections' => collect(Organization::SECTIONS)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
+                'enabledSections' => $active->enabled_sections ?? array_keys(Organization::SECTIONS),
+                'sectionsUpdateUrl' => route('panel.organizations.settings.update'),
+            ];
+        }
+
+        if ($user->is_admin) {
+            $allOrgs = Organization::with('owner')->orderBy('name')->get();
+
+            $data['allOrganizations'] = [
+                'sections' => collect(Organization::SECTIONS)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
+                'users' => User::orderBy('name')->get(['id', 'name', 'email'])
+                    ->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email])
+                    ->values(),
+                'items' => $allOrgs->map(fn (Organization $o) => [
+                    'id' => $o->id,
+                    'name' => $o->name,
+                    'ownerId' => $o->user_id,
+                    'ownerEmail' => $o->owner->email,
+                    'handle' => $o->handle,
+                    'enabled_sections' => $o->enabled_sections ?? array_keys(Organization::SECTIONS),
+                    'update_url' => route('panel.users.sections', $o),
+                    'owner_url' => route('panel.users.owner', $o),
+                ])->values(),
+            ];
+        }
+
+        return Inertia::render('Panel/Organizations/Index', $data);
     }
 
     /** Tworzy nową organizację temu samemu kontu i ustawia ją jako aktywną. */
@@ -59,21 +99,6 @@ class OrganizationsController extends Controller
         $request->session()->put('active_organization_id', $org->id);
 
         return redirect()->route('panel.dashboard')->with('success', 'Aktywna organizacja: ' . $org->name . '.');
-    }
-
-    /** Self-service: widoczność 5 sekcji AKTYWNEJ organizacji. */
-    public function settings(Request $request)
-    {
-        $org = $request->user()->activeOrganization($request);
-        abort_unless($org, 404);
-
-        return Inertia::render('Panel/Organizations/Settings', [
-            'organizationName' => $org->name,
-            'nameUpdateUrl' => route('panel.organizations.name'),
-            'sections' => collect(Organization::SECTIONS)->map(fn ($label, $key) => ['key' => $key, 'label' => $label])->values(),
-            'enabledSections' => $org->enabled_sections ?? array_keys(Organization::SECTIONS),
-            'updateUrl' => route('panel.organizations.settings.update'),
-        ]);
     }
 
     /** Self-service: zmiana nazwy AKTYWNEJ organizacji (handle/URL publiczny bez zmian). */

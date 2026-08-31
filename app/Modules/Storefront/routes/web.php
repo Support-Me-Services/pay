@@ -178,18 +178,17 @@ Route::prefix('panel')->name('panel.')->group(function () {
         Route::post('/applications/{application}/status', [Panel\ApplicationController::class, 'updateStatus'])->name('applications.status');
         Route::delete('/applications/{application}', [Panel\ApplicationController::class, 'destroy'])->name('applications.destroy');
 
-        // Super-user: globalny podgląd/nadzór nad WSZYSTKIMI organizacjami
-        // (bezpiecznik, bramkowane is_admin w kontrolerze) — nie główny mechanizm.
-        Route::get('/uzytkownicy', [Panel\UsersController::class, 'index'])->name('users.index');
+        // Super-user: akcje nad WSZYSTKIMI organizacjami (bramkowane is_admin
+        // w kontrolerze) — dane renderuje jeden ekran OrganizationsController::index.
         Route::post('/uzytkownicy/{organization}/sekcje', [Panel\UsersController::class, 'updateSections'])->name('users.sections');
         Route::post('/uzytkownicy/{organization}/wlasciciel', [Panel\UsersController::class, 'updateOwner'])->name('users.owner');
 
-        // Moje organizacje — lista/przełącznik aktywnej, zakładanie nowej,
-        // self-service włącz/wyłącz sekcji AKTYWNEJ organizacji.
+        // Organizacja — jeden ekran: lista/przełącznik aktywnej + zakładanie
+        // nowej, self-service ustawienia AKTYWNEJ (nazwa, widoczność sekcji),
+        // i (tylko super-user) globalny podgląd/nadzór nad wszystkimi.
         Route::get('/organizacje', [Panel\OrganizationsController::class, 'index'])->name('organizations.index');
         Route::post('/organizacje', [Panel\OrganizationsController::class, 'store'])->name('organizations.store');
         Route::post('/organizacje/przelacz', [Panel\OrganizationsController::class, 'switchTo'])->name('organizations.switch');
-        Route::get('/organizacje/ustawienia', [Panel\OrganizationsController::class, 'settings'])->name('organizations.settings');
         Route::post('/organizacje/ustawienia', [Panel\OrganizationsController::class, 'updateSettings'])->name('organizations.settings.update');
         Route::post('/organizacje/nazwa', [Panel\OrganizationsController::class, 'updateName'])->name('organizations.name');
     });

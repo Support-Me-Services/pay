@@ -121,13 +121,9 @@ class HandleInertiaRequests extends Middleware
             $nav[] = ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')];
         }
 
-        $nav[] = ['label' => 'Moje organizacje', 'href' => route('panel.organizations.index'), 'active' => $request->routeIs('panel.organizations.index')];
-        if ($org) {
-            $nav[] = ['label' => 'Ustawienia organizacji', 'href' => route('panel.organizations.settings'), 'active' => $request->routeIs('panel.organizations.settings*')];
-        }
-        if ($user->is_admin) {
-            $nav[] = ['label' => 'Wszystkie organizacje', 'href' => route('panel.users.index'), 'active' => $request->routeIs('panel.users.*')];
-        }
+        // Jeden ekran „Organizacja" — łączy dawne „Moje organizacje", „Ustawienia
+        // organizacji" i (dla super-usera) „Wszystkie organizacje".
+        $nav[] = ['label' => 'Organizacja', 'href' => route('panel.organizations.index'), 'active' => $request->routeIs('panel.organizations.index')];
 
         return [
             'brand' => config('shop.name', 'SupportME'),
