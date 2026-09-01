@@ -64,9 +64,17 @@ export default function StorefrontLayout({ children, ...overrides }) {
                 <meta name="twitter:title" content={title} />
                 <meta name="twitter:description" content={metaDescription} />
                 {seo.ogImage && <meta name="twitter:image" content={seo.ogImage} />}
-                <link rel="preconnect" href="https://fonts.googleapis.com" />
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-                <link href={`https://fonts.googleapis.com/css2?${needsDisplayFont ? 'family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&' : ''}family=Inter:wght@400;500;600;700&display=swap`} rel="stylesheet" />
+                {/* Inter hostowany lokalnie (public/css/fonts-inter.css) — zero zależności
+                    od fonts.googleapis.com/fonts.gstatic.com, żeby formularz nie czekał na
+                    dodatkowe round-tripy do obcej domeny na wolnym/niestabilnym 3G. */}
+                <link rel="stylesheet" href="/css/fonts-inter.css" />
+                {needsDisplayFont && (
+                    <>
+                        <link rel="preconnect" href="https://fonts.googleapis.com" />
+                        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+                        <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+                    </>
+                )}
                 <link rel="stylesheet" href="/css/landing.css" />
                 {css && <link rel="stylesheet" href={css} />}
             </Head>

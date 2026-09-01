@@ -61,7 +61,7 @@ export default function Home({ beneficiariesUrl, showThanks, mecenasLogo, mecena
             <section className="lp-hero">
                 <div className="lp-hero__inner">
                     <div className="lp-hero__copy">
-                        <h1>Technologia,<br className="br-m" />która <br className="br-d" />pomaga czynić dobro</h1>
+                        <h1>Technologia, <br className="br-m" />która <br className="br-d" />pomaga czynić dobro</h1>
                         <p>Łączymy ludzi, wartości<br className="br-m" /> i nowoczesne płatności,<br />aby wspieranie ważnych inicjatyw było prostsze<br className="br-d" /> niż kiedykolwiek wcześniej.</p>
                         <div className="lp-badges">
                             <a href="#"><img src="/img/landing/appstore.png" alt="Pobierz w App Store" /></a>
