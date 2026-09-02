@@ -232,7 +232,12 @@ export default function Index({ organizations, activeId, switchUrl, storeUrl, ac
 
             <MyOrganizations organizations={organizations} activeId={activeId} switchUrl={switchUrl} storeUrl={storeUrl} />
 
-            {activeOrg && <ActiveOrgSettings activeOrg={activeOrg} />}
+            {/* key={activeId} — wymusza pełny remount przy zmianie aktywnej
+                organizacji (przełączenie, założenie nowej), inaczej stan
+                zaznaczonych checkboxów (useState) zostaje z POPRZEDNIEJ
+                organizacji, mimo że propsy (activeOrg.enabledSections) się
+                zmieniły — useState czyta initial value tylko przy montowaniu. */}
+            {activeOrg && <ActiveOrgSettings key={activeId} activeOrg={activeOrg} />}
 
             {allOrganizations && <AllOrganizations allOrganizations={allOrganizations} />}
         </>

@@ -80,6 +80,10 @@ class OrganizationsController extends Controller
             'user_id' => $request->user()->id,
             'name' => $data['name'],
             'handle' => Organization::uniqueHandle($data['name']),
+            // Nowa organizacja startuje z pustą widocznością sekcji (nic
+            // zaznaczone) — świadomy wybór, nie domyślne "wszystko widoczne"
+            // (które oznacza `null`, patrz Organization::canSee()).
+            'enabled_sections' => [],
         ]);
 
         $request->session()->put('active_organization_id', $org->id);
