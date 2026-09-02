@@ -28,6 +28,7 @@ services:
       - ./entrypoint.sh:/entrypoint.sh:ro
     ports:
       - "8000:8000"
+      - "9091:9091"  # PoC Fazy 1 — serwer gRPC gateway-svc (RoadRunner), obok php artisan serve
     depends_on:
       db:
         condition: service_healthy

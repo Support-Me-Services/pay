@@ -1,0 +1,13 @@
+version: "3"
+
+# PoC Fazy 1 — serwer gRPC dla gateway-svc pod RoadRunner, URUCHAMIANY OBOK
+# istniejącego "php artisan serve" (dual-run, zero zmian w dzisiejszych
+# trasach). Patrz proto/README.md i dokument architektury, sekcja "Kontrakty
+# gRPC". Port 9091 — 9090 jest już zajęty przez core-svc w ecosystem/.
+server:
+  command: "php grpc-worker.php"
+
+grpc:
+  listen: "tcp://0.0.0.0:9091"
+  proto:
+    - "proto/health/v1/health.proto"

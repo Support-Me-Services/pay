@@ -2,7 +2,7 @@ FROM php:8.2-cli
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libonig-dev libzip-dev unzip git ca-certificates \
- && docker-php-ext-install pdo_mysql mbstring zip pcntl \
+ && docker-php-ext-install pdo_mysql mbstring zip pcntl sockets \
  && docker-php-ext-enable opcache \
  && rm -rf /var/lib/apt/lists/*
 
@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # "Wesprzyj" (self-call sklepu do wlasnego API bramki, /api/v1/transactions)
 # blokuje sie na 10s (timeout GatewayClient) i konczy bledem zamiast pokazac
 # mock PayU. Z pcntl serwer widelkuje polaczenie per request.
+#
+# sockets: wymagane przez spiral/roadrunner-worker (PoC serwera gRPC dla
+# gateway-svc, Faza 1 ekosystemu mikroserwisow) - relay do procesu RoadRunner.
 
 # Środowisko z Avast HTTPS-scanningiem (MITM TLS własnym root CA). Ten root jest
 # zaufany w Windows, ale nie w kontenerze — bez tego composer nie pobierze
