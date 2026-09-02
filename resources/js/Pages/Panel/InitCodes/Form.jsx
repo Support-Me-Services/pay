@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import { Link, useForm } from '@inertiajs/react'
 import PanelLayout from '@/Layouts/PanelLayout'
-import QrCodeImage, { qrImageUrl } from '@/Components/QrCodeImage'
+import QrCodeImage, { openQrPrintSheet } from '@/Components/QrCodeImage'
 import CopyButton from '@/Components/CopyButton'
+
+// Ile sztuk kodu QR zmieści się na jednej kartce A4 do wyboru w formularzu
+// wydruku — rozmiar kodu dopasowuje się automatycznie do wybranej liczby.
+const PRINT_COUNT_OPTIONS = [1, 2, 4, 6, 8, 9, 12, 16, 20, 24, 30]
 
 /** Panel „Tagi/QR" (organizacji) — dodawanie/edycja kodu, cel: konkretny produkt. */
 export default function Form({ item, shopItems, storeUrl, indexUrl }) {
     const editing = !!item
+    const [printCount, setPrintCount] = useState(20)
 
     const form = useForm({
         label: item?.label ?? '',
@@ -81,7 +87,17 @@ export default function Form({ item, shopItems, storeUrl, indexUrl }) {
                                 <div style={{ marginTop: 8 }}>
                                     <QrCodeImage url={item.qr_url} size={160} />
                                     <div className="form-hint">Kliknij kod, aby powiększyć na cały ekran (ułatwia skanowanie).</div>
-                                    <div><a href={qrImageUrl(item.qr_url, 640)} target="_blank" rel="noopener noreferrer">Pobierz QR</a></div>
+                                    <div className="d-flex gap-1 mt-1" style={{ alignItems: 'center' }}>
+                                        <label htmlFor="print_count" className="text-muted" style={{ fontSize: 13 }}>Ile sztuk na kartce A4:</label>
+                                        <select id="print_count" value={printCount} onChange={(e) => setPrintCount(Number(e.target.value))} style={{ width: 'auto' }}>
+                                            {PRINT_COUNT_OPTIONS.map((n) => <option key={n} value={n}>{n}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <a href="#" onClick={(e) => { e.preventDefault(); openQrPrintSheet(item.qr_url, item.label, printCount) }}>
+                                            Pobierz QR (PDF, arkusz A4 — {printCount} szt.)
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         )}
