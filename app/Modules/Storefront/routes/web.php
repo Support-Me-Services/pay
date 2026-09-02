@@ -92,8 +92,6 @@ Route::get('/inwestorzy', fn () => Inertia::render('Storefront/Inwestorzy', [
     'pageDescription' => 'Inwestorzy i akcjonariusze SupportMe — wierzymy, że kapitał może służyć dobru.',
 ]))->name('investors');
 
-Route::get('/t/{tag_uid}', [StorefrontController::class, 'tag'])->name('tag');
-
 // Praca (kariera) — publiczna lista stanowisk
 Route::get('/praca', [CareersController::class, 'index'])->name('careers');
 

@@ -90,6 +90,10 @@ if [ "$DO_MIGRATE" = 1 ]; then
   echo "==> Migracje schematu (tenant storefront: $TENANT_STOREFRONT)"
   echo "    !!! Upewnij się, że masz BACKUP bazy (pg_dump) — patrz DEPLOYMENT.md"
   # --path OGRANICZONY do modułu, by nie odpalić gateway create_shop_tables (kolizja).
+  # Init PRZED Storefront: migracja danych Init kopiuje shop_items.tag_uid do
+  # init_codes, a migracja Storefront dopiero potem tę kolumnę usuwa.
+  run_www env TENANT="$TENANT_STOREFRONT" "$PHP" artisan migrate --force \
+    --path=app/Modules/Init/database/migrations
   run_www env TENANT="$TENANT_STOREFRONT" "$PHP" artisan migrate --force \
     --path=app/Modules/Storefront/database/migrations
   run_www env TENANT="$TENANT_STOREFRONT" "$PHP" artisan migrate --force \

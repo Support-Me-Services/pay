@@ -27,6 +27,7 @@ class Organization extends Model
         'shop-items' => 'Zbiórki',
         'positions' => 'Praca',
         'applications' => 'Aplikacje / Baza kandydatów',
+        'init-codes' => 'Tagi NFC / Kody QR',
     ];
 
     /** Konto zarządzające tą organizacją. */

@@ -116,7 +116,6 @@ class ShopItemController extends Controller
             'description' => $item->description,
             'price_pln' => $item->pricePln(),
             'min_amount_pln' => $item->minAmountPln(),
-            'tag_uid' => $item->tag_uid,
             'sort' => (int) $item->sort,
             'is_default' => (bool) $item->is_default,
             'active' => (bool) $item->active,
@@ -140,7 +139,6 @@ class ShopItemController extends Controller
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'slug')->where('organization_id', $this->org->id)->ignore($current?->id)],
             'price_pln' => ['required', 'integer', 'min:1', 'max:5000'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'tag_uid' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'tag_uid')->ignore($current?->id)],
             'sort' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'image_file' => ['nullable', 'image', 'max:5120'],
             'active' => ['nullable', 'boolean'],
@@ -152,7 +150,6 @@ class ShopItemController extends Controller
         ], [], [
             'name' => 'nazwa',
             'price_pln' => 'cena',
-            'tag_uid' => 'tag NFC',
             'image_file' => 'grafika',
             'thank_you_heading' => 'nagłówek podziękowania',
             'thank_you_body' => 'treść podziękowania',
@@ -168,7 +165,6 @@ class ShopItemController extends Controller
             'price' => $priceGr,
             'min_amount' => $priceGr,   // w trybie sklepu min = cena (spójność z modelem darowiznowym)
             'description' => $data['description'] ?? null,
-            'tag_uid' => $data['tag_uid'] ?? null,
             'sort' => (int) ($data['sort'] ?? 0),
             'active' => $request->boolean('active'),
             'thank_you_heading' => $data['thank_you_heading'] ?? null,

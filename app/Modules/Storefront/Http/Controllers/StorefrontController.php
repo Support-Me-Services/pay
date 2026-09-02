@@ -2,7 +2,6 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Modules\Storefront\Jobs\SendGatewayEvent;
 use App\Modules\Storefront\Models\ShopItem;
 use Inertia\Inertia;
 
@@ -73,26 +72,5 @@ class StorefrontController extends Controller
             'mecenasUrl' => $mecenas ? route('user.shop', $mecenas->handle) : null,
             'mecenasLogo' => $mecenas?->logo ? asset($mecenas->logo) : null,
         ];
-    }
-
-    /**
-     * GET /t/{tag_uid} — wejście z taga NFC: jeśli tag wskazuje produkt sklepu
-     * donacyjnego (Zbiórki), kierujemy na stronę sklepu z auto-otwarciem
-     * modala tego produktu; w przeciwnym razie 404.
-     */
-    public function tag(string $tagUid)
-    {
-        $item = ShopItem::where('tag_uid', $tagUid)->where('active', true)->first();
-
-        if ($item) {
-            SendGatewayEvent::dispatchAfterResponse('tag_open', $tagUid);
-
-            return redirect()->route('home', ['produkt' => $item->slug], 302);
-        }
-
-        return Inertia::render('Storefront/TagNotFound', [
-            // Strona kategorii usunięta — powrót prowadzi na podstronę „Wspieramy".
-            'categoryUrl' => route('beneficiaries'),
-        ])->toResponse(request())->setStatusCode(404);
     }
 }

@@ -20,6 +20,11 @@ chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 # przez panel — produkty, węzły "O nas" — nie są publicznie dostępne, 404)
 [ -L public/storage ] || php artisan storage:link
 
+# moduł Init (tagi NFC / kody QR) — PRZED storefront: migracja danych Init
+# kopiuje shop_items.tag_uid do init_codes, a migracja storefront dopiero
+# potem tę kolumnę usuwa.
+php artisan migrate --path=app/Modules/Init/database/migrations --force || true
+
 # schemat sklepu (storefront -> baza nfc_shop1 wg TENANT z .env).
 # Migrujemy tylko ścieżkę storefront: w prod schemat budowany jest Liquibase,
 # nie artisanem — patrz LOCAL.md.

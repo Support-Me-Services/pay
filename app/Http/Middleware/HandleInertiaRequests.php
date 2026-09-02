@@ -120,6 +120,13 @@ class HandleInertiaRequests extends Middleware
             $nav[] = ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*') && ! $request->routeIs('panel.applications.consents'), 'badge' => $org ? \App\Modules\Storefront\Models\JobApplication::forOrganization($org->id)->where('is_read', false)->count() ?: null : null];
             $nav[] = ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')];
         }
+        if ($org?->canSee('init-codes')) {
+            $nav[] = ['label' => 'Tagi/QR', 'href' => route('panel.init-codes.index'), 'active' => $request->routeIs('panel.init-codes.*')];
+        }
+
+        // Moje tagi — kody OSOBISTE (własność konta, nie organizacji), więc
+        // bez gatingu canSee() — widoczne zawsze dla zalogowanego konta.
+        $nav[] = ['label' => 'Moje tagi', 'href' => route('panel.my-init-codes.index'), 'active' => $request->routeIs('panel.my-init-codes.*')];
 
         // Jeden ekran „Organizacja" — łączy dawne „Moje organizacje", „Ustawienia
         // organizacji" i (dla super-usera) „Wszystkie organizacje".

@@ -11,7 +11,6 @@ export default function Form({ item, organizations, storeUrl, indexUrl }) {
         slug: item?.slug ?? '',
         price_pln: item?.price_pln ?? 1,
         sort: item?.sort ?? 0,
-        tag_uid: item?.tag_uid ?? '',
         image_file: null,
         is_default: item?.is_default ?? false,
         active: item?.active ?? true,
@@ -76,12 +75,6 @@ export default function Form({ item, organizations, storeUrl, indexUrl }) {
                                 <input id="sort" type="number" min={0} max={65535} value={form.data.sort} onChange={(e) => form.setData('sort', e.target.value)} />
                                 {err.sort && <div className="form-error">{err.sort}</div>}
                             </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label htmlFor="tag_uid">Tag NFC (UID) — kieruje na stronę sklepu z tym produktem</label>
-                            <input id="tag_uid" value={form.data.tag_uid} onChange={(e) => form.setData('tag_uid', e.target.value)} placeholder="np. 04A1B2C3D4 (opcjonalne)" />
-                            {err.tag_uid && <div className="form-error">{err.tag_uid}</div>}
                         </div>
 
                         <div className="form-group">

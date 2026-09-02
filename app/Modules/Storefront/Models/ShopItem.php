@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ShopItem extends Model
 {
     protected $fillable = [
-        'organization_id', 'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'tag_uid', 'active', 'sort',
+        'organization_id', 'slug', 'name', 'image', 'min_amount', 'price', 'description', 'is_default', 'active', 'sort',
         'thank_you_heading', 'thank_you_body', 'thank_you_image', 'mecenas_organization_id',
     ];
 

@@ -105,7 +105,7 @@ class CompanyStoreController extends Controller
                 'currency' => 'PLN',
                 'return_url' => route('order.return', $order->id),
                 'notify_url' => route('webhooks.gateway'),
-                'tag_uid' => $item->tag_uid,
+                'tag_uid' => null,
             ]);
         } catch (\Throwable $e) {
             return redirect()->route('home')

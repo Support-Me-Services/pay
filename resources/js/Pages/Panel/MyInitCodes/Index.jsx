@@ -1,18 +1,28 @@
 import { Link, router } from '@inertiajs/react'
 import PanelLayout from '@/Layouts/PanelLayout'
+import QrCodeImage from '@/Components/QrCodeImage'
+import CopyButton from '@/Components/CopyButton'
 
-/** Panel „Sklep" — lista produktów (odwzorowanie shop-items/index.blade.php). */
+/**
+ * Panel „Moje tagi" — kody OSOBISTE (własność konta, nie organizacji). Cel:
+ * cała lista zbiórek jednej z własnych organizacji, nie pojedynczy produkt.
+ */
 export default function Index({ items, createUrl }) {
     const toggle = (item) => router.post(item.toggle_url, {}, { preserveScroll: true })
     const destroy = (item) => {
-        if (confirm('Usunąć produkt?')) router.delete(item.destroy_url, { preserveScroll: true })
+        if (confirm('Usunąć tag?')) router.delete(item.destroy_url, { preserveScroll: true })
     }
 
     return (
         <>
             <div className="panel-title">
-                <h1>Zbiórki</h1>
-                <Link href={createUrl} className="btn btn-primary btn-sm">+ Dodaj produkt</Link>
+                <h1>Moje tagi</h1>
+                <Link href={createUrl} className="btn btn-primary btn-sm">+ Dodaj tag</Link>
+            </div>
+
+            <div className="form-hint mb-3">
+                Twoje własne tagi/kody QR — niezależne od organizacji, prowadzą na całą
+                listę zbiórek wybranej przez Ciebie organizacji.
             </div>
 
             <div className="card card-static">
@@ -21,25 +31,27 @@ export default function Index({ items, createUrl }) {
                         <table className="table">
                             <thead>
                                 <tr>
-                                    <th>Kol.</th><th>Grafika</th><th>Nazwa</th><th>Min. kwota</th>
-                                    <th>Domyślny</th><th>Status</th><th></th>
+                                    <th>Etykieta</th><th>Organizacja docelowa</th><th>Kod</th><th>Status</th><th></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {items.length === 0 && (
-                                    <tr><td colSpan={7} className="text-muted">Brak produktów.</td></tr>
+                                    <tr><td colSpan={5} className="text-muted">Brak tagów.</td></tr>
                                 )}
                                 {items.map((item) => (
                                     <tr key={item.id}>
-                                        <td>{item.sort}</td>
+                                        <td>{item.label || <span className="text-muted">—</span>}</td>
+                                        <td>{item.target_organization_name || <span className="text-muted">— nieprzypisany —</span>}</td>
                                         <td>
-                                            {item.image
-                                                ? <img src={item.image} alt="" style={{ width: 40, height: 40, objectFit: 'contain', borderRadius: 6, background: '#f6f9fb' }} />
-                                                : <span className="text-muted">—</span>}
+                                            <div className="d-flex gap-1" style={{ alignItems: 'center' }}>
+                                                <QrCodeImage url={item.qr_url} size={48} />
+                                                <span>
+                                                    <a href={item.tag_url} target="_blank" rel="noopener noreferrer">tag</a>{' '}
+                                                    <CopyButton value={item.tag_url} />
+                                                </span>
+                                                <a href={item.qr_url} target="_blank" rel="noopener noreferrer">qr</a>
+                                            </div>
                                         </td>
-                                        <td className="fw-bold">{item.name}</td>
-                                        <td>{item.min_amount_pln} zł</td>
-                                        <td>{item.is_default ? <span className="badge badge-brand">domyślny</span> : <span className="text-muted">—</span>}</td>
                                         <td>{item.active ? <span className="badge badge-success">aktywny</span> : <span className="badge badge-muted">nieaktywny</span>}</td>
                                         <td className="actions nowrap">
                                             <Link href={item.edit_url}>Edytuj</Link>{' '}
@@ -59,4 +71,4 @@ export default function Index({ items, createUrl }) {
     )
 }
 
-Index.layout = (page) => <PanelLayout title="Zbiórki — produkty">{page}</PanelLayout>
+Index.layout = (page) => <PanelLayout title="Moje tagi">{page}</PanelLayout>
