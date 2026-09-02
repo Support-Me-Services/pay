@@ -1,4 +1,5 @@
 import { Head, useForm } from '@inertiajs/react'
+import PasswordInput from '@/Components/PasswordInput'
 
 /**
  * Zakładanie konta sklepu — strona standalone (BEZ chromu panelu), bliźniacza
@@ -44,14 +45,14 @@ export default function Register({ brand, postUrl, loginUrl }) {
                         </div>
                         <div className="form-group">
                             <label htmlFor="password">Hasło</label>
-                            <input type="password" id="password" value={form.data.password}
+                            <PasswordInput id="password" value={form.data.password}
                                 onChange={(e) => form.setData('password', e.target.value)} required />
                             <div className="form-hint">Minimum 8 znaków.</div>
                             {form.errors.password && <div className="form-error">{form.errors.password}</div>}
                         </div>
                         <div className="form-group">
                             <label htmlFor="password_confirmation">Powtórz hasło</label>
-                            <input type="password" id="password_confirmation" value={form.data.password_confirmation}
+                            <PasswordInput id="password_confirmation" value={form.data.password_confirmation}
                                 onChange={(e) => form.setData('password_confirmation', e.target.value)} required />
                         </div>
                         <button type="submit" className="btn btn-primary btn-block" disabled={form.processing}>Załóż konto</button>

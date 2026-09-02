@@ -1,4 +1,5 @@
 import { Head, useForm } from '@inertiajs/react'
+import PasswordInput from '@/Components/PasswordInput'
 
 /**
  * Logowanie do panelu — strona standalone (BEZ chromu panelu).
@@ -37,7 +38,7 @@ export default function Login({ brand, postUrl, registerUrl }) {
                         </div>
                         <div className="form-group">
                             <label htmlFor="password">Hasło</label>
-                            <input type="password" id="password" value={form.data.password}
+                            <PasswordInput id="password" value={form.data.password}
                                 onChange={(e) => form.setData('password', e.target.value)} required />
                         </div>
                         <button type="submit" className="btn btn-primary btn-block" disabled={form.processing}>Zaloguj się</button>
