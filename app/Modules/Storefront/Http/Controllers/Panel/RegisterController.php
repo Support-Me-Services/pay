@@ -44,6 +44,12 @@ class RegisterController extends Controller
             return redirect()->route('panel.dashboard');
         }
 
+        // Normalizacja PRZED walidacją unikalności — inaczej "Test@x.com" i
+        // "test@x.com" przeszłyby jako różne konta (email i tak zapisuje się
+        // małymi literami, patrz User::email(), ale unique() porównuje z
+        // surowym inputem, gdyby nie znormalizować go tutaj wcześniej).
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             // users.email jest unikalny globalnie (jedna tabela kont dla obu paneli).

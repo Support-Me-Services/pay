@@ -29,6 +29,9 @@ class LoginController extends Controller
             'password' => ['required'],
         ], [], ['email' => 'e-mail', 'password' => 'hasło']);
 
+        // Logowanie niewrażliwe na wielkość liter w e-mailu.
+        $credentials['email'] = strtolower(trim($credentials['email']));
+
         if (! Auth::attempt($credentials, true)) {
             return back()->withErrors(['email' => 'Niepoprawny login lub hasło.'])->onlyInput('email');
         }
