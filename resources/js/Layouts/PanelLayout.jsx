@@ -21,11 +21,11 @@ export default function PanelLayout({ title, children }) {
             </Head>
 
             <aside className="panel-sidebar">
-                <div className="brand">
+                <a href={panel.activeOrganization?.shopUrl || panel.homeUrl} className="brand" style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                     {panel.activeOrganization
                         ? panel.activeOrganization.name
                         : <>{panel.brand || 'SupportME'}<span className="dot">.</span></>}
-                </div>
+                </a>
                 <nav className="panel-nav">
                     {nav.map((it) => (
                         <a key={it.href} href={it.href} className={it.active ? 'active' : ''}>

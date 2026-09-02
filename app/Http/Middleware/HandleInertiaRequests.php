@@ -75,6 +75,7 @@ class HandleInertiaRequests extends Middleware
                 'investors' => route('investors'),
                 'regulamin' => route('regulamin'),
                 'thanks' => route('thanks'),
+                'panel' => route('panel.login'),
             ] : null,
 
             // Nawigacja panelu + liczniki — tylko na trasach panelu (lazy).
@@ -135,12 +136,16 @@ class HandleInertiaRequests extends Middleware
         return [
             'brand' => config('shop.name', 'SupportME'),
             'nav' => $nav,
+            // Wyjście z panelu na publiczną stronę — nazwa organizacji w
+            // sidebarze linkuje na JEJ WŁASNĄ stronę (sklep pod jej handle);
+            // bez aktywnej organizacji — fallback na ogólną stronę główną.
+            'homeUrl' => route('main'),
             // Osobny przycisk pod belką (jak dawniej „Wyloguj") — zmiana hasła,
             // wylogowanie i dane konta są teraz razem na jednym ekranie.
             'accountUrl' => route('panel.password.edit'),
             'accountActive' => $request->routeIs('panel.password.*'),
             'logoutUrl' => route('panel.logout'),
-            'activeOrganization' => $org ? ['id' => $org->id, 'name' => $org->name] : null,
+            'activeOrganization' => $org ? ['id' => $org->id, 'name' => $org->name, 'shopUrl' => route('user.shop', $org->handle)] : null,
         ];
     }
 

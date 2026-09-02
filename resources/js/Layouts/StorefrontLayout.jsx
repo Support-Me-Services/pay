@@ -115,6 +115,7 @@ export default function StorefrontLayout({ children, ...overrides }) {
                         <a href={r.regulamin}>Regulamin</a>
                         <a href="/polityka-prywatnosci.pdf" target="_blank" rel="noopener noreferrer">Polityka prywatności</a>
                         <a href={r.thanks}>Dziękujemy</a>
+                        <a href={r.panel}>Panel</a>
                     </div>
                     <a className="lp-footer__social" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
                         <img src="/img/landing/linkedin.svg" alt="LinkedIn" />
