@@ -22,7 +22,7 @@ class UserShopController extends Controller
                 'id' => $i->id,
                 'name' => $i->name,
                 'description' => $i->description,
-                'image' => asset($i->image),
+                'image' => $i->image ? asset($i->image) : null,
                 'is_svg' => $i->isSvg(),
                 'price' => $i->pricePln(),
                 'add_url' => route('user.cart.add', [$handle, $i->id]),

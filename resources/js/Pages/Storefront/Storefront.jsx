@@ -258,8 +258,8 @@ export default function Storefront({ items, startIdx, foundations, mainUrl, regu
                         {[prevIt, it, nextIt].map((cardIt, i) => (
                             <div key={i} className={`paywin__card${i === 1 && unlocked ? ' is-unlocked' : ''}`}>
                                 <div className={`paywin__visual${cardIt.is_svg ? ' is-svg' : ''}`}>
-                                    <img src={cardIt.image} alt={cardIt.name} width="240" height="240"
-                                        loading={i === 1 ? 'eager' : 'lazy'} fetchPriority={i === 1 ? 'high' : 'low'} decoding="async" />
+                                    {cardIt.image && <img src={cardIt.image} alt={cardIt.name} width="240" height="240"
+                                        loading={i === 1 ? 'eager' : 'lazy'} fetchPriority={i === 1 ? 'high' : 'low'} decoding="async" />}
                                 </div>
                                 <div className="paywin__name">{cardIt.name}</div>
                             </div>

@@ -53,7 +53,7 @@ class CompanyStoreController extends Controller
                 'slug' => $i->slug,
                 'name' => $i->name,
                 'min' => round($i->min_amount / 100, 2),
-                'image' => asset($i->image),
+                'image' => $i->image ? asset($i->image) : null,
                 'is_svg' => $i->isSvg(),
                 'action' => route('shop.buy', $i->slug),
             ])->values(),

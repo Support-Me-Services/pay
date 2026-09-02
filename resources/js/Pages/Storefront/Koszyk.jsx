@@ -80,7 +80,7 @@ export default function Koszyk({ lines, methods, shipCode, shipPoint, shipHasPoi
                     <div className="cart__list">
                         {lines.map((l) => (
                             <div className="citem" key={l.id}>
-                                <img className="citem__img" src={l.image} alt={l.name} />
+                                {l.image && <img className="citem__img" src={l.image} alt={l.name} />}
                                 <div className="citem__main">
                                     <div className="citem__name">{l.name}</div>
                                     <div className="citem__unit">{l.unit_price} zł / szt.</div>

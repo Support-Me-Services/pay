@@ -44,7 +44,7 @@ export default function UserShop({ items, ownerName }) {
                 {items.map((item) => (
                     <div className="pcard" key={item.id}>
                         <div className={`pcard__img${item.is_svg ? ' is-svg' : ''}`}>
-                            <img src={item.image} alt={item.name} />
+                            {item.image && <img src={item.image} alt={item.name} />}
                         </div>
                         <h2 className="pcard__name">{item.name}</h2>
                         {item.description && <p className="pcard__desc">{item.description}</p>}

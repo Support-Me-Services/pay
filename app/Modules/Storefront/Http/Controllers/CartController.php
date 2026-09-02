@@ -33,7 +33,7 @@ class CartController extends Controller
             'lines' => $lines->map(fn ($l) => [
                 'id' => $l['item']->id,
                 'name' => $l['item']->name,
-                'image' => asset($l['item']->image),
+                'image' => $l['item']->image ? asset($l['item']->image) : null,
                 'unit_price' => $l['item']->pricePln(),
                 'qty' => $l['qty'],
                 'line_total' => number_format($l['lineGrosze'] / 100, 2, ',', ' '),
