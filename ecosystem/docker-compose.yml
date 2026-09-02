@@ -1,0 +1,78 @@
+# Faza 0 — fundament ekosystemu mikroserwisów, CAŁKOWICIE osobno od docker/
+# (który zostaje wyłącznym środowiskiem Laravela, patrz LOCAL.md). Nic tutaj
+# nie jest jeszcze podłączone do żywej aplikacji — to szkielet do wyklikania
+# i zweryfikowania REST(api-gateway)->gRPC(core-svc), zanim popłynie przez
+# niego jakakolwiek prawdziwa domena. Patrz README.md w tym katalogu.
+services:
+  postgres-core:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: core_svc
+      POSTGRES_USER: core_svc
+      POSTGRES_PASSWORD: core_svc
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U core_svc"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  postgres-keycloak:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
+    depends_on:
+      postgres-keycloak:
+        condition: service_healthy
+
+  core-svc:
+    build:
+      context: ..
+      dockerfile: services/core-svc/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-core:5432/core_svc
+      SPRING_DATASOURCE_USERNAME: core_svc
+      SPRING_DATASOURCE_PASSWORD: core_svc
+    ports:
+      - "8082:8082"
+      - "9090:9090"
+    depends_on:
+      postgres-core:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: services/api-gateway/Dockerfile
+    environment:
+      PAY_CORE_SVC_GRPC_HOST: core-svc
+      PAY_CORE_SVC_GRPC_PORT: "9090"
+      # gateway-svc (Laravel/RoadRunner) żyje w OSOBNYM stacku (docker/, nie
+      # tutaj) — host.docker.internal to Docker Desktop, nie nazwa serwisu.
+      PAY_GATEWAY_SVC_GRPC_HOST: host.docker.internal
+      PAY_GATEWAY_SVC_GRPC_PORT: "9091"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - core-svc

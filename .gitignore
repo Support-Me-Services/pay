@@ -25,3 +25,17 @@ Thumbs.db
 
 # Inertia SSR — artefakt buildu (vite build --ssr)
 /bootstrap/ssr
+
+# Ekosystem mikroserwisów — artefakty buildu Maven (services/*) i wygenerowany
+# kod z proto/ (protobuf-maven-plugin generuje go pod target/ przy każdym build)
+services/*/target/
+
+# PoC Fazy 1 — pobrane binarki RoadRunner (platform-specific, pobierane przez
+# `php vendor/bin/rr get` / `download-protoc-binary`, nie commitujemy binarek)
+/rr
+/protoc-gen-php-grpc
+
+# Wygenerowany kod z proto/ (protoc --php_out), regenerowany na żądanie —
+# patrz proto/README.md. Ręcznie napisany handler (HealthGrpcHandler.php)
+# zostaje pod tym samym katalogiem, więc ignorujemy tylko podkatalog Generated.
+/app/Modules/Gateway/Grpc/Generated/

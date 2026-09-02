@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+pay:
+  core-svc:
+    grpc-host: localhost
+    grpc-port: 9090
+  gateway-svc:
+    # gateway-svc (Laravel/RoadRunner, PoC Fazy 1) żyje w OSOBNYM stacku
+    # Dockera (docker/, nie ecosystem/) — patrz ecosystem/docker-compose.yml
+    # dla nadpisania na host.docker.internal przy uruchomieniu w kontenerze.
+    grpc-host: localhost
+    grpc-port: 9091
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

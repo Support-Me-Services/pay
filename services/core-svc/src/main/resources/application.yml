@@ -1,0 +1,21 @@
+server:
+  port: 8082
+
+grpc:
+  server:
+    port: 9090
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/core_svc
+    username: core_svc
+    password: core_svc
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
