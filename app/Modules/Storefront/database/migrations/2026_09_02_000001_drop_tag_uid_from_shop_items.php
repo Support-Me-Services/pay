@@ -16,11 +16,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('shop_items', function (Blueprint $table) {
-            // Unique utworzony przez Laravela w 2026_06_17_000001 (nie przez
-            // Liquibase) -> na Postgresie to prawdziwy CONSTRAINT, więc
-            // dropUnique() (DROP CONSTRAINT), NIE dropIndex() (patrz pamięć
-            // pay-postgres-unique-drop / DEPLOYMENT.md).
-            $table->dropUnique('shop_items_tag_uid_unique');
+            // POPRAWKA po nieudanym wdrożeniu na produkcji: mimo że
+            // 2026_06_17_000001 tworzy ten unique przez $table->unique()
+            // (co zwykle na Postgresie oznacza CONSTRAINT), schemat
+            // Storefrontu na produkcji budowany jest przez Liquibase, NIE
+            // przez tę migrację (patrz docker/entrypoint.sh) — tam ten
+            // unique jest zwykłym INDEKSEM. dropUnique() (DROP CONSTRAINT)
+            // rzuca tam SQLSTATE 42704 "constraint ... does not exist".
+            // dropIndex() (DROP INDEX) — patrz pamięć pay-postgres-unique-drop.
+            $table->dropIndex('shop_items_tag_uid_unique');
             $table->dropColumn('tag_uid');
         });
     }
