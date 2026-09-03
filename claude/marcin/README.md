@@ -15,6 +15,15 @@ notatki oszczędzają ponownego odkrywania tych samych pułapek.
    decyzje architektoniczne i wszystkie pułapki napotkane przy budowie
    Fazy 0/1/2 (Maven/JDK, RoadRunner+gRPC w PHP, Next.js 16).
 
+## Utrzymanie tego katalogu
+
+**Zasada:** nowe ustalenia, decyzje i napotkane pułapki dopisuj tutaj na
+bieżąco, w trakcie pracy — nie tylko na wyraźną prośbę. Dodaj do
+właściwego pliku tematycznego (albo nowego, jeśli temat tego wymaga) i
+zaktualizuj sekcję „Stan" niżej. To jest jedyne miejsce, które przenosi
+się razem z repo na inny komputer — pamięć sesji Claude Code tego nie
+robi.
+
 ## Punkt startowy dla nowej sesji Claude
 
 Poproś Claude o przeczytanie tego katalogu na początku, oraz otwórz
