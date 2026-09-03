@@ -263,6 +263,89 @@ zweryfikowany), nie sama migracja kont.
 
 ---
 
+## Faza 4 — szkielet `mobile/` w Expo/React Native (zrobione, zweryfikowane — bez urządzenia)
+
+Dowód, że `api-gateway` jest identycznie użyteczny z telefonu jak z
+przeglądarki: ten sam REST kontrakt (`/api/v1/health`, `/api/v1/me`), to
+samo logowanie Keycloak (Authorization Code + PKCE), inny tylko klient
+Keycloaka (`mobile` zamiast `web`). `core-svc` pozostaje pusty — świadoma
+decyzja, nie zaległość (pierwsza funkcja biznesowa jeszcze nieustalona).
+
+W tym środowisku deweloperskim nie ma emulatora Androida/iOS ani fizycznego
+telefonu, więc weryfikacja ograniczona jest do tego, co da się sprawdzić bez
+urządzenia — patrz „Zakres weryfikacji" niżej. Realny test na telefonie
+(skan kodu QR w Expo Go) zostaje po stronie użytkownika.
+
+### Co powstało
+
+- **`mobile/`** — `create-expo-app` (szablon `blank`), Expo SDK 57 / React
+  Native 0.86 / React 19.
+- **`mobile/App.js`** — pojedynczy ekran: health-check publiczny przy
+  starcie, przycisk logowania Keycloak (`expo-auth-session` +
+  `expo-web-browser`, system browser + PKCE), po zalogowaniu wywołanie
+  chronionego `/api/v1/me` z tokenem Bearer. Wzorzec 1:1 z
+  `web/app/panel/page.js`, tylko przeniesiony z Server Components/Server
+  Actions na hooki (`useAuthRequest`, `useEffect`) — bo tu nie ma serwera,
+  całość działa po stronie klienta na telefonie.
+- **Klient Keycloaka `mobile`** — dodany do `ecosystem/keycloak/pay-realm.json`
+  obok `web` (publiczny, PKCE, `redirectUris: ["paymobile://*", "exp://*"]`,
+  ten sam audience mapper `aud: api-gateway`). `exp://*` jest wymagany dla
+  Expo Go w developmencie (Expo Go zarządza własnym tymczasowym schematem);
+  `paymobile://*` (z `app.json` → `scheme`) dla buildów standalone.
+- **`mobile/.env.example`** + `mobile/README.md` — LAN IP zamiast
+  `localhost` (na telefonie `localhost` to sam telefon), z instrukcją jak
+  znaleźć własne IP. `.env` (realne IP, różne na każdej maszynie) jest
+  w `.gitignore`, tak samo jak `web/.env.local`.
+
+### Pułapki napotkane
+
+- **Dwa równoległe `npm install` w tym samym `node_modules/` psują stan
+  katalogu.** `create-expo-app` sam odpala `npm install` na końcu
+  scaffoldingu — jeśli w tym czasie odpali się kolejny `npm install`/`npx
+  expo install` w tym samym katalogu (np. bo poprzednie polecenie w tle
+  wydawało się już skończone, a w rzeczywistości dalej działało), efekt to
+  częściowy `node_modules/` bez `node_modules/.bin` w ogóle — `npx expo
+  ...` zaczyna zgłaszać `'expo' is not recognized`, mimo że `expo` jest
+  w `package.json`. Diagnoza: sprawdzić czy proces `npm install` faktycznie
+  się zakończył (np. `ls node_modules/.bin | wc -l` — powinno być
+  kilkadziesiąt+ wpisów) zanim odpali się kolejna komenda npm w tym samym
+  katalogu; nie ufać samemu statusowi „running"/timeout polecenia w tle bez
+  potwierdzenia.
+- **`create-expo-app` na Windows/npm potrafi trwać kilkadziesiąt minut**
+  (w tej sesji: ~27 min na `npm install` samego scaffoldu) — prawdopodobnie
+  antywirus skanujący każdy plik `node_modules` w locie. Nie traktować
+  długiego czasu jako zawieszenia; sprawdzić realny postęp (rosnący
+  `node_modules/`) zanim się to przerwie.
+- **`npx expo export --platform web` wymaga `react-native-web`**, którego
+  tu celowo nie ma (apka nie celuje w web) — błąd jasno mówi, co doinstalować,
+  ale dla weryfikacji bez urządzenia właściwe polecenie to `npx expo export
+  --platform android` (samo bundlowanie przez Metro, nie wymaga emulatora
+  ani zainstalowanego Android SDK) — to jedyny wiarygodny „czy się w ogóle
+  kompiluje" test dostępny w tym środowisku.
+
+### Zakres weryfikacji (bez urządzenia)
+
+- `npx expo export --platform android` — bundluje `App.js` przez Metro
+  (619 modułów, bez błędów) → dowód, że kod się kompiluje i wszystkie
+  importy (`expo-auth-session`, `expo-web-browser`, `expo-crypto`) się
+  rozwiązują.
+- **NIE zweryfikowano** (wymaga telefonu/emulatora): faktyczny redirect do
+  Keycloaka z Expo Go, wymiana kodu na token, poprawność `redirectUri` w
+  praktyce, zachowanie na słabym łączu.
+
+### Świadomie NIE zrobione
+
+- Trwałe przechowywanie tokenu (`expo-secure-store`) — token żyje tylko
+  w pamięci komponentu, znika po zamknięciu apki. To PoC logowania, nie
+  gotowy do użycia ekran.
+- Refresh-token flow — po wygaśnięciu access tokena trzeba zalogować się
+  ponownie ręcznie.
+- Obsługa słabego/niestabilnego połączenia (retry, cache offline) — mimo że
+  to był jawnie zgłoszony wymóg wcześniej w tej samej sesji, nie został
+  jeszcze przeniesiony na `mobile/` (ani zresztą w pełni na `web/`).
+
+---
+
 ## Jak odpalić od zera (nowy komputer)
 
 1. **Laravel** (`docker/`) — patrz `LOCAL.md` w korzeniu repo.
@@ -284,7 +367,12 @@ zweryfikowany), nie sama migracja kont.
    `web/README.md`) i wygeneruj własny `AUTH_SECRET`.
 5. Wymaga też Maven (do `services/api-gateway`, `services/core-svc`) —
    `JAVA_HOME` na JDK 21 przed `mvn`.
-6. **Keycloak — testowy użytkownik** (realm `pay` odtwarza się sam z
+6. **`mobile/`** — `cd mobile && npm install`. Skopiuj `.env.example` do
+   `.env`, uzupełnij własnym LAN IP (patrz `mobile/README.md`). Bez
+   telefonu/emulatora da się zweryfikować co najwyżej `npx expo export
+   --platform android` (bundlowanie bez błędów) — realny test wymaga Expo
+   Go na telefonie w tej samej sieci Wi-Fi.
+7. **Keycloak — testowy użytkownik** (realm `pay` odtwarza się sam z
    `ecosystem/keycloak/pay-realm.json`, ale użytkownicy nie są w eksporcie):
    zaloguj się do konsoli admina (`http://localhost:8180`, `admin`/`admin`),
    realm `pay` → Users → Add user, ustaw `firstName`+`lastName` (inaczej
