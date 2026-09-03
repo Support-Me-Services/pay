@@ -30,6 +30,7 @@ export default function Live() {
       <nav>
         <Link href="/">← SSG / ISR</Link>
         <Link href="/live">CSR (ta strona)</Link>
+        <Link href="/panel">panel (Keycloak) →</Link>
       </nav>
       <h1>web — Next.js, wariant CSR</h1>
       <p className="lede">

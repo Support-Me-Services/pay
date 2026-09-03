@@ -174,6 +174,95 @@ dedykowana sesja, nie coś do robienia kawałkami przy okazji.
 
 ---
 
+## Faza 3 — auth przez Keycloak (zrobione, zweryfikowane — PoC)
+
+Pełny przepływ OIDC (Authorization Code + PKCE) zweryfikowany END-TO-END w
+realnej przeglądarce: logowanie w Keycloaku → powrót do `web` z sesją →
+wywołanie **chronionego** endpointu `api-gateway` (`GET /api/v1/me`) z
+tokenem Bearer → poprawna odpowiedź z realnymi claimami (subject, email,
+issuer, audience) → wylogowanie. Bez tokenu `/api/v1/me` zwraca 401.
+
+### Co powstało
+
+- **Realm `pay`** w Keycloaku (nie `master`), klient **`web`** (publiczny,
+  PKCE, bez client secret), mapper audience (`aud: api-gateway`). Wyeksportowany
+  do `ecosystem/keycloak/pay-realm.json` i **auto-importowany** przy starcie
+  kontenera (`command: start-dev --import-realm` + zamontowany plik) —
+  zweryfikowane na całkiem świeżym środowisku (usunięty kontener + wolumen
+  Postgresa), realm i klient odtworzyły się same.
+- **`api-gateway`**: Spring Security OAuth2 Resource Server. Chroni
+  wszystko poza `/api/v1/health` i `/actuator/**`. Waliduje: podpis (JWKS),
+  `iss`, i `aud` zawiera `api-gateway` (jawny `DelegatingOAuth2TokenValidator`
+  w `SecurityConfig.kt`, nie sam auto-config `issuer-uri`).
+- **`web`**: logowanie przez `next-auth@beta` (Auth.js v5) z providerem
+  Keycloak. Strona `/panel` (server component) — link do wywołania
+  `/api/v1/me` z tokenem z sesji, przyciski logowania/wylogowania jako
+  Server Actions.
+
+### Pułapki napotkane
+
+- **`jwk-set-uri` ≠ `issuer` w kontenerze.** Standardowy Spring auto-config
+  (`issuer-uri`) zakłada, że token ma taki sam adres, pod jakim serwis
+  faktycznie dociąga JWKS — nieprawda tutaj: przeglądarka (i token) widzi
+  Keycloaka jako `localhost:8180`, ale `api-gateway` wewnątrz sieci Dockera
+  musi dociągać klucze przez `keycloak:8080`. Rozwiązanie: rozdzielić
+  `jwk-set-uri` (per-środowisko, nadpisywane w `ecosystem/docker-compose.yml`)
+  od `issuer` (stały string, taki sam wszędzie — to jest w tokenie).
+- **Keycloak REST Admin API przez curl na Windows/Git Bash: JSON body
+  ZAWSZE plikiem** (`--data-binary "@plik.json"`), nigdy inline `-d
+  '{...}'` z heredokiem/wieloliniowym stringiem — kończy się `"unable to
+  read contents from stream"` (400) przez mangling nowych linii/cudzysłowów
+  w tym shellu.
+- **Token admina Keycloaka wygasa szybko** (domyślnie krótki
+  `accessTokenLifespan` na realm `master`) — jeśli kolejne wywołanie
+  Admin API dostanie 401, po prostu pobierz nowy token, nie diagnozuj dłużej.
+- **`partial-export` Keycloaka NIE eksportuje użytkowników** — tylko
+  realm/klienci/role/grupy. Testowy user (`marcin` / `test1234`, profil
+  wymaga `firstName`+`lastName` inaczej Keycloak zażąda `VERIFY_PROFILE`
+  przy pierwszym logowaniu) trzeba odtworzyć ręcznie po każdym `docker
+  compose down` bez zachowania wolumenu — komenda w `ecosystem/README.md`.
+- **Auth.js v5, klient publiczny (PKCE, bez sekretu):**
+  `clientSecret: undefined` + `checks: ["pkce"]` w konfiguracji providera
+  Keycloak — mimo że oficjalna dokumentacja providera pokazuje tylko
+  wariant z sekretem ("confidential"), publiczny klient też działa.
+- **Duży, realny bug Next.js 16.3.4 (Cache Components):** strona z
+  `<Suspense>` wokół async server component czytającego `cookies()`
+  (przez `auth()`) renderowała się poprawnie po stronie serwera (HTML +
+  strumień RSC oba miały właściwą treść — zweryfikowane surowym curlem),
+  ale po stronie klienta treść zostawała uwięziona w `<div hidden>` na
+  końcu `<body>` i NIGDY nie była przenoszona na miejsce fallbacku
+  (`offsetParent: null`, zerowy `getBoundingClientRect()`) — więc strona
+  wisiała na fallbacku w nieskończoność, mimo że dane były już dawno
+  gotowe. Reprodukowalne i w `next dev`, i w `next start` (build
+  produkcyjny) — to nie problem trybu dev. Diagnoza zajęła sporo czasu,
+  bo standardowe narzędzia do inspekcji DOM (accessibility tree) też
+  mylące pokazywały element jako "istniejący" bez jasnego sygnału o
+  `hidden`/zerowym rozmiarze — dopiero bezpośredni `getBoundingClientRect()`
+  + sprawdzenie łańcucha rodziców przez `javascript_tool` ujawniło
+  prawdziwą przyczynę. **Fix**: strona, która i tak nie potrzebuje
+  częściowego prerenderowania (panel prywatny, zero SEO), powinna być w
+  pełni blokująca — `export const instant = false;` (oficjalna ścieżka
+  `["block"]` z komunikatu błędu builda), NIE Suspense, i NIE stary
+  `export const dynamic = "force-dynamic"` (ten drugi jest **niekompatybilny**
+  z `cacheComponents: true` i wywala build). Warto spróbować tego fixu
+  najpierw, zanim zacznie się debugować Suspense/streaming w tej wersji
+  Next.js.
+
+### Dane testowe (tylko lokalnie, nieprzenoszone do repo)
+
+- Konsola admina Keycloaka: `http://localhost:8180` — `admin`/`admin`.
+- Testowy użytkownik realm `pay`: `marcin`/`test1234`.
+
+### Świadomie NIE zrobione
+
+Provisioning/migracja realnych kont z dzisiejszych tabel `users` Laravela
+(bramka + sklep) do Keycloaka, i okres dual-auth (stare sesje Laravela +
+tokeny Keycloak równolegle) — to jest właściwy zakres „Fazy 3" z dokumentu
+architektury; to, co tu zrobione, to fundament pod to (mechanizm działa,
+zweryfikowany), nie sama migracja kont.
+
+---
+
 ## Jak odpalić od zera (nowy komputer)
 
 1. **Laravel** (`docker/`) — patrz `LOCAL.md` w korzeniu repo.
@@ -190,9 +279,19 @@ dedykowana sesja, nie coś do robienia kawałkami przy okazji.
    sesji albo po prostu wygeneruj ponownie), i odpal `./rr serve -c
    .rr.yaml` w tle.
 4. **`web/`** — `cd web && npm install && npm run dev`. Wymaga JDK 21
-   (obok domyślnego) do budowania `services/*` i Node do `web/`.
+   (obok domyślnego) do budowania `services/*` i Node do `web/`. Skopiuj
+   `.env.local` (nieśledzony przez git — zmienne wypisane w
+   `web/README.md`) i wygeneruj własny `AUTH_SECRET`.
 5. Wymaga też Maven (do `services/api-gateway`, `services/core-svc`) —
    `JAVA_HOME` na JDK 21 przed `mvn`.
+6. **Keycloak — testowy użytkownik** (realm `pay` odtwarza się sam z
+   `ecosystem/keycloak/pay-realm.json`, ale użytkownicy nie są w eksporcie):
+   zaloguj się do konsoli admina (`http://localhost:8180`, `admin`/`admin`),
+   realm `pay` → Users → Add user, ustaw `firstName`+`lastName` (inaczej
+   Keycloak zażąda uzupełnienia profilu przy pierwszym logowaniu) i hasło
+   przez zakładkę Credentials (nie „temporary"). Albo przez Admin REST API
+   — patrz `claude/marcin/03-ekosystem-mikroserwisow.md`, sekcja Faza 3,
+   dla przykładu payloadu.
 
 Wszystkie porty i szczegóły — patrz README w każdym katalogu
 (`services/*/README.md`, `ecosystem/README.md`, `web/README.md`) i sekcje

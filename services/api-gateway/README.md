@@ -11,17 +11,24 @@ ekosystemu `pay`. Spring Boot + Kotlin, Maven.
   niego prawdziwa domena.
 - **Bez własnej bazy danych i bez logiki biznesowej** — jeśli kiedyś zacznie
   trzymać stan, przestaje pełnić rolę bramki.
-- Auth: docelowo waliduje JWT wydany przez Keycloak (JWKS) — **jeszcze nie
-  wpięte** w tej fazie.
+- **Auth (Faza 3): waliduje JWT wydany przez Keycloak** — Spring Security
+  OAuth2 Resource Server (`SecurityConfig.kt`). `/api/v1/health` i
+  `/actuator/**` publiczne, wszystko inne wymaga ważnego tokenu (podpis
+  przez JWKS + `iss` + `aud` zawiera `api-gateway`). `/api/v1/me` to demo
+  chronionego endpointu (`MeController.kt`) — zwraca claimy z tokenu.
+  `jwk-set-uri` i `issuer` są rozdzielone w configu celowo — patrz
+  komentarz w `SecurityConfig.kt` i `application.yml`.
 
 ## Uruchomienie lokalnie (bez Dockera)
 
-Wymaga działającego `core-svc` na `localhost:9090` (gRPC) — patrz
-`services/core-svc/README.md`.
+Wymaga działającego `core-svc` na `localhost:9090` (gRPC) i Keycloaka na
+`localhost:8180` (realm `pay`) — patrz `services/core-svc/README.md` i
+`ecosystem/README.md`.
 
 ```bash
 mvn spring-boot:run
-curl http://localhost:8081/api/v1/health
+curl http://localhost:8081/api/v1/health   # publiczny, 200
+curl http://localhost:8081/api/v1/me       # chroniony, 401 bez tokenu
 ```
 
 ## Uruchomienie w Dockerze

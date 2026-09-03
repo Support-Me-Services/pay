@@ -95,3 +95,17 @@ a {
   color: #b3332c;
   font-size: 0.9rem;
 }
+
+.demo button {
+  font: inherit;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+  background: var(--foreground);
+  color: var(--background);
+  cursor: pointer;
+}
+
+.demo button:hover {
+  opacity: 0.85;
+}

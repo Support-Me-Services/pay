@@ -1,14 +1,12 @@
-# ecosystem/ — Faza 0 nowej architektury mikroserwisowej
+# ecosystem/ — nowa architektura mikroserwisowa (Fazy 0–3)
 
 Osobny stack Dockera od `docker/` (który zostaje wyłącznie środowiskiem
 lokalnym Laravela — patrz `LOCAL.md`, nic tam nie zmieniamy). Można odpalić
 oba naraz, bez konfliktów portów.
 
-**Stan: nic tu jeszcze nie jest podłączone do żywej aplikacji.** To dowód, że
-szkielet (api-gateway, core-svc, ich kontrakt gRPC, Keycloak) w ogóle działa —
-zanim popłynie przez niego jakakolwiek prawdziwa domena albo prawdziwe
-logowanie. Kontekst i uzasadnienie każdej decyzji: dokument architektury
-ekosystemu `pay` (link w `docs/` / historii rozmowy) oraz `proto/README.md`.
+Kontekst i uzasadnienie każdej decyzji: dokument architektury ekosystemu
+`pay` (link w `claude/marcin/03-ekosystem-mikroserwisow.md`) oraz
+`proto/README.md`.
 
 ## Uruchomienie
 
@@ -17,34 +15,43 @@ cd ecosystem
 docker compose up -d --build
 ```
 
-Pierwszy build kompiluje oba serwisy Maven wewnątrz obrazu (kilka minut).
+Pierwszy build kompiluje oba serwisy Maven wewnątrz obrazu i ściąga
+Keycloaka (kilka minut). Realm `pay` + klient `web` (publiczny, PKCE)
+odtwarzają się automatycznie z `keycloak/pay-realm.json`
+(`--import-realm`) — **ale użytkownicy nie są w tym imporcie**, trzeba ich
+dodać ręcznie po każdym starcie od zera (patrz niżej).
 
 ## Co sprawdzić
 
 ```bash
-# api-gateway odpowiada i faktycznie odpytał core-svc po gRPC (nie atrapa):
+# api-gateway odpowiada, odpytał core-svc I gateway-svc (Laravel/RoadRunner) po gRPC:
 curl http://localhost:8081/api/v1/health
 
 # core-svc sam w sobie + jego połączenie do Postgresa:
 curl http://localhost:8082/actuator/health
 
-# Keycloak wstał i ma gotową konfigurację OIDC:
-curl http://localhost:8180/realms/master/.well-known/openid-configuration
+# Keycloak, realm "pay" (nie "master"):
+curl http://localhost:8180/realms/pay/.well-known/openid-configuration
+
+# api-gateway: chroniony endpoint bez tokenu -> 401
+curl -o /dev/null -w '%{http_code}\n' http://localhost:8081/api/v1/me
 ```
 
-Poprawna odpowiedź z `/api/v1/health` wygląda tak (dwa niezależne serwisy,
-połączone realnym gRPC, nie hardcode):
+Pełny test logowania (Faza 3) wymaga przeglądarki — patrz `web/README.md`,
+strona `/panel`.
 
-```json
-{
-  "apiGateway": "UP",
-  "coreSvc": {
-    "status": "SERVING",
-    "serviceName": "core-svc",
-    "message": "core-svc odpowiada na wywołanie od: api-gateway"
-  }
-}
-```
+## Odtworzenie testowego użytkownika Keycloaka
+
+`partial-export` Keycloaka (skąd pochodzi `keycloak/pay-realm.json`) NIE
+eksportuje użytkowników. Po świeżym starcie (albo `docker compose down` bez
+zachowania wolumenu `postgres-keycloak`) trzeba dodać użytkownika ręcznie:
+
+- Konsola: `http://localhost:8180` → login `admin`/`admin` → realm `pay` →
+  Users → Add user. Ustaw `firstName` + `lastName` (inaczej Keycloak zażąda
+  uzupełnienia profilu przy pierwszym logowaniu), potem zakładka
+  Credentials → ustaw hasło (**nie** „temporary").
+- Albo przez Admin REST API (przykład payloadu i pełen przepływ curl —
+  `claude/marcin/03-ekosystem-mikroserwisow.md`, sekcja Faza 3).
 
 ## Porty
 
@@ -54,12 +61,17 @@ połączone realnym gRPC, nie hardcode):
 | `core-svc` | `8082` | REST wewnętrzny (Actuator) |
 | `core-svc` | `9090` | gRPC (konsument: api-gateway) |
 | `postgres-core` | `5433` | baza `core-svc` (dziś: żadnych tabel domenowych) |
-| `keycloak` | `8180` | konsola/OIDC (login: `admin`/`admin`, tylko dev) |
+| `keycloak` | `8180` | konsola/OIDC, realm `pay` (login admina: `admin`/`admin`, tylko dev) |
+
+`gateway-svc` (Laravel/RoadRunner, PoC Fazy 1) żyje w **osobnym** stacku
+(`docker/`), port `9091` — `api-gateway` dociera do niego przez
+`host.docker.internal`, nie nazwę serwisu (to inny projekt docker-compose).
 
 ## Czego tu celowo nie ma
 
 - Żadnego wpięcia do `panel/login` Laravela — auth tam działa dokładnie tak
-  jak dziś, Keycloak stoi obok.
+  jak dziś. Keycloak i `api-gateway` stoją obok, gotowe do użycia, ale
+  realne konta z dzisiejszych tabel `users` (bramka + sklep) nie są
+  migrowane/provisionowane do Keycloaka — to właściwy zakres Fazy 3, nie
+  zrobiony jeszcze.
 - Żadnej domeny biznesowej w `core-svc` — patrz `services/core-svc/README.md`.
-- gRPC po stronie Laravela — to osobny PoC (ryzyko opisane w dokumencie
-  architektury), nie część tej fazy.

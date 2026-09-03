@@ -11,6 +11,14 @@ pay:
     # dla nadpisania na host.docker.internal przy uruchomieniu w kontenerze.
     grpc-host: localhost
     grpc-port: 9091
+  keycloak:
+    # issuer = string zaszyty w tokenie (to, czego użyła przeglądarka) —
+    # NIE zmienia się między local/docker. jwk-set-uri = jak TEN kontener
+    # faktycznie dociąga klucze — patrz ecosystem/docker-compose.yml dla
+    # nadpisania na keycloak:8080 przy uruchomieniu w kontenerze.
+    issuer: http://localhost:8180/realms/pay
+    jwk-set-uri: http://localhost:8180/realms/pay/protocol/openid-connect/certs
+    audience: api-gateway
 
 management:
   endpoints:

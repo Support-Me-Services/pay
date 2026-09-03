@@ -34,7 +34,8 @@ export default function Home() {
     <main className="demo">
       <nav>
         <Link href="/">SSG / ISR (ta strona)</Link>
-        <Link href="/live">CSR →</Link>
+        <Link href="/live">CSR</Link>
+        <Link href="/panel">panel (Keycloak) →</Link>
       </nav>
       <h1>web — Next.js, wariant SSG/ISR</h1>
       <p className="lede">

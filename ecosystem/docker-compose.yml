@@ -32,7 +32,10 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
-    command: start-dev
+    # --import-realm wczytuje ./keycloak/pay-realm.json przy starcie (Faza 3) —
+    # realm "pay" + klient "web" (public, PKCE) odtwarzają się automatycznie,
+    # nie trzeba klikać w konsoli po każdym docker compose down/up.
+    command: start-dev --import-realm
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak
@@ -40,6 +43,8 @@ services:
       KC_DB_PASSWORD: keycloak
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/pay-realm.json:/opt/keycloak/data/import/pay-realm.json:ro
     ports:
       - "8180:8080"
     depends_on:
@@ -72,7 +77,11 @@ services:
       # tutaj) — host.docker.internal to Docker Desktop, nie nazwa serwisu.
       PAY_GATEWAY_SVC_GRPC_HOST: host.docker.internal
       PAY_GATEWAY_SVC_GRPC_PORT: "9091"
+      # issuer zostaje localhost:8180 (to widzi przeglądarka i to jest w
+      # tokenie) — tylko jwk-set-uri zmienia się na nazwę kontenera.
+      PAY_KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/pay/protocol/openid-connect/certs
     ports:
       - "8081:8081"
     depends_on:
       - core-svc
+      - keycloak
