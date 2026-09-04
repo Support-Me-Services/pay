@@ -1,0 +1,293 @@
+name: Efemeryczne środowisko testowe (GCP)
+
+# Faza 7 — push na feature-branch stawia cały stos (Laravel + api-gateway +
+# core-svc + Keycloak + bazy) na współdzielonym klastrze GKE Autopilot,
+# każdy branch we własnym namespace. CronJob `housekeeper` wewnątrz klastra
+# (patrz k8s/housekeeper/) kasuje namespace po godzinie bezczynności —
+# ten workflow NIE ma własnego harmonogramu sprzątania, tylko szybką
+# ścieżkę na zamknięcie PR-a (drugi job niżej), żeby nie czekać do godziny
+# jeśli test skończył się wcześniej.
+#
+# Wymaga jednorazowego setupu GCP opisanego w k8s/README.md (klaster
+# pay-ephemeral, Artifact Registry, Workload Identity Federation) — patrz
+# tam po szczegóły sekretów GCP_WORKLOAD_IDENTITY_PROVIDER/GCP_SERVICE_ACCOUNT
+# użytych niżej.
+
+on:
+  push:
+    branches: ["feature/**"]
+  pull_request:
+    types: [closed]
+
+env:
+  PROJECT_ID: please-support-me-test
+  REGION: europe-central2
+  CLUSTER: pay-ephemeral
+  REGISTRY: europe-central2-docker.pkg.dev/please-support-me-test/pay
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation (bez klucza JSON)
+  pull-requests: write # komentarz z URL-ami na PR-ze
+
+jobs:
+  teardown-on-close:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wylicz namespace brancha
+        id: ns
+        run: echo "name=pay-eph-$(echo '${{ github.event.pull_request.head.ref }}' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/^-*//;s/-*$//' | cut -c1-40)" >> "$GITHUB_OUTPUT"
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: pay-ephemeral
+          location: europe-central2
+
+      - name: Skasuj namespace natychmiast (PR zamknięty/zmergowany)
+        run: kubectl delete namespace "${{ steps.ns.outputs.name }}" --ignore-not-found
+
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    concurrency:
+      # Drugi push na ten sam branch anuluje poprzedni, jeszcze trwający
+      # deploy tego samego brancha — inaczej dwa równoległe joby walczyłyby
+      # o ten sam namespace.
+      group: pay-ephemeral-${{ github.ref_name }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wylicz namespace brancha
+        id: ns
+        run: echo "name=pay-eph-$(echo '${{ github.ref_name }}' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/^-*//;s/-*$//' | cut -c1-40)" >> "$GITHUB_OUTPUT"
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: pay-ephemeral
+          location: europe-central2
+
+      - uses: imranismail/setup-kustomize@v2
+        with:
+          kustomize-version: "5.4.3"
+
+      # --- budowa i push 3 obrazów, tag = SHA commita ---
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Zbuduj i wypchnij obraz Laravela
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.ci
+          push: true
+          tags: ${{ env.REGISTRY }}/laravel:${{ github.sha }}
+          cache-from: type=gha,scope=laravel
+          cache-to: type=gha,mode=max,scope=laravel
+
+      - name: Zbuduj i wypchnij obraz core-svc
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/core-svc/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/core-svc:${{ github.sha }}
+          cache-from: type=gha,scope=core-svc
+          cache-to: type=gha,mode=max,scope=core-svc
+
+      - name: Zbuduj i wypchnij obraz api-gateway
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/api-gateway/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/api-gateway:${{ github.sha }}
+          cache-from: type=gha,scope=api-gateway
+          cache-to: type=gha,mode=max,scope=api-gateway
+
+      # --- namespace + sekret admina Keycloaka (losowy, NIE "admin"/"admin" —
+      # środowisko jest publiczne przez godzinę) ---
+      - name: Namespace + etykiety TTL (housekeeper czyta pay/created-at)
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace "$NS" pay/ephemeral=true --overwrite
+          kubectl annotate namespace "$NS" pay/created-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
+
+      - name: Sekret hasła admina Keycloaka (nowy losowy przy każdym deployu)
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          kubectl create secret generic keycloak-admin -n "$NS" \
+            --from-literal=password="$(openssl rand -hex 16)" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # --- render nakładki ephemeral z realnym namespace/tagami obrazów,
+      # potem apply. --load-restrictor=LoadRestrictionsNone: k8s/overlays/
+      # ephemeral celowo odwołuje się do już istniejących k8s/*.yaml (zero
+      # duplikacji manifestów lokalnych), co domyślne, bardziej restrykcyjne
+      # `kubectl apply -k` by zablokowało (patrz k8s/README.md). ---
+      - name: Render + apply (kustomize)
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          SHA="${{ github.sha }}"
+          sed -i "s/pay-ephemeral-placeholder/${NS}/" k8s/overlays/ephemeral/kustomization.yaml
+          sed -i "s/newTag: ci-placeholder/newTag: ${SHA}/" k8s/overlays/ephemeral/kustomization.yaml
+          kustomize build --load-restrictor=LoadRestrictionsNone k8s/overlays/ephemeral | kubectl apply -f -
+
+      # --- Keycloak: czekaj na pod + zewnętrzny IP, dociągnij KC_HOSTNAME
+      # (nie da się go znać PRZED apply — LB dostaje IP dopiero po utworzeniu
+      # Service'u), poczekaj na restart z poprawną wartością ---
+      - name: Czekaj na Keycloak i ustaw KC_HOSTNAME
+        id: keycloak
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          kubectl rollout status deployment/keycloak -n "$NS" --timeout=180s
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc keycloak -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            [ -n "$IP" ] && break
+            sleep 10
+          done
+          [ -n "$IP" ] || { echo "Keycloak LoadBalancer nie dostał zewnętrznego IP w 5 minut"; exit 1; }
+          SSLIP="$(echo "$IP" | tr '.' '-').sslip.io"
+          echo "sslip=$SSLIP" >> "$GITHUB_OUTPUT"
+          kubectl set env deployment/keycloak -n "$NS" KC_HOSTNAME="http://${SSLIP}:8180"
+          kubectl rollout status deployment/keycloak -n "$NS" --timeout=120s
+
+      # --- świeży import realmu maskuje sekrety klientów w eksporcie (znany
+      # problem z Fazy 6) — pobierz PRAWDZIWE sekrety z Admin API ---
+      - name: Pobierz sekrety klientów Keycloaka
+        id: kc-secrets
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          SSLIP="${{ steps.keycloak.outputs.sslip }}"
+          ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
+          TOKEN=$(curl -sf -X POST "http://${SSLIP}:8180/realms/master/protocol/openid-connect/token" \
+            -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token)
+          for CLIENT in laravel-panel-gateway laravel-panel-storefront; do
+            ID=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
+              "http://${SSLIP}:8180/admin/realms/pay/clients?clientId=${CLIENT}" | jq -r '.[0].id')
+            SECRET=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
+              "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}/client-secret" | jq -r .value)
+            echo "::add-mask::${SECRET}"
+            VAR=$(echo "$CLIENT" | tr '[:lower:]-' '[:upper:]_')
+            echo "${VAR}_ID=${ID}" >> "$GITHUB_OUTPUT"
+            echo "${VAR}_SECRET=${SECRET}" >> "$GITHUB_OUTPUT"
+          done
+          echo "token=${TOKEN}" >> "$GITHUB_OUTPUT"
+
+      # --- api-gateway/core-svc już zaaplikowane wyżej (JWKS URI zawsze
+      # wewnątrzklastrowy, nie zależy od zewnętrznych IP) — tylko czekamy ---
+      - name: Czekaj na core-svc i api-gateway
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          kubectl rollout status deployment/core-svc -n "$NS" --timeout=180s
+          kubectl rollout status deployment/api-gateway -n "$NS" --timeout=180s
+
+      # --- Laravel: dogrywamy prawdziwy URL Keycloaka + sekrety klientów,
+      # restart, potem czekamy na WŁASNY zewnętrzny IP ---
+      - name: Ustaw config Keycloaka na Laravelu i czekaj na IP
+        id: laravel
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          SSLIP="${{ steps.keycloak.outputs.sslip }}"
+          kubectl set env deployment/laravel-app -n "$NS" \
+            KEYCLOAK_BASE_URL="http://${SSLIP}:8180" \
+            KEYCLOAK_CLIENT_SECRET_GATEWAY="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_SECRET }}" \
+            KEYCLOAK_CLIENT_SECRET_STOREFRONT="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_SECRET }}"
+          kubectl rollout status deployment/laravel-app -n "$NS" --timeout=300s
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc laravel-app -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            [ -n "$IP" ] && break
+            sleep 10
+          done
+          [ -n "$IP" ] || { echo "laravel-app LoadBalancer nie dostał zewnętrznego IP w 5 minut"; exit 1; }
+          SSLIP_LARAVEL="$(echo "$IP" | tr '.' '-').sslip.io"
+          echo "sslip=$SSLIP_LARAVEL" >> "$GITHUB_OUTPUT"
+
+      - name: Adres api-gateway
+        id: api-gateway
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc api-gateway -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            [ -n "$IP" ] && break
+            sleep 10
+          done
+          [ -n "$IP" ] || { echo "api-gateway LoadBalancer nie dostał zewnętrznego IP w 5 minut"; exit 1; }
+          echo "sslip=$(echo "$IP" | tr '.' '-').sslip.io" >> "$GITHUB_OUTPUT"
+
+      # --- dopisz adres Laravela do dozwolonych redirect URI obu klientów —
+      # dopiero teraz, bo poznaliśmy go dopiero PO wystawieniu jego Service'u.
+      # PUT nadpisuje całą reprezentację klienta, więc najpierw GET i
+      # DOPISUJEMY do istniejącej listy (nie kasujemy localhost/prod). ---
+      - name: Zarejestruj redirect URI Laravela w Keycloaku
+        run: |
+          SSLIP="${{ steps.keycloak.outputs.sslip }}"
+          SSLIP_LARAVEL="${{ steps.laravel.outputs.sslip }}"
+          TOKEN="${{ steps.kc-secrets.outputs.token }}"
+          for PAIR in "LARAVEL_PANEL_GATEWAY:${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_ID }}" \
+                      "LARAVEL_PANEL_STOREFRONT:${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_ID }}"; do
+            ID="${PAIR#*:}"
+            CLIENT=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
+              "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}")
+            UPDATED=$(echo "$CLIENT" | jq \
+              --arg cb "http://${SSLIP_LARAVEL}:8000/panel/auth/callback" \
+              --arg lo "http://${SSLIP_LARAVEL}:8000/panel/login" \
+              --arg wo "http://${SSLIP_LARAVEL}:8000" \
+              '.redirectUris += [$cb] | ."attributes"."post.logout.redirect.uris" += ("+" + $lo) | .webOrigins += [$wo]')
+            curl -sf -X PUT -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
+              -d "$UPDATED" "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}" >/dev/null
+          done
+
+      - name: Podsumowanie
+        run: |
+          {
+            echo "## Efemeryczne środowisko testowe — \`${{ github.ref_name }}\`"
+            echo ""
+            echo "Zniknie automatycznie po godzinie bezczynności (albo przy zamknięciu PR-a)."
+            echo ""
+            echo "| Usługa | Adres |"
+            echo "|---|---|"
+            echo "| Laravel (Storefront/panel) | http://${{ steps.laravel.outputs.sslip }}:8000 |"
+            echo "| api-gateway | http://${{ steps.api-gateway.outputs.sslip }}:8081 |"
+            echo "| Keycloak (login/admin) | http://${{ steps.keycloak.outputs.sslip }}:8180 |"
+            echo ""
+            echo "Login admina Keycloaka: \`admin\` / (patrz Secret \`keycloak-admin\` w namespace \`${{ steps.ns.outputs.name }}\`)."
+            echo ""
+            echo "_Uwaga: efemeryczne środowisko testuje wyłącznie tenant Storefront — patrz k8s/README.md._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Komentarz na PR (jeśli istnieje otwarty PR dla tego brancha)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              head: `${context.repo.owner}:${context.ref_name}`, state: "open",
+            });
+            if (prs.data.length === 0) return;
+            const body = [
+              `**Efemeryczne środowisko testowe gotowe** (zniknie po godzinie):`,
+              `- Laravel: http://${{ steps.laravel.outputs.sslip }}:8000`,
+              `- api-gateway: http://${{ steps.api-gateway.outputs.sslip }}:8081`,
+              `- Keycloak: http://${{ steps.keycloak.outputs.sslip }}:8180`,
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: prs.data[0].number, body,
+            });

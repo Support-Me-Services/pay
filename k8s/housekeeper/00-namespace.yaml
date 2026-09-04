@@ -1,0 +1,6 @@
+# Faza 7 — namespace trwały (NIE efemeryczny), wdrażany RĘCZNIE raz podczas
+# jednorazowego setupu GCP (patrz k8s/README.md), nie przez CI per-branch.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pay-system

@@ -1,0 +1,16 @@
+# Faza 7 — baza wspólna dla lokalnego Docker Desktop i chmury (GCP).
+# Referencja do ISTNIEJĄCYCH plików w k8s/ — zero duplikacji, zero zmian
+# w dotychczasowym `kubectl apply -f k8s/` (ten katalog nic z tego nie
+# rusza). Nakładka chmurowa: k8s/overlays/ephemeral/.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../00-namespace.yaml
+  - ../10-postgres-core.yaml
+  - ../11-postgres-keycloak.yaml
+  - ../12-keycloak.yaml
+  - ../20-core-svc.yaml
+  - ../21-api-gateway.yaml
+  - ../30-mysql.yaml
+  - ../31-laravel-app.yaml

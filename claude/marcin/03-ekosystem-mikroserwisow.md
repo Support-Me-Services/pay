@@ -868,3 +868,146 @@ osobny przyszły temat.
 Wszystkie porty i szczegóły — patrz README w każdym katalogu
 (`services/*/README.md`, `ecosystem/README.md`, `web/README.md`) i sekcje
 „Pułapki napotkane" wyżej.
+
+## Faza 7 — efemeryczne środowisko testowe na GCP per feature-branch
+
+Użytkownik: push na `feature/**` ma automatycznie postawić cały stos na
+GCP, gotowy do testowania, i zniknąć samoczynnie po godzinie — żeby nie
+generować kosztów. Pełny plan (kontekst, uzasadnienie każdej decyzji):
+`.claude/plans/mellow-floating-babbage.md` w tej sesji — tu tylko skrót +
+pułapki napotkane przy implementacji.
+
+**Architektura w skrócie**: jeden stały, współdzielony klaster GKE
+Autopilot (`pay-ephemeral`), branch = namespace (`pay-eph-<slug>`) w tym
+klastrze, nie osobny klaster (tworzenie klastra trwa minuty — nie do
+zaakceptowania w pętli push→środowisko). Bazy i `core-svc` jako
+`ClusterIP` (nie `LoadBalancer` — koszt + zbędna ekspozycja bazy danych w
+internecie), `laravel-app`/`api-gateway`/`keycloak` jako `LoadBalancer` z
+adresami `sslip.io` (magiczny DNS z IP w nazwie, zero konfiguracji DNS —
+świadomie bez HTTPS/Ingressa, to godzinne testy wewnętrzne). Sprzątanie:
+`CronJob` **wewnątrz klastra** (`k8s/housekeeper/`), nie harmonogram w
+GitHub Actions — działa nawet przy awarii Actions, zero uprawnień GCP
+(samo `kubectl delete namespace` zwalnia adresy IP LoadBalancerów).
+
+**Kluczowy problem projektowy i jego rozwiązanie — "jajko i kura"**:
+Keycloak musi znać z góry dozwolone redirect URI Laravela, ale zewnętrzny
+adres Laravela poznaje się dopiero PO wystawieniu jego `Service`
+(LoadBalancer dostaje IP asynchronicznie). Rozwiązane dzięki temu, że
+`ResolveTenant::applyKeycloakClient()` (Faza 6) już buduje `redirect`
+dynamicznie z `$request->getSchemeAndHttpHost()`, nie z `config('app.url')`
+— Laravel nie musi z góry znać własnego adresu. Jedyne, co Keycloak musi
+poznać z wyprzedzeniem, to allowlist redirect URI, a to da się dopisać PO
+fakcie przez Admin API (ta sama technika co ręczne zmiany w Fazie 6).
+Sekwencja w CI: bazy → Keycloak (czekaj na IP) → Admin API: pobierz
+prawdziwe sekrety klientów (świeży import maskuje je, ten sam problem co
+punkt 8 wyżej) → core-svc/api-gateway (JWKS URI zawsze wewnątrzklastrowy,
+bez zmian) → laravel-app z realnym `KEYCLOAK_BASE_URL`+sekretami (czekaj
+na WŁASNY IP) → Admin API: dopisz redirect URI Laravela do obu klientów.
+Żaden krok nie wymaga ręcznego restartu — `kubectl set env` na
+Deploymencie i tak wymusza rolling restart z nowym env.
+
+### Pułapki napotkane
+
+1. **Kustomize `LoadRestrictionsRootOnly` blokuje odwołania do plików
+   POZA katalogiem danej kustomizacji** — `k8s/base/kustomization.yaml`
+   celowo referuje istniejące `k8s/*.yaml` (`../00-namespace.yaml` itd.,
+   zero duplikacji manifestów), ale to domyślnie zablokowane jako
+   "security" ryzyko ("file ... is not in or below ..."). `kubectl apply
+   -k` NIE ma flagi, żeby to poluzować (nie eksponuje
+   `--load-restrictor`) — wymaga **samodzielnej** binarki `kustomize`
+   (`kustomize build --load-restrictor=LoadRestrictionsNone | kubectl
+   apply -f -`), zainstalowanej w CI przez `imranismail/setup-kustomize`.
+   Dotyczy to WYŁĄCZNIE ścieżki CI (chmura) — lokalny `kubectl apply -f
+   k8s/` nigdy nie używał Kustomize, więc nie ma tego ograniczenia i
+   pozostaje bez zmian.
+2. **Obraz Laravela lokalnie (`docker/Dockerfile`) w ogóle nie zawiera
+   kodu aplikacji** — kod wchodzi przez `hostPath` na dysk Windows, co
+   fizycznie nie istnieje na GKE. Nowy `docker/Dockerfile.ci` (wielo-
+   etapowy: `composer install --no-scripts` bez kodu aplikacji jeszcze
+   niekopiowanego, `npm run build:client` w osobnym etapie, finalny obraz
+   PHP z zapieczonym kodem/vendor/`public/build`) — `docker/entrypoint.sh`
+   zostaje bez zmian (już idempotentny, composer install no-opuje się gdy
+   `vendor/` już jest).
+3. **`composer install --no-scripts` (konieczne, bo kod app jeszcze nie
+   skopiowany na tamtym etapie) zostawia `bootstrap/cache/packages.php`
+   nieaktualny** — bez ręcznego `php artisan package:discover` w
+   finalnym etapie obrazu, provider Inertii nie jest zarejestrowany
+   ("Target [Inertia\Ssr\Gateway] is not instantiable", 500) — dokładnie
+   ten sam, już wcześniej udokumentowany błąd co w `bin/deploy.sh`
+   (komentarz przy `package:discover` tamże). Dodane jawnie po `COPY`
+   pełnego kodu w `Dockerfile.ci`.
+4. **`gcloud` na tej maszynie**: plain `gcloud` (bez rozszerzenia, z PATH)
+   zgłasza błąd "nie znaleziono Python" przy realnych komendach (nie przy
+   `--version`) — użyj pełnej ścieżki do `gcloud.cmd`
+   (`C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin\
+   gcloud.cmd`), ten sam plik co w pamięci `gcp-server-access`. Osobno:
+   token auth wygasa i wymaga interaktywnego `gcloud auth login` — nie da
+   się tego zrobić nieinteraktywnie z sesji Claude, użytkownik musi to
+   zrobić sam przed jednorazowym setupem GCP.
+
+### Świadomie NIE zrobione (v1)
+
+Testowanie tenantu Gateway w efemerycznym środowisku (tylko Storefront —
+nieznany host mapuje się na `localhost` wyłącznie w `environment('local')`),
+HTTPS/własna domena, cache warstw Dockera między buildami, reguły dla
+PR-ów z forków (repo prywatne, nieistotne). Pełna lista w planie.
+
+### Decyzja (po fakcie, zmieniła pierwotny plan): 2 osobne projekty/billing accounty, nie 1 wspólny klaster
+
+Pierwotny plan zakładał JEDEN wspólny klaster GKE (`pay-shared`) na testy
+i (kiedyś) produkcję, żeby nie dzielić się darmowym kredytem GCP
+($74.40/mies. na opłatę za zarządzanie klastra — pokrywa tylko jeden
+klaster PER BILLING ACCOUNT). Użytkownik świadomie to odrzucił: to system
+przetwarzający płatności/darowizny — stabilność i bezpieczeństwo produkcji
+(brak wspólnych okien konserwacji węzłów, brak `housekeeper`-a z prawem
+kasowania namespace'ów w tym samym klastrze co produkcja) są ważniejsze
+niż ta oszczędność. Ostateczna decyzja, silniejsza niż same osobne
+klastry: **2 CAŁKOWICIE OSOBNE billing accounty** (nie tylko 2 projekty na
+jednym) — dodatkowa korzyść odkryta po drodze: kredyt $74.40/mies. liczy
+się PER BILLING ACCOUNT, więc 2 billing accounty = 2 pełne darmowe
+kredyty, zero kompromisu kosztowego względem 1 wspólnego klastra.
+
+Przydział kont Google (dwa istniejące na tej maszynie):
+- `founder@please-support-me.com` → **produkcja**, bez zmian (już dziś
+  właściciel `please-support-me-499509` — potwierdzone pamięcią
+  `gcp-server-access`). Konto rolowe/firmowe, nie osobiste — celowo, żeby
+  krytyczna infrastruktura przetrwała zmiany kadrowe.
+- `marcin.lula@please-support-me.com` (osobiste konto Marcina) → **nowy
+  billing account pod środowiska testowe**, dopiero co założony przez
+  użytkownika w konsoli GCP (ja nie mogę zakładać billing accountów —
+  wymaga formularza płatności).
+
+Nowy projekt GCP pod testy: **`please-support-me-test`** (jeszcze NIE
+utworzony). Klaster w nim: **`pay-ephemeral`** (nazwa już użyta we
+wszystkich plikach — `.github/workflows/ephemeral-env.yml`,
+`k8s/README.md`, `k8s/overlays/ephemeral/kustomization.yaml`).
+
+### Stan na przerwanie sesji (kontynuacja na innym komputerze)
+
+**Wszystkie pliki są gotowe i spójne, ZERO zasobów GCP jeszcze
+utworzonych.** Ostatnia rzecz zablokowana: token `gcloud auth` dla
+`marcin.lula@please-support-me.com` wygasł, wymaga interaktywnego
+`gcloud auth login marcin.lula@please-support-me.com` (nie da się zrobić
+nieinteraktywnie z sesji Claude — dokładnie ten sam problem co wcześniej
+z `founder@`, patrz pułapka #4 wyżej).
+
+**Następne kroki, w kolejności** (pełne komendy: `k8s/README.md`, sekcja
+"Jednorazowy setup"):
+1. `gcloud auth login marcin.lula@please-support-me.com` (ręcznie,
+   interaktywnie).
+2. `gcloud billing accounts list --account=marcin.lula@please-support-me.com`
+   — potwierdzić ID nowo założonego billing accountu.
+3. `gcloud projects create please-support-me-test` + `gcloud billing
+   projects link` do tego ID.
+4. Włączyć API (`container`, `artifactregistry`, `iam`, `iamcredentials`,
+   `cloudresourcemanager`).
+5. Klaster Autopilot `pay-ephemeral` (region `europe-central2`).
+6. Artifact Registry `pay`.
+7. Service account `github-ci` + role `container.developer` +
+   `artifactregistry.writer` (ograniczone, NIE Owner/Editor).
+8. Workload Identity Federation (GitHub Actions bez klucza JSON) — wynik:
+   sekrety repo GitHub `GCP_WORKLOAD_IDENTITY_PROVIDER`,
+   `GCP_SERVICE_ACCOUNT`.
+9. `kubectl apply -f k8s/housekeeper/` (raz, ręcznie).
+10. Pierwszy realny test: branch `feature/...`, push, sprawdzić
+    Actions → podsumowanie z URL-ami → zalogować się przez przeglądarkę.

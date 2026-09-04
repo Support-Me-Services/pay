@@ -1,0 +1,122 @@
+# Faza 7 — nakładka na k8s/base dla efemerycznego środowiska testowego na
+# GCP (per feature-branch). CI podmienia dwie rzeczy przed `kubectl apply -k`:
+#   - `namespace:` niżej (sed na "pay-ephemeral-placeholder" -> realny slug brancha)
+#   - tagi obrazów w sekcji `images:` (sed na SHA commita)
+# Reszta (ClusterIP dla usług wewnętrznych, realm Keycloaka jako ConfigMap,
+# obraz Laravela bez hostPath, resources.requests dla Autopilota) jest stała.
+#
+# Sekret KEYCLOAK_ADMIN_PASSWORD celowo NIE jest tu generowany przez Kustomize
+# (secretGenerator dostałby hash w nazwie przy KAŻDEJ zmianie, a wartość i tak
+# musi być losowa PER URUCHOMIENIE CI, nie stała w repo) — CI tworzy Secret
+# `keycloak-admin` imperatywnie (`kubectl create secret ... --dry-run=client
+# -o yaml | kubectl apply -f -`) PRZED tym `kubectl apply -k`, patrz
+# .github/workflows/ephemeral-env.yml. Patch niżej tylko się do niego odwołuje.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pay-ephemeral-placeholder
+
+resources:
+  - ../../base
+
+configMapGenerator:
+  - name: keycloak-realm
+    files:
+      - ../../../ecosystem/keycloak/pay-realm.json
+    options:
+      disableNameSuffixHash: true
+
+images:
+  - name: pay-laravel:local
+    newName: europe-central2-docker.pkg.dev/please-support-me-test/pay/laravel
+    newTag: ci-placeholder
+  - name: ecosystem_core-svc:latest
+    newName: europe-central2-docker.pkg.dev/please-support-me-test/pay/core-svc
+    newTag: ci-placeholder
+  - name: ecosystem_api-gateway:latest
+    newName: europe-central2-docker.pkg.dev/please-support-me-test/pay/api-gateway
+    newTag: ci-placeholder
+
+patches:
+  # --- bazy wewnętrzne: bez zewnętrznego IP (koszt LB + niepotrzebna
+  # ekspozycja bazy danych w internecie na czas testu) ---
+  - target: { kind: Service, name: db }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Service, name: postgres-core }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Service, name: core-svc }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
+      # (postgres-keycloak jest już ClusterIP domyślnie — bez zmian)
+
+  # --- core-svc / api-gateway: obraz z rejestru zamiast lokalnego, Autopilot
+  # wymaga resources.requests ---
+  - target: { kind: Deployment, name: core-svc }
+    patch: |-
+      - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
+  - target: { kind: Deployment, name: api-gateway }
+    patch: |-
+      - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
+
+  # --- Keycloak: realm z ConfigMapy (nie hostPath — nie istnieje na GKE),
+  # losowe hasło admina z Secretu wytworzonego przez CI, resources.requests
+  # (JVM Keycloaka potrzebuje więcej niż domyślne minimum Autopilota) ---
+  - target: { kind: Deployment, name: keycloak }
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/volumes/0
+        value: { name: realm, configMap: { name: keycloak-realm } }
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts/0/subPath
+        value: pay-realm.json
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value: { requests: { cpu: "500m", memory: "1Gi" } }
+  # Zmiana env po NAZWIE (merge strategiczny), nie po indeksie — indeksy w
+  # k8s/12-keycloak.yaml są kruche (już raz się pomyliłem licząc ręcznie).
+  # KEYCLOAK_ADMIN_PASSWORD: z wygenerowanego przez CI Secretu, nie "admin"
+  # na sztywno (środowisko jest publiczne przez godzinę). KC_HOSTNAME:
+  # placeholder — prawdziwy zewnętrzny adres poznajemy dopiero PO
+  # `kubectl apply` (LoadBalancer dostaje IP asynchronicznie), CI dogrywa
+  # go przez `kubectl set env` zaraz po odczytaniu IP (patrz workflow).
+  - target: { kind: Deployment, name: keycloak }
+    patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: keycloak
+      spec:
+        template:
+          spec:
+            containers:
+              - name: keycloak
+                env:
+                  - name: KEYCLOAK_ADMIN_PASSWORD
+                    value: null
+                    valueFrom: { secretKeyRef: { name: keycloak-admin, key: password } }
+                  - name: KC_HOSTNAME
+                    value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnetrznego IP"
+
+  # --- Laravel: obraz z zapieczonym kodem (Dockerfile.ci) zamiast hostPath —
+  # wolumeny repo/entrypoint znikają, vendor/storage jako emptyDir (środowisko
+  # jednorazowe, nic nie musi przetrwać restartu poda) ---
+  - target: { kind: Deployment, name: laravel-app }
+    patch: |-
+      - { op: remove, path: /spec/template/spec/volumes/1 }
+      - { op: remove, path: /spec/template/spec/volumes/0 }
+      - { op: replace, path: /spec/template/spec/volumes/0, value: { name: vendor, emptyDir: {} } }
+      - { op: replace, path: /spec/template/spec/volumes/1, value: { name: storage, emptyDir: {} } }
+      - { op: remove, path: /spec/template/spec/containers/0/volumeMounts/1 }
+      - { op: remove, path: /spec/template/spec/containers/0/volumeMounts/0 }
+      - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "500m", memory: "1Gi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/env, value: [] }
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_BASE_URL, value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnętrznego IP Keycloaka" } }
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_INTERNAL_BASE_URL, value: "http://keycloak:8080" } }
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_REALM, value: "pay" } }
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_CLIENT_SECRET_GATEWAY, value: "PLACEHOLDER-ustawiane przez CI po pobraniu z Keycloak Admin API" } }
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_CLIENT_SECRET_STOREFRONT, value: "PLACEHOLDER-ustawiane przez CI po pobraniu z Keycloak Admin API" } }

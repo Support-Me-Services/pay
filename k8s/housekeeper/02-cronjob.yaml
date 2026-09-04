@@ -1,0 +1,41 @@
+# Co 5 minut kasuje namespace'y efemeryczne (etykieta pay/ephemeral=true)
+# starsze niż godzinę (adnotacja pay/created-at, RFC3339 UTC) — patrz
+# .github/workflows/ephemeral-env.yml, które ją ustawia/odświeża przy
+# każdym (re)deployu brancha. Działa niezależnie od GitHub Actions (nawet
+# przy jego awarii) — jedyna zależność to samo Kubernetes API.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: housekeeper
+  namespace: pay-system
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 120
+      template:
+        spec:
+          serviceAccountName: housekeeper
+          restartPolicy: Never
+          containers:
+            - name: housekeeper
+              image: bitnami/kubectl:1.30
+              command: ["bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  NOW=$(date -u +%s)
+                  kubectl get namespace -l pay/ephemeral=true \
+                    -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.pay/created-at}{"\n"}{end}' \
+                    | while IFS=$'\t' read -r NS CREATED; do
+                        [ -z "$CREATED" ] && continue
+                        CREATED_EPOCH=$(date -u -d "$CREATED" +%s) || continue
+                        AGE=$(( NOW - CREATED_EPOCH ))
+                        if [ "$AGE" -gt 3600 ]; then
+                          echo "Kasuję namespace $NS (wiek: ${AGE}s > 3600s)"
+                          kubectl delete namespace "$NS" --wait=false
+                        else
+                          echo "Zostawiam $NS (wiek: ${AGE}s)"
+                        fi
+                      done

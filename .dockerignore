@@ -1,0 +1,19 @@
+# docker/Dockerfile.ci (Faza 7) robi COPY . . z korzenia repo — bez tego
+# kontekst budowania ciągnąłby .git/, node_modules/, vendor/ i .env
+# (prawdziwe sekrety lokalne, w .gitignore, ale na wszelki wypadek jawnie
+# tu też wykluczone).
+.git
+node_modules
+vendor
+public/build
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/logs
+.env
+.env.*
+!.env.example
+!.env.docker
+k8s
+ecosystem
+services

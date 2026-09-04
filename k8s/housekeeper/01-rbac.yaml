@@ -1,0 +1,32 @@
+# Uprawnienia housekeepera: WYŁĄCZNIE Kubernetes API (get/list/delete na
+# namespace'ach) — celowo zero uprawnień GCP. `kubectl delete namespace`
+# kasuje kaskadowo wszystko w środku (Deploymenty, Service'y — GKE samo
+# zwalnia adresy IP LoadBalancerów przy kasowaniu Service'u, PVC, Secrety),
+# więc nie ma potrzeby integrować się z GCP API osobno.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: housekeeper
+  namespace: pay-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pay-housekeeper
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pay-housekeeper
+subjects:
+  - kind: ServiceAccount
+    name: housekeeper
+    namespace: pay-system
+roleRef:
+  kind: ClusterRole
+  name: pay-housekeeper
+  apiGroup: rbac.authorization.k8s.io
