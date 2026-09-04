@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'handle',
         'is_admin',
+        'keycloak_sub',
     ];
 
     /**

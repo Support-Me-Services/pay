@@ -40,6 +40,14 @@ php artisan migrate \
     --path=app/Modules/Init/database/migrations \
     --force || true
 
+# schemat bazowy MUSI wejść też do nfc_pay (Gateway) — dotąd wchodził
+# WYŁĄCZNIE do domyślnego TENANT-a ze .env (nfc_shop1/Storefront), bo
+# powyższe wywołanie nie ma TENANT= i nfc_pay nigdy nie dostawało tabeli
+# users/sessions/cache/jobs z tej ścieżki (Faza 6 to wykryła: keycloak_sub
+# nie miał gdzie wejść w bazie bramki). Gateway ma dziś WŁASNY panel/login
+# z tabelą users, więc to nie jest nowa potrzeba, tylko wcześniej ukryta luka.
+TENANT=pay.please-support-me.com php artisan migrate --path=database/migrations --force || true
+
 # schemat bramki (Gateway -> baza nfc_pay) + sklep "shops" z kluczem API —
 # potrzebne do pełnego mock-flow płatności lokalnie (Wesprzyj -> ekran testowy
 # PayU zamiast 401). TENANT tylko na czas migracji (przełącza domyślną bazę);

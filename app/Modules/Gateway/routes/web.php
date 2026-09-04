@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\KeycloakController;
 use App\Modules\Gateway\Http\Controllers\LandingController;
 use App\Modules\Gateway\Http\Controllers\Panel;
 use Illuminate\Support\Facades\Route;
@@ -15,18 +16,17 @@ Route::post('/lead', [LandingController::class, 'storeLead'])->name('lead.store'
 
 Route::get('/internal/activation-status', [App\Modules\Gateway\Http\Controllers\ActivationStatusController::class, 'show'])->name('activation.status');
 
-// Panel bramki
+// Panel bramki — logowanie WYŁĄCZNIE przez Keycloak (Faza 6), patrz
+// App\Http\Controllers\Auth\KeycloakController. Bez samoobsługowej
+// rejestracji, jak dziś — brak dopasowania po keycloak_sub kończy się 403.
 Route::prefix('panel')->name('panel.')->group(function () {
     Route::get('/login', [Panel\LoginController::class, 'show'])->name('login');
-    Route::post('/login', [Panel\LoginController::class, 'login'])->name('login.post');
-    Route::post('/logout', [Panel\LoginController::class, 'logout'])->name('logout');
+    Route::get('/auth/redirect', [KeycloakController::class, 'redirect'])->name('auth.redirect');
+    Route::get('/auth/callback', [KeycloakController::class, 'callback'])->name('auth.callback');
+    Route::post('/logout', [KeycloakController::class, 'logout'])->name('logout');
 
     Route::middleware('auth')->group(function () {
         Route::get('/', [Panel\DashboardController::class, 'index'])->name('dashboard');
-
-        // Zmiana hasła zalogowanego konta.
-        Route::get('/password', [Panel\PasswordController::class, 'edit'])->name('password.edit');
-        Route::put('/password', [Panel\PasswordController::class, 'update'])->name('password.update');
 
         Route::get('/shops', [Panel\ShopController::class, 'index'])->name('shops.index');
         Route::get('/shops/create', [Panel\ShopController::class, 'create'])->name('shops.create');

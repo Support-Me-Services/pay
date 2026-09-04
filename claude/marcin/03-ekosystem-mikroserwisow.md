@@ -657,6 +657,159 @@ teraz dzieje się sam, w obu światach (`docker/` i `k8s/`).
   <port>` (np. `keycloak` czeka na `postgres-keycloak`, `core-svc` na
   `postgres-core`, `laravel-app` na `db`).
 
+## Faza 6 — Laravel bez własnego uwierzytelniania, wszystko przez Keycloak (2026-09-04)
+
+Na wyraźną prośbę użytkownika: **panel Gateway I Storefront logują się
+WYŁĄCZNIE przez Keycloak** — Laravel nie sprawdza już żadnego hasła
+samodzielnie (`Auth::attempt()`/`Hash::check` usunięte całkowicie). Sesja
+Laravela ZOSTAJE jako nośnik stanu (CSRF/Inertia/`$request->user()` bez
+zmian) — Keycloak zastępuje wyłącznie weryfikację hasła na wejściu. Pełny
+plan projektowy (decyzje i uzasadnienia) zachowany w
+`C:\Users\marci\.claude\plans\mellow-floating-babbage.md`. **Wyłącznie
+lokalnie** — zero zmian w prawdziwym/produkcyjnym Laravelu.
+
+### Kluczowe decyzje (skrót — pełne uzasadnienia w pliku planu)
+
+- **Dwa klienty Keycloaka** (`laravel-panel-gateway`, `laravel-panel-storefront`,
+  oba poufne/`publicClient:false`) — Gateway i Storefront to dziś
+  kompletnie osobne tożsamości (osobne bazy, osobne `users`), jeden
+  wspólny klient osłabiłby izolację rotacji sekretu.
+- **Dopasowanie konta WYŁĄCZNIE po nowej kolumnie `keycloak_sub`, NIGDY po
+  e-mailu** — realm ma `verifyEmail:false`, auto-link po e-mailu byłby
+  furtką na przejęcie konta. Storefront: brak dopasowania → nowe konto.
+  Gateway: brak dopasowania → 403, zero auto-rejestracji (jak dziś).
+- **Prawdziwe single-logout** — `id_token` w sesji, użyty jako
+  `id_token_hint` przy end-session Keycloaka, żeby SSO-sesja w Keycloaku
+  faktycznie się kończyła (nie tylko lokalna sesja Laravela).
+- `app/Http/Controllers/Auth/KeycloakController.php` — jeden wspólny
+  kontroler dla obu modułów (wcześniej dwie kopie `LoginController` z
+  własnym `Auth::attempt()`). Który klient Keycloaka jest użyty ustala
+  `ResolveTenant::applyKeycloakClient()` per host (ten sam mechanizm co już
+  istniejący `gateway_api_key` per-host).
+- Usunięte całkowicie: oba `LoginController`y (stary wariant),
+  `Storefront/RegisterController`, oba `PasswordController`y (routes +
+  kontrolery + strony Inertia) — zmiana hasła to teraz konto Keycloaka
+  (link do `{issuer}/account`, nowa karta).
+- Migracja `users.keycloak_sub` (nullable, unique) + `users.password`
+  teraz `nullable()` — jedna migracja w `database/migrations`, dotyczy OBU
+  baz (`nfc_shop1`, `nfc_pay`).
+
+### Realne błędy znalezione przy weryfikacji (nie tylko test artefakty)
+
+Ta faza miała wyjątkowo dużo prawdziwych bugów złapanych na etapie
+weryfikacji — zapisane tu, bo żaden nie był oczywisty z samego kodu:
+
+1. **Brak przycisku wylogowania w `PanelLayout.jsx` (Storefront)** —
+   `logoutUrl` był już poprawnie współdzielony jako prop z
+   `HandleInertiaRequests`, ale layout nigdy go nie renderował (sprawdzone
+   przez `git diff` — luka ISTNIAŁA już PRZED Fazą 6, nie coś co ta faza
+   zepsuła). `GatewayPanelLayout.jsx` miał link "Wyloguj" cały czas.
+   Fix: dodany analogiczny link do `PanelLayout.jsx`.
+2. **`router.post()` Inertii nie może wylogować przez Keycloak** — po
+   dodaniu linku "Wyloguj" (wzorem Gateway: `router.post(panel.logoutUrl)`,
+   `onClick` + `e.preventDefault()`) wylogowanie w przeglądarce kończyło
+   się cichym `net::ERR_FAILED` w konsoli (złapane przez
+   `read_network_requests`, nie widoczne na oko). Przyczyna: `router.post()`
+   idzie przez `fetch`/XHR; `KeycloakController::logout()` odpowiada
+   `redirect()->away($keycloakEndSessionUrl)` — **przekierowaniem
+   cross-origin** (Keycloak na innym porcie/hoście). Przeglądarka NIE
+   pozwala scriptowemu `fetch`/XHR podążyć za takim przekierowaniem i
+   odczytać efektu (CORS) — to działa tylko dla PRAWDZIWEJ nawigacji
+   (link, pełny submit formularza). Dotyczyło OBU layoutów (Gateway też
+   używał `router.post`, wcześniej nieszkodliwie, bo stare
+   Gateway-logout przekierowywało tylko wewnątrz appki, same-origin).
+   **Fix**: `logout()` w obu layoutach buduje i submituje PRAWDZIWY
+   `<form method="POST">` (z tokenem CSRF) przez `document.body.appendChild`
+   + `form.submit()` — pełna nawigacja, nie fetch, bez ograniczenia CORS.
+3. **Keycloak odrzucał `post_logout_redirect_uri`** ("Invalid redirect
+   uri") — atrybut klienta `post.logout.redirect.uris` domyślnie `"+"`
+   (= ta sama lista co `redirectUris`, czyli tylko `/panel/auth/callback`),
+   a `KeycloakController::logout()` woła end-session z
+   `post_logout_redirect_uri=/panel/login`. **Fix**: ustawiony jawnie na
+   URL logowania każdego klienta przez Admin API (`PUT
+   /admin/realms/pay/clients/{id}`, pole `attributes["post.logout.redirect.uris"]`).
+   Bez tego end-session był odrzucany PRZED wylogowaniem — SSO-sesja
+   przeżywała, drugie logowanie cicho przechodziło bez ekranu Keycloaka
+   (dowód: dopiero PO tym fixie drugie logowanie faktycznie pokazało
+   prawdziwy formularz logowania Keycloaka).
+4. **`users.email` jest unique → 500 zamiast czystej odmowy** — test
+   regresyjny na decyzję "brak auto-linku po e-mailu" (plan zakładał: e-mail
+   pasujący do istniejącego konta, ale INNY/brak `keycloak_sub` → tworzy
+   OSOBNE konto) okazał się niewykonalny w praktyce: `email` w `users` MA
+   unikalny indeks (potwierdzone: `DESCRIBE` → `email varchar(255) NO UNI`),
+   więc `User::create()` z kolidującym e-mailem rzuca nieobsłużony
+   `UniqueConstraintViolationException` → surowe 500, nie "osobne konto".
+   Sama własność bezpieczeństwa trzyma się (NIE loguje w cudze konto), ale
+   UX jest zły (500 zamiast czytelnego komunikatu). **Fix**: jawny check
+   `User::where('email', ...)->exists()` przed `create()`, odmowa 409 z
+   komunikatem, tym samym wzorcem co odmowa Gateway (`abort()`). Test
+   przemianowany na `..._is_rejected_not_auto_linked` (dokładniej opisuje,
+   co faktycznie się dzieje).
+5. **`ResolveTenant`'owe przełączanie bazy per-tenant psuje testy sqlite**
+   — technika "jeden użytkownik MySQL, wiele nazwanych baz" (`purge()` +
+   `config(['database.connections.mysql.database' => ...])`) jest z natury
+   specyficzna dla MySQL; uruchomiona bezwarunkowo próbowała nadpisać
+   `database.connections.sqlite.database` (testy: `DB_CONNECTION=sqlite`,
+   `:memory:`) literalną nazwą tenanta (np. `"nfc_shop1"`), co sqlite
+   traktuje jak ścieżkę do PLIKU — łamiąc KAŻDY test dotykający bazy
+   (potwierdzone: nawet domyślny szkieletowy `ExampleTest` już to
+   robił, tylko nikt wcześniej nie napisał testu, który by to ujawnił —
+   dziś zero pokrycia testowego bazy w tym repo). **Fix**: przełączanie
+   bazy w `ResolveTenant::applyTenant()` ograniczone do `$conn === 'mysql'`
+   — w produkcji (MySQL) zero zmiany zachowania, w testach (sqlite) po
+   prostu nie próbuje przełączać.
+6. **Migracje modułów Gateway i Storefront kolidują na współdzielonej
+   bazie testowej** — oba moduły mają NIEZALEŻNIE OD SIEBIE tabelę
+   `events` (różne przeznaczenie, różne kolumny — w produkcji nigdy nie
+   koliduje, bo żyją w osobnych bazach MySQL), ale `RefreshDatabase` w
+   testach scala migracje ZE WSZYSTKICH modułów w jeden przebieg na
+   JEDNEJ sqlite `:memory:` — `"table events already exists"`. To
+   pre-istniejąca luka w testowalności repo (nikt nigdy nie napisał
+   testu dotykającego bazy przed Fazą 6), nie coś, co ta faza zepsuła —
+   i naprawa właściwa (osobne połączenia testowe per tenant, mirror
+   produkcyjnego układu) to osobny, większy temat. **Obejście w
+   `KeycloakLoginTest`**: bez `RefreshDatabase`, ręczne
+   `Schema::create('users', ...)` w `setUp()` (dokładny odpowiednik
+   dzisiejszego schematu) — wystarczające do przetestowania logiki
+   logowania w izolacji, bez dotykania pozostałych tabel/modułów.
+
+### Weryfikacja — wszystko potwierdzone realnie (przeglądarka + curl + testy)
+
+- **Storefront (localhost, przeglądarka)**: nowa tożsamość → nowe konto
+  (`keycloak_sub` wypełnione, `password` NULL), zalogowanie na dashboard.
+- **Gateway (`pay.please-support-me.com`, curl z jednym cookie jarem przez
+  CAŁY flow — Browser tool odmawia nawigacji do niestandardowego hosta)**:
+  brak dopasowania → czyste 403, **zero utworzonego wiersza** w
+  `nfc_pay.users` (sprawdzone bezpośrednio w bazie). Pierwsza próba dała
+  mylące 500 — to był artefakt WŁASNEGO skryptu testowego (osobne cookie
+  jary dla `/panel/auth/redirect` i `/panel/auth/callback` gubiły sesję
+  Laravela, więc Socialite's `state`-CSRF-check rzucał
+  `InvalidStateException` ZANIM kod aplikacji w ogóle się wykonał) — po
+  poprawce (jeden cookie jar na cały flow) prawidłowe 403 potwierdzone.
+- **Prawdziwe single-logout**: wylogowanie → drugie `/panel/auth/redirect`
+  pokazuje PRAWDZIWY formularz logowania Keycloaka (nie ciche
+  re-auth) — potwierdzone w przeglądarce, dopiero po fixie #3 wyżej.
+- **Regresja: scoping organizacji + bramka `is_admin`** — przetestowane z
+  PRAWDZIWYM kontem (nie tylko świeżo utworzonym, pustym): seedowe konto
+  `id=1` (`admin@local`) ręcznie powiązane z nową tożsamością Keycloaka
+  (`keycloak_sub` ustawiony wprost w bazie — jednorazowa, lokalna czynność
+  testowa, NIE realny cutover), `is_admin=1`, przypisana organizacja
+  testowa. Po zalogowaniu: aktywna organizacja widoczna, panel „Wszystkie
+  organizacje" (gate `abort_unless($user->is_admin, ...)` w
+  `UsersController`) dostępny i działający — identycznie jak przed Fazą 6.
+- **`tests/Feature/Auth/KeycloakLoginTest.php`** (nowy, Socialite
+  fake'owany przez `shouldReceive`) — 5 testów, wszystkie zielone: nowa
+  tożsamość (Storefront), ta sama `keycloak_sub` bez duplikatu, e-mail
+  bez dopasowania odrzucony (nie auto-linkowany), Gateway odrzuca
+  niedopasowaną tożsamość, Gateway akceptuje dopasowaną.
+
+### Świadomie NIE zrobione (jak w planie)
+
+Realny cutover produkcyjny (prawdziwe sekrety, migracja istniejących kont),
+migracja `is_admin` na rolę Keycloaka, zmiany w `web/`/`mobile/` poza
+akceptacją efektu ubocznego `registrationAllowed:true` — wszystko odłożone,
+osobny przyszły temat.
+
 ## Jak odpalić od zera (nowy komputer)
 
 1. **Laravel** (`docker/`) — patrz `LOCAL.md` w korzeniu repo.
@@ -702,6 +855,15 @@ teraz dzieje się sam, w obu światach (`docker/` i `k8s/`).
    przez zakładkę Credentials (nie „temporary"). Albo przez Admin REST API
    — patrz `claude/marcin/03-ekosystem-mikroserwisow.md`, sekcja Faza 3,
    dla przykładu payloadu.
+8. **Panel Laravela (Faza 6) — sekrety klientów Keycloaka**: `pay-realm.json`
+   odtwarza klienty `laravel-panel-gateway`/`laravel-panel-storefront`, ale
+   partial-export Keycloaka MASKUJE sekrety (fresh import generuje nowe) —
+   po każdym świeżym imporcie realmu ustaw realne wartości w `.env` (NIE
+   `.env.docker`): konsola admina → Clients → `laravel-panel-*` →
+   Credentials → Client secret. Bez tego callback Laravela dostanie 401
+   przy wymianie kodu na token. Ten sam problem/wzorzec co odtwarzanie
+   testowego użytkownika (punkt wyżej) — świeży import realmu zawsze
+   wymaga tego ręcznego kroku.
 
 Wszystkie porty i szczegóły — patrz README w każdym katalogu
 (`services/*/README.md`, `ecosystem/README.md`, `web/README.md`) i sekcje

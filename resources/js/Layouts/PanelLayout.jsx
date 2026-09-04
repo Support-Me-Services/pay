@@ -11,6 +11,26 @@ export default function PanelLayout({ title, children }) {
     const flash = props.flash || {}
     const nav = panel.nav || []
 
+    // Faza 6 — wylogowanie kończy się przekierowaniem NA ZEWNĄTRZ (Keycloak
+    // end-session, dla prawdziwego single-logout). router.post() Inertii
+    // idzie przez fetch/XHR, którego przeglądarka NIE pozwala przekierować
+    // cross-origin (CORS blokuje odczyt odpowiedzi) — więc zamiast tego
+    // realny, natywny submit formularza (pełna nawigacja, bez tego
+    // ograniczenia), tak jak zwykły <form method="POST"> na stronie.
+    const logout = (e) => {
+        e.preventDefault()
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = panel.logoutUrl
+        const csrf = document.createElement('input')
+        csrf.type = 'hidden'
+        csrf.name = '_token'
+        csrf.value = props.csrf_token
+        form.appendChild(csrf)
+        document.body.appendChild(form)
+        form.submit()
+    }
+
     return (
         <div className="panel-wrap">
             <Head>
@@ -36,7 +56,14 @@ export default function PanelLayout({ title, children }) {
                     {panel.accountUrl && (
                         <>
                             <div className="nav-sep" />
-                            <a href={panel.accountUrl} className={panel.accountActive ? 'active' : ''}>Zarządzanie kontem</a>
+                            {/* Faza 6 — konto Keycloaka, zewnętrzna konsola (nowa karta). */}
+                            <a href={panel.accountUrl} target="_blank" rel="noopener noreferrer">Zarządzanie kontem ↗</a>
+                        </>
+                    )}
+                    {panel.logoutUrl && (
+                        <>
+                            <div className="nav-sep" />
+                            <a href="#" onClick={logout}>Wyloguj</a>
                         </>
                     )}
                 </nav>

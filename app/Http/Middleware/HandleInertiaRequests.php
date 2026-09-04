@@ -140,10 +140,10 @@ class HandleInertiaRequests extends Middleware
             // sidebarze linkuje na JEJ WŁASNĄ stronę (sklep pod jej handle);
             // bez aktywnej organizacji — fallback na ogólną stronę główną.
             'homeUrl' => route('main'),
-            // Osobny przycisk pod belką (jak dawniej „Wyloguj") — zmiana hasła,
-            // wylogowanie i dane konta są teraz razem na jednym ekranie.
-            'accountUrl' => route('panel.password.edit'),
-            'accountActive' => $request->routeIs('panel.password.*'),
+            // Faza 6 — konto (w tym zmiana hasła) to teraz konto Keycloaka,
+            // link prowadzi wprost na jego konsolę (nowa karta), nie ma już
+            // lokalnego ekranu /panel/password.
+            'accountUrl' => $this->keycloakAccountUrl(),
             'logoutUrl' => route('panel.logout'),
             'activeOrganization' => $org ? ['id' => $org->id, 'name' => $org->name, 'shopUrl' => route('user.shop', $org->handle)] : null,
         ];
@@ -161,9 +161,18 @@ class HandleInertiaRequests extends Middleware
                 ['label' => 'Płatności', 'href' => route('panel.transactions'), 'active' => $request->routeIs('panel.transactions')],
                 ['label' => 'Leady', 'href' => route('panel.leads'), 'active' => $request->routeIs('panel.leads')],
                 ['label' => 'AntiTheft', 'href' => route('panel.antitheft'), 'active' => $request->routeIs('panel.antitheft')],
-                ['label' => 'Zmiana hasła', 'href' => route('panel.password.edit'), 'active' => $request->routeIs('panel.password.*')],
+                // Faza 6 — konto (w tym zmiana hasła) to konto Keycloaka.
+                ['label' => 'Konto Keycloaka', 'href' => $this->keycloakAccountUrl(), 'active' => false],
             ],
             'logoutUrl' => route('panel.logout'),
         ];
+    }
+
+    /** Konsola konta Keycloaka (zmiana hasła, dane profilu) — Faza 6. */
+    private function keycloakAccountUrl(): string
+    {
+        $keycloak = config('services.keycloak');
+
+        return sprintf('%s/realms/%s/account', $keycloak['base_url'] ?? '', $keycloak['realms'] ?? '');
     }
 }

@@ -1,15 +1,11 @@
-import { Head, useForm } from '@inertiajs/react'
-import PasswordInput from '@/Components/PasswordInput'
+import { Head } from '@inertiajs/react'
 
-/** Logowanie do panelu bramki płatności — strona standalone (bez chromu). */
-export default function Login({ postUrl }) {
-    const form = useForm({ email: '', password: '' })
-
-    const submit = (e) => {
-        e.preventDefault()
-        form.post(postUrl)
-    }
-
+/**
+ * Logowanie do panelu bramki płatności — strona standalone (bez chromu).
+ * Faza 6: Laravel nie sprawdza już żadnego hasła — jeden przycisk prowadzi
+ * na realny ekran logowania Keycloaka.
+ */
+export default function Login({ redirectUrl }) {
     return (
         <>
             <Head>
@@ -25,20 +21,7 @@ export default function Login({ postUrl }) {
                     <h2 className="text-center">Support<span className="text-brand">ME</span></h2>
                     <p className="text-muted text-center mb-3">Panel bramki płatności</p>
 
-                    <form onSubmit={submit}>
-                        <div className="form-group">
-                            <label htmlFor="email">E-mail</label>
-                            <input type="email" id="email" value={form.data.email}
-                                onChange={(e) => form.setData('email', e.target.value)} required autoFocus />
-                            {form.errors.email && <div className="form-error">{form.errors.email}</div>}
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="password">Hasło</label>
-                            <PasswordInput id="password" value={form.data.password}
-                                onChange={(e) => form.setData('password', e.target.value)} required />
-                        </div>
-                        <button type="submit" className="btn btn-primary btn-block" disabled={form.processing}>Zaloguj się</button>
-                    </form>
+                    <a href={redirectUrl} className="btn btn-primary btn-block">Zaloguj przez Keycloak</a>
                 </div>
             </div>
         </>

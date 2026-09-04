@@ -1,4 +1,4 @@
-import { Head, router, usePage } from '@inertiajs/react'
+import { Head, usePage } from '@inertiajs/react'
 
 /**
  * Chrom panelu bramki płatności (sidebar + flash) — odwzorowuje
@@ -11,9 +11,24 @@ export default function GatewayPanelLayout({ title, children }) {
     const flash = props.flash || {}
     const nav = panel.nav || []
 
+    // Faza 6 — wylogowanie kończy się przekierowaniem NA ZEWNĄTRZ (Keycloak
+    // end-session, dla prawdziwego single-logout). router.post() Inertii
+    // idzie przez fetch/XHR, którego przeglądarka NIE pozwala przekierować
+    // cross-origin (CORS blokuje odczyt odpowiedzi) — więc zamiast tego
+    // realny, natywny submit formularza (pełna nawigacja, bez tego
+    // ograniczenia), tak jak zwykły <form method="POST"> na stronie.
     const logout = (e) => {
         e.preventDefault()
-        router.post(panel.logoutUrl)
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = panel.logoutUrl
+        const csrf = document.createElement('input')
+        csrf.type = 'hidden'
+        csrf.name = '_token'
+        csrf.value = props.csrf_token
+        form.appendChild(csrf)
+        document.body.appendChild(form)
+        form.submit()
     }
 
     return (

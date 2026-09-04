@@ -1,19 +1,14 @@
-import { Head, useForm } from '@inertiajs/react'
-import PasswordInput from '@/Components/PasswordInput'
+import { Head } from '@inertiajs/react'
 
 /**
- * Logowanie do panelu — strona standalone (BEZ chromu panelu).
- * Zawsze theme.css (style admina: auth-wrap/auth-card/form-group), niezależnie
- * od motywu publicznego hosta. Błędy walidacji przez współdzielone `errors`.
+ * Logowanie do panelu — strona standalone (BEZ chromu panelu). Zawsze
+ * theme.css (style admina), niezależnie od motywu publicznego hosta.
+ * Faza 6: Laravel nie sprawdza już żadnego hasła ani nie ma osobnego
+ * ekranu rejestracji — jeden przycisk prowadzi na realny ekran logowania
+ * Keycloaka, który (registrationAllowed w realm) sam oferuje "Zarejestruj
+ * się" dla nowych kont.
  */
-export default function Login({ brand, postUrl, registerUrl }) {
-    const form = useForm({ email: '', password: '' })
-
-    const submit = (e) => {
-        e.preventDefault()
-        form.post(postUrl)
-    }
-
+export default function Login({ brand, redirectUrl }) {
     return (
         <>
             <Head>
@@ -29,24 +24,7 @@ export default function Login({ brand, postUrl, registerUrl }) {
                     <h2 className="text-center">{brand}<span className="text-brand">.</span></h2>
                     <p className="text-muted text-center mb-3">Panel sklepu</p>
 
-                    <form onSubmit={submit}>
-                        <div className="form-group">
-                            <label htmlFor="email">E-mail</label>
-                            <input type="email" id="email" value={form.data.email}
-                                onChange={(e) => form.setData('email', e.target.value)} required autoFocus />
-                            {form.errors.email && <div className="form-error">{form.errors.email}</div>}
-                        </div>
-                        <div className="form-group">
-                            <label htmlFor="password">Hasło</label>
-                            <PasswordInput id="password" value={form.data.password}
-                                onChange={(e) => form.setData('password', e.target.value)} required />
-                        </div>
-                        <button type="submit" className="btn btn-primary btn-block" disabled={form.processing}>Zaloguj się</button>
-                    </form>
-
-                    <p className="text-muted text-center mt-2 mb-0">
-                        Nie masz konta? <a href={registerUrl}>Załóż konto</a>
-                    </p>
+                    <a href={redirectUrl} className="btn btn-primary btn-block">Zaloguj przez Keycloak</a>
                 </div>
             </div>
         </>

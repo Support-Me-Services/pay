@@ -3,10 +3,13 @@
 namespace App\Providers;
 
 use App\Routing\TenantUrlGenerator;
+use App\Socialite\KeycloakProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -59,13 +62,14 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        // Rejestracja kont w panelu sklepu — ochrona przed masowym zakładaniem
-        // kont przez boty. Limit per IP: krótkofalowy (burst) + dzienny.
-        RateLimiter::for('panel-register', function (Request $request) {
-            return [
-                Limit::perMinute(5)->by($request->ip()),
-                Limit::perDay(20)->by($request->ip()),
-            ];
+        // Faza 6 — rejestracja sterownika Keycloaka dla Socialite. WŁASNA
+        // podklasa (App\Socialite\KeycloakProvider), NIE gotowy listener
+        // pakietu (SocialiteProviders\Keycloak\KeycloakExtendSocialite) —
+        // ten wskazywałby na bazowy Provider::class, który nie rozróżnia
+        // publicznego adresu Keycloaka (przeglądarka) od wewnętrznego
+        // adresu klastra (wywołania serwer-serwer), patrz KeycloakProvider.
+        Event::listen(SocialiteWasCalled::class, function (SocialiteWasCalled $event) {
+            $event->extendSocialite('keycloak', KeycloakProvider::class);
         });
     }
 }

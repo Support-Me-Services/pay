@@ -31,6 +31,15 @@ spec:
             - { name: KC_DB_PASSWORD, value: keycloak }
             - { name: KEYCLOAK_ADMIN, value: admin }
             - { name: KEYCLOAK_ADMIN_PASSWORD, value: admin }
+            # Faza 6 — issuer STAŁY, niezależny od tego, PRZEZ KTÓRY adres
+            # (localhost:8180 z przeglądarki, keycloak:8080 wewnątrz
+            # klastra) przyszło akurat TO żądanie. Bez tego Keycloak liczy
+            # issuer dynamicznie z nagłówka Host żądania i userinfo/token
+            # odrzuca token wydany "dla" innego hosta niż ten, którym
+            # akurat woła — dokładnie to złapało KeycloakProvider (Faza 6),
+            # gdy token/userinfo szły przez keycloak:8080, a token miał
+            # iss=localhost:8180 (adres, którym logowała się przeglądarka).
+            - { name: KC_HOSTNAME, value: "http://localhost:8180" }
           ports:
             - containerPort: 8080
           volumeMounts:

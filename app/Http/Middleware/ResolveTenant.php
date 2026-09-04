@@ -14,7 +14,8 @@ class ResolveTenant
      */
     public function handle(Request $request, Closure $next): Response
     {
-        static::applyTenant($request->getHost());
+        $tenant = static::applyTenant($request->getHost());
+        static::applyKeycloakClient($tenant, $request);
 
         return $next($request);
     }
@@ -65,8 +66,13 @@ class ResolveTenant
 
         // 2) Przełączenie bazy danych — MUSI nastąpić przed jakimkolwiek
         //    odczytem DB/sesji (dlatego middleware jest pierwszy w grupie).
+        //    Technika "ten sam użytkownik, wiele nazwanych baz" jest z natury
+        //    specyficzna dla MySQL — testy (phpunit.xml: DB_CONNECTION=sqlite,
+        //    DB_DATABASE=:memory:) NIE mają osobnych baz per tenant, więc
+        //    przełączanie tu połamałoby połączenie sqlite (próba otwarcia
+        //    pliku o nazwie tenanta, np. "nfc_shop1", zamiast :memory:).
         $conn = config('database.default');               // 'mysql' albo 'pgsql'
-        if (config("database.connections.{$conn}.database") !== $tenant['db']) {
+        if ($conn === 'mysql' && config("database.connections.{$conn}.database") !== $tenant['db']) {
             config(["database.connections.{$conn}.database" => $tenant['db']]);
             app('db')->purge($conn);
         }
@@ -75,5 +81,32 @@ class ResolveTenant
         app()->instance('tenant', $tenant);
 
         return $tenant;
+    }
+
+    /**
+     * Faza 6 — logowanie panelu idzie WYŁĄCZNIE przez Keycloak, osobny
+     * klient per moduł (patrz config/tenants.php). Ustawia config Socialite
+     * (`services.keycloak`) na klienta bieżącego tenanta, ten sam wzorzec co
+     * `shop.gateway_api_key` wyżej — jeden choke point, KeycloakController
+     * nie musi wiedzieć nic o tenantach.
+     */
+    private static function applyKeycloakClient(array $tenant, Request $request): void
+    {
+        if (empty($tenant['keycloak_client_id'])) {
+            return;
+        }
+
+        config([
+            'services.keycloak' => [
+                'client_id' => $tenant['keycloak_client_id'],
+                'client_secret' => $tenant['keycloak_client_secret'],
+                'redirect' => $request->getSchemeAndHttpHost().'/panel/auth/callback',
+                'base_url' => config('services.keycloak_base_url'),
+                'internal_base_url' => config('services.keycloak_internal_base_url'),
+                // "realms" (liczba mnoga) — tak nazywa ten klucz konfiguracji
+                // pakiet socialiteproviders/keycloak, patrz Provider::getBaseUrl().
+                'realms' => config('services.keycloak_realm'),
+            ],
+        ]);
     }
 }

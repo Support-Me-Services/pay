@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\KeycloakController;
 use App\Modules\Storefront\Http\Controllers\BeneficiariesController;
 use App\Modules\Storefront\Http\Controllers\CareersController;
 use App\Modules\Storefront\Http\Controllers\CartController;
@@ -113,16 +114,16 @@ Route::get('/zwrot/{order}/status', [OrderReturnController::class, 'status'])->n
 // Webhook bramki płatności
 Route::post('/webhooks/gateway', [GatewayWebhookController::class, 'handle'])->name('webhooks.gateway');
 
-// Panel sklepu
+// Panel sklepu — logowanie WYŁĄCZNIE przez Keycloak (Faza 6), patrz
+// App\Http\Controllers\Auth\KeycloakController. Rejestracja też: pierwsze
+// logowanie bez dopasowania po keycloak_sub zakłada nowe konto — samoobsługowa
+// rejestracja żyje teraz na hostowanej stronie Keycloaka (registrationAllowed
+// w realm), nie ma już lokalnego /panel/register.
 Route::prefix('panel')->name('panel.')->group(function () {
     Route::get('/login', [Panel\LoginController::class, 'show'])->name('login');
-    Route::post('/login', [Panel\LoginController::class, 'login'])->name('login.post');
-    Route::post('/logout', [Panel\LoginController::class, 'logout'])->name('logout');
-
-    // Samodzielne zakładanie konta sklepu (konto + własny handle od razu).
-    Route::get('/register', [Panel\RegisterController::class, 'show'])->name('register');
-    Route::post('/register', [Panel\RegisterController::class, 'store'])
-        ->middleware('throttle:panel-register')->name('register.post');
+    Route::get('/auth/redirect', [KeycloakController::class, 'redirect'])->name('auth.redirect');
+    Route::get('/auth/callback', [KeycloakController::class, 'callback'])->name('auth.callback');
+    Route::post('/logout', [KeycloakController::class, 'logout'])->name('logout');
 
     Route::middleware('auth')->group(function () {
         // Dashboard usunięty — wejście na /panel renderuje wprost „Moje
@@ -130,14 +131,10 @@ Route::prefix('panel')->name('panel.')->group(function () {
         // od tego, które sekcje organizacja ma dziś włączone). WAŻNE: to musi
         // być bezpośrednie wywołanie kontrolera, nie redirect() na
         // panel.organizations.index — redirect-przez-redirect gubi flash
-        // (`->with('success', ...)`) ustawiony przez wywołujących (Register,
-        // Login, OrganizationsController::switchTo), bo sesyjny flash
-        // przeżywa tylko JEDEN dodatkowy hop.
+        // (`->with('success', ...)`) ustawiony przez wywołujących (Login,
+        // OrganizationsController::switchTo), bo sesyjny flash przeżywa
+        // tylko JEDEN dodatkowy hop.
         Route::get('/', [Panel\OrganizationsController::class, 'index'])->name('dashboard');
-
-        // Zmiana hasła zalogowanego konta.
-        Route::get('/password', [Panel\PasswordController::class, 'edit'])->name('password.edit');
-        Route::put('/password', [Panel\PasswordController::class, 'update'])->name('password.update');
 
         Route::post('/upload-editor-image', [Panel\BeneficiaryNodeController::class, 'uploadEditorImage'])->name('editor-upload');
 

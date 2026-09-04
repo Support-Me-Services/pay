@@ -3,10 +3,13 @@
 namespace App\Modules\Gateway\Http\Controllers\Panel;
 
 use App\Modules\Gateway\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
+/**
+ * Faza 6 — sam ekran z przyciskiem "Zaloguj przez Keycloak". Właściwe
+ * logowanie/wylogowanie: App\Http\Controllers\Auth\KeycloakController.
+ */
 class LoginController extends Controller
 {
     public function show()
@@ -16,35 +19,7 @@ class LoginController extends Controller
         }
 
         return Inertia::render('Gateway/Login', [
-            'postUrl' => route('panel.login.post'),
+            'redirectUrl' => route('panel.auth.redirect'),
         ]);
-    }
-
-    public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ], [], ['email' => 'e-mail', 'password' => 'hasło']);
-
-        // Logowanie niewrażliwe na wielkość liter w e-mailu.
-        $credentials['email'] = strtolower(trim($credentials['email']));
-
-        if (! Auth::attempt($credentials, true)) {
-            return back()->withErrors(['email' => 'Niepoprawny login lub hasło.'])->onlyInput('email');
-        }
-
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('panel.dashboard'));
-    }
-
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('panel.login');
     }
 }
