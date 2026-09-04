@@ -3,6 +3,8 @@ package com.supportme.pay.apigateway.security
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.invoke
@@ -52,7 +54,31 @@ open class SecurityConfig(
         return decoder
     }
 
+    /**
+     * Ścieżki pod prefiksem `/internal/` — osobny łańcuch, osobny mechanizm (nagłówek
+     * X-Internal-Api-Key, nie JWT Keycloaka). `@Order(1)` = wyższy
+     * priorytet niż główny łańcuch niżej: Spring Security wybiera pierwszy
+     * łańcuch, którego `securityMatcher` pasuje, więc te ścieżki NIGDY nie
+     * trafiają do łańcucha JWT. Sama autoryzacja dzieje się w
+     * [InternalApiKeyFilter] — tu `permitAll`, bo brak tokenu nie jest
+     * powodem odrzucenia (filtr już to zrobił, wcześniej w łańcuchu).
+     */
     @Bean
+    @Order(1)
+    open fun internalFilterChain(http: HttpSecurity, internalApiKeyFilter: InternalApiKeyFilter): SecurityFilterChain {
+        http {
+            securityMatcher("/internal/**")
+            csrf { disable() }
+            authorizeHttpRequests {
+                authorize(anyRequest, permitAll)
+            }
+            addFilterBefore<UsernamePasswordAuthenticationFilter>(internalApiKeyFilter)
+        }
+        return http.build()
+    }
+
+    @Bean
+    @Order(2)
     open fun filterChain(http: HttpSecurity): SecurityFilterChain {
         http {
             csrf { disable() }
@@ -62,6 +88,11 @@ open class SecurityConfig(
                 // niezwiązane z auth. /api/v1/me demonstruje ochronę tokenem.
                 authorize("/api/v1/health", permitAll)
                 authorize("/actuator/**", permitAll)
+                // Faza 5 — publiczne skanowanie kodu inicjalizacji (tag NFC/QR),
+                // patrz PublicInitController. Niezalogowane z natury (ktoś
+                // zbliża telefon do fizycznego tagu), jak health check.
+                authorize("/init/tag/**", permitAll)
+                authorize("/init/qr/**", permitAll)
                 authorize(anyRequest, authenticated)
             }
             oauth2ResourceServer {

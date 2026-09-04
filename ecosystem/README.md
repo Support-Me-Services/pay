@@ -1,4 +1,4 @@
-# ecosystem/ — nowa architektura mikroserwisowa (Fazy 0–3)
+# ecosystem/ — nowa architektura mikroserwisowa (Fazy 0–5)
 
 Osobny stack Dockera od `docker/` (który zostaje wyłącznie środowiskiem
 lokalnym Laravela — patrz `LOCAL.md`, nic tam nie zmieniamy). Można odpalić
@@ -40,6 +40,13 @@ curl -o /dev/null -w '%{http_code}\n' http://localhost:8081/api/v1/me
 Pełny test logowania (Faza 3) wymaga przeglądarki — patrz `web/README.md`,
 strona `/panel`.
 
+**Faza 5 (InitCode — tagi NFC/QR)** — test integracyjny, czarna skrzynka po
+HTTP, wymaga też uruchomionego `docker/` (Laravel) z `rr serve`:
+
+```bash
+bash ecosystem/tests/integration/test-initcode.sh
+```
+
 ## Odtworzenie testowego użytkownika Keycloaka
 
 `partial-export` Keycloaka (skąd pochodzi `keycloak/pay-realm.json`) NIE
@@ -74,4 +81,9 @@ zachowania wolumenu `postgres-keycloak`) trzeba dodać użytkownika ręcznie:
   realne konta z dzisiejszych tabel `users` (bramka + sklep) nie są
   migrowane/provisionowane do Keycloaka — to właściwy zakres Fazy 3, nie
   zrobiony jeszcze.
-- Żadnej domeny biznesowej w `core-svc` — patrz `services/core-svc/README.md`.
+- Żadnego cutoveru ruchu produkcyjnego na `core-svc`/`api-gateway` — Faza 5
+  dodała pierwszą domenę biznesową (InitCode: tagi NFC/QR), w pełni
+  zweryfikowaną tutaj, ale dzisiejsze trasy Laravela (`app/Modules/Init/**`)
+  zostają nietknięte; realny cutover czeka na wdrożenie tych serwisów na
+  stage/prod (dziś nie istnieje), patrz `claude/marcin/03-ekosystem-mikroserwisow.md`,
+  sekcja Faza 5.

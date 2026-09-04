@@ -11,3 +11,4 @@ grpc:
   listen: "tcp://0.0.0.0:9091"
   proto:
     - "proto/health/v1/health.proto"
+    - "proto/storefront/v1/storefront.proto"

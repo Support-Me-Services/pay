@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import pay.health.v1.HealthCheckRequest
 import pay.health.v1.HealthCheckServiceGrpc
+import java.util.concurrent.TimeUnit
 
 /**
  * Demonstracja jedynej zasady architektury ekosystemu: REST na brzegu,
@@ -32,7 +33,9 @@ class HealthController(
             .build()
 
         return try {
-            val response = stub.check(request)
+            // Faza 5: deadline jawny — bez niego zawieszony peer wisiałby
+            // w nieskończoność (dotyczy każdego blocking-stuba w tym serwisie).
+            val response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).check(request)
             mapOf(
                 "status" to response.status.name,
                 "serviceName" to response.serviceName,

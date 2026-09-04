@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package pay.storefront.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.storefront.v1";
+option java_outer_classname = "StorefrontProto";
+
+// Implementowany przez gateway-svc (Laravel/RoadRunner) — jedyny właściciel
+// wiedzy o slugach/handle'ach/statusie aktywności produktów i organizacji
+// sklepu. Konsument: api-gateway, przy budowie przekierowania po
+// rozwiązaniu kodu inicjalizacji (patrz proto/initcode/v1).
+service StorefrontService {
+  rpc ResolveRedirectTarget(ResolveRedirectTargetRequest) returns (ResolveRedirectTargetResponse);
+}
+
+message ResolveRedirectTargetRequest {
+  enum TargetType {
+    NONE = 0;
+    SHOP_ITEM = 1;
+    ORGANIZATION = 2;
+  }
+
+  TargetType target_type = 1;
+  int64 target_id = 2;
+  // uuid kodu, który wywołał to rozwiązanie — przekazywany dalej wyłącznie
+  // do zdarzenia analitycznego tag_open, nie do samego wyszukania celu.
+  string source_uuid = 3;
+}
+
+message ResolveRedirectTargetResponse {
+  bool found = 1;
+  bool active = 2;
+  // Ścieżka względna (np. "/?produkt=slug" albo "/people/handle") — host
+  // dokleja wołający (api-gateway) z żądania publicznego, nie ten serwis.
+  string url_path = 3;
+}

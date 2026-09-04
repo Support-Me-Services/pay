@@ -19,6 +19,17 @@ pay:
     issuer: http://localhost:8180/realms/pay
     jwk-set-uri: http://localhost:8180/realms/pay/protocol/openid-connect/certs
     audience: api-gateway
+  storefront:
+    # Allowlist hostów do budowy Location przy przekierowaniu skanu (Faza 5,
+    # PublicInitController) — bez tego nagłówek Host od klienta trafiałby
+    # wprost do odpowiedzi (open redirect). Te same 3 aliasy co
+    # config('tenants.map') w Laravelu.
+    allowed-hosts: localhost,please-support-me.com,stage.please-support-me.com
+  internal:
+    # Sekret dla /internal/v1/** (Faza 5) — WYŁĄCZNIE do lokalnej
+    # weryfikacji, patrz InternalApiKeyFilter. W żadnym środowisku
+    # współdzielonym nie zostawiać wartości domyślnej.
+    api-key: local-dev-only-change-me
 
 management:
   endpoints:

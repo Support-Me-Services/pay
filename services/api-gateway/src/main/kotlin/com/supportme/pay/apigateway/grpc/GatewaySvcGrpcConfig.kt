@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import pay.health.v1.HealthCheckServiceGrpc
+import pay.storefront.v1.StorefrontServiceGrpc
 
 /**
  * Kanał gRPC do gateway-svc (Laravel/RoadRunner, PoC Fazy 1) — osobny stack
@@ -28,4 +29,10 @@ open class GatewaySvcGrpcConfig(
         @Qualifier("gatewaySvcChannel") channel: ManagedChannel,
     ): HealthCheckServiceGrpc.HealthCheckServiceBlockingStub =
         HealthCheckServiceGrpc.newBlockingStub(channel)
+
+    @Bean
+    open fun gatewaySvcStorefrontStub(
+        @Qualifier("gatewaySvcChannel") channel: ManagedChannel,
+    ): StorefrontServiceGrpc.StorefrontServiceBlockingStub =
+        StorefrontServiceGrpc.newBlockingStub(channel)
 }

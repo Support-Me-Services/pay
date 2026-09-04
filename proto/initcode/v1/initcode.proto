@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package pay.initcode.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.initcode.v1";
+option java_outer_classname = "InitCodeProto";
+
+// Pierwsza prawdziwa domena core-svc — kod inicjalizacji kontaktu (tag NFC /
+// kod QR, ten sam byt pod dwoma kanałami — patrz InitController w Laravelu,
+// skąd ta domena się wywodzi). Właściciel = dokładnie jedno z dwóch:
+// organization_id (kod organizacyjny, cel = shop_item_id) albo
+// owner_user_id (kod osobisty, cel = target_organization_id). core-svc
+// egzekwuje ten niezmiennik (CHECK w schemacie) i scope przy każdej mutacji.
+service InitCodeService {
+  rpc Create(CreateInitCodeRequest) returns (InitCodeResponse);
+  rpc Update(UpdateInitCodeRequest) returns (InitCodeResponse);
+  rpc Delete(DeleteInitCodeRequest) returns (DeleteInitCodeResponse);
+  rpc Toggle(ToggleInitCodeRequest) returns (InitCodeResponse);
+  rpc List(ListInitCodesRequest) returns (ListInitCodesResponse);
+
+  // Rozwiązanie publicznego skanu (/init/tag/{uuid}, /init/qr/{uuid}) —
+  // czysta identyfikacja celu, bez wiedzy o slugach/URL-ach/aktywności
+  // (to należy do Storefrontu, patrz proto/storefront/v1).
+  rpc Resolve(ResolveRequest) returns (ResolveResponse);
+}
+
+// Dokładnie jedno z tych dwóch pól jest ustawione — właściciel kodu.
+message OwnerScope {
+  oneof scope {
+    int64 organization_id = 1;
+    int64 owner_user_id = 2;
+  }
+}
+
+message CreateInitCodeRequest {
+  OwnerScope owner = 1;
+  string label = 2;
+  // Cel — dokładnie jedno z dwóch, zgodnie z typem właściciela.
+  optional int64 shop_item_id = 3;
+  optional int64 target_organization_id = 4;
+}
+
+message UpdateInitCodeRequest {
+  int64 id = 1;
+  OwnerScope owner = 2; // scope wołającego — do weryfikacji własności, nie do zmiany właściciela rekordu
+  string label = 3;
+  optional int64 shop_item_id = 4;
+  optional int64 target_organization_id = 5;
+}
+
+message DeleteInitCodeRequest {
+  int64 id = 1;
+  OwnerScope owner = 2;
+}
+
+message DeleteInitCodeResponse {
+  bool deleted = 1;
+}
+
+message ToggleInitCodeRequest {
+  int64 id = 1;
+  OwnerScope owner = 2;
+}
+
+message ListInitCodesRequest {
+  OwnerScope owner = 1;
+}
+
+message ListInitCodesResponse {
+  repeated InitCodeResponse codes = 1;
+}
+
+message InitCodeResponse {
+  int64 id = 1;
+  string uuid = 2;
+  string label = 3;
+  optional int64 organization_id = 4;
+  optional int64 owner_user_id = 5;
+  optional int64 shop_item_id = 6;
+  optional int64 target_organization_id = 7;
+  bool active = 8;
+}
+
+message ResolveRequest {
+  string uuid = 1;
+}
+
+message ResolveResponse {
+  enum TargetType {
+    NONE = 0;
+    SHOP_ITEM = 1;
+    ORGANIZATION = 2;
+  }
+
+  bool found = 1;
+  TargetType target_type = 2;
+  int64 target_id = 3; // shop_item_id albo target_organization_id, zależnie od target_type
+  string uuid = 4; // echo — do dispatchu zdarzenia tag_open po stronie wołającego
+}

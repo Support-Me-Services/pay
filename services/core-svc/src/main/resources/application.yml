@@ -10,6 +10,14 @@ spring:
     url: jdbc:postgresql://localhost:5433/core_svc
     username: core_svc
     password: core_svc
+  jpa:
+    # Flyway jest jedynym właścicielem schematu — Hibernate tylko waliduje,
+    # że encje się z nim zgadzają (nigdy nie generuje/zmienia DDL sam).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
 
 management:
   endpoints:

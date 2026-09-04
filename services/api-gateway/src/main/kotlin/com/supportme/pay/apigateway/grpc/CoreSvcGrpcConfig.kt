@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import pay.health.v1.HealthCheckServiceGrpc
+import pay.initcode.v1.InitCodeServiceGrpc
 
 /** Kanał gRPC do core-svc — jedyne miejsce, gdzie api-gateway zna jego adres sieciowy. */
 @Configuration
@@ -25,4 +26,10 @@ open class CoreSvcGrpcConfig(
         @Qualifier("coreSvcChannel") channel: ManagedChannel,
     ): HealthCheckServiceGrpc.HealthCheckServiceBlockingStub =
         HealthCheckServiceGrpc.newBlockingStub(channel)
+
+    @Bean
+    open fun coreSvcInitCodeStub(
+        @Qualifier("coreSvcChannel") channel: ManagedChannel,
+    ): InitCodeServiceGrpc.InitCodeServiceBlockingStub =
+        InitCodeServiceGrpc.newBlockingStub(channel)
 }

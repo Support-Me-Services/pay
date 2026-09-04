@@ -346,6 +346,151 @@ urządzenia — patrz „Zakres weryfikacji" niżej. Realny test na telefonie
 
 ---
 
+## Faza 5 — pierwsza domena w core-svc: InitCode / NFC / QR (zrobione, zweryfikowane lokalnie end-to-end)
+
+Pełny plan (kontekst, uzasadnienie architektury, decyzje) zapisany w
+`C:\Users\marci\.claude\plans\mellow-floating-babbage.md` — tu tylko wynik
+i pułapki. **Kluczowa korekta odkryta w trakcie planowania**: `api-gateway`/
+`core-svc`/Keycloak nie mają dziś ŻADNEJ ścieżki wdrożenia na stage/prod
+(produkcja to nginx+PHP-FPM, `git pull`+build, zero Dockera/JVM) — więc mimo
+że użytkownik pierwotnie prosił o cutover ruchu "teraz", faktyczny zakres tej
+fazy jest **wyłącznie dodatkowy**: core-svc dostaje pierwszą prawdziwą
+domenę, w pełni zweryfikowaną w `ecosystem/`, ale **dzisiejsze trasy
+Laravela (`/init/tag`, `/init/qr`, panel CRUD) zostają nietknięte** — realny
+cutover to osobny, przyszły temat (wymaga najpierw wdrożenia JVM na
+stage/prod, czego dziś nie ma).
+
+### Co powstało
+
+- **`proto/initcode/v1/initcode.proto`** — CRUD + `Resolve(uuid)` (czysta
+  identyfikacja celu, bez wiedzy o slugach/URL-ach).
+- **`proto/storefront/v1/storefront.proto`** — `ResolveRedirectTarget`,
+  implementowany przez Laravel — jedyny właściciel wiedzy o slugach/
+  handle'ach/aktywności.
+- **`core-svc`**: pierwsza prawdziwa persystencja — `spring-boot-starter-data-jpa`
+  + Flyway (`V1__create_init_codes.sql`, bigint PK + osobna unikalna
+  kolumna `uuid`, `CHECK` wymuszający dokładnie jedno z
+  `organization_id`/`owner_user_id` — w Laravelu ten niezmiennik był tylko
+  w kontrolerze, tu wreszcie na poziomie bazy). gRPC service z pełnym
+  egzekwowaniem scope przy mutacjach (`ownedEntityOrError`).
+- **`gateway-svc` (Laravel)**: nowy `app/Modules/Storefront/Grpc/StorefrontGrpcHandler.php`,
+  zarejestrowany w `grpc-worker.php` OBOK istniejącego health handlera —
+  wyłącznie dodanie, `app/Modules/Init/**` bez zmian.
+- **`api-gateway`**: `PublicInitController` (`GET /init/tag/{uuid}`,
+  `/init/qr/{uuid}`, publiczne, z allowlistą hosta przeciw open-redirect) +
+  `InternalInitCodeController` (`/internal/v1/init-codes/**`, CRUD, chronione
+  nagłówkiem `X-Internal-Api-Key` porównywanym stałoczasowo, osobny
+  `SecurityFilterChain` z `@Order(1)` obok łańcucha JWT). Deadline'y na
+  wszystkich blocking-stubach (w tym doklejone do istniejącego
+  `HealthController`, który wcześniej ich nie miał).
+
+### Pułapki napotkane
+
+- **Ten sam bug zagnieżdżonego komentarza Kotlina co w Fazie 2, trzy nowe
+  miejsca**: literalny fragment `/internal/**` wewnątrz bloku `/** ... */`
+  (KDoc) otwiera zagnieżdżony komentarz i psuje kompilację
+  ("Unclosed comment") — Kotlin, w przeciwieństwie do PHP, WSPIERA
+  zagnieżdżone `/* */`. Znowu w treści prozy opisującej ścieżkę URL z `**`
+  (glob). Fix: unikać dosłownego `/**` w treści komentarza, pisać
+  "prefiks `/internal/`" zamiast `/internal/**`. **Warto to sprawdzać z
+  automatu (grep po `/\*\*[^ ]` w plikach `.kt`) zanim się buduje**, bo to
+  już drugi raz w tej samej sesji.
+- **`UsernamePasswordAuthenticationFilter` jest w `org.springframework.security.web.authentication`,
+  NIE w `org.springframework.security.authentication`** — łatwa pomyłka przy
+  pisaniu z pamięci, kompilator od razu łapie (`Unresolved reference`).
+- **`.rr.yaml` ma jawną allowlistę `grpc.proto` — nowy plik `.proto` trzeba
+  tam DOPISAĆ RĘCZNIE**, inaczej serwer RoadRunner startuje bez błędu, ale
+  każde wywołanie nowej usługi kończy się `UNIMPLEMENTED: unknown service`
+  mimo że handler jest poprawnie zaimplementowany i zarejestrowany w
+  `grpc-worker.php`. Najmylący objaw w tej fazie — długo wyglądało jak
+  problem z autoloaderem (patrz niżej), a to był oddzielny, drugi błąd.
+- **`composer.json` ma `optimize-autoloader: true`** — po `protoc` wygenerował
+  nowe klasy PHP (`Pay\Storefront\V1\*`), trzeba **ręcznie odpalić
+  `composer dump-autoload -o`** w kontenerze, inaczej autoloader (zamrożony
+  classmap z poprzedniego builda) ich nie widzi, mimo że pliki fizycznie
+  istnieją i PSR-4 mapping jest poprawny. Ten sam mechanizm, który już był
+  problemem przy generowaniu klas health.proto w Fazie 1, tylko tam nikt
+  wtedy nie musiał dopisywać NOWEGO serwisu do już działającego workera.
+- **Worker RoadRunner (`rr serve`) NIE przeładowuje kodu PHP automatycznie**
+  — po każdej zmianie w `StorefrontGrpcHandler.php`, `.rr.yaml`, albo po
+  `composer dump-autoload`, trzeba ubić stary proces i odpalić `./rr serve`
+  na nowo (najprościej: `docker compose restart app` — czyści WSZYSTKIE
+  osierocone procesy naraz, dużo bezpieczniejsze niż ręczne `kill` po PID
+  wewnątrz kontenera).
+- **Ręczne zabijanie procesów w kontenerze przez `docker exec sh -c "for p
+  in /proc/... grep -q 'rr' ..."` ryzykuje samobójstwo powłoki** — jeśli
+  wzorzec grepa (np. literalne `'rr'` w kodzie skryptu) pasuje do WŁASNEGO
+  `cmdline` tej powłoki (bo `sh -c "<cały skrypt>"` zawiera tekst skryptu
+  jako swój argument), proces zabija sam siebie (i całe drzewo) — exit 137
+  bez żadnego innego komunikatu. Bezpieczniej: listować procesy do pliku
+  najpierw, grepować LOKALNIE (poza kontenerem) po dokładnym prefiksie
+  (`./rr serve`, nie samo `rr`), zabijać po konkretnym PID w osobnym kroku.
+- **`MSYS_NO_PATHCONV=1` wciąż konieczne na Windows/Git Bash** dla KAŻDEGO
+  `docker exec` z argumentem zaczynającym się od `/` (np. `/app/...`) —
+  bez tego Git Bash cichcem podmienia go na ścieżkę Windows
+  (`C:/Program Files/Git/app`) i komenda w kontenerze dostaje śmieci. Znany
+  problem z wcześniejszej fazy, wraca przy każdej nowej sesji `docker exec`.
+- **Duży, nieoczywisty bug środowiskowy — wywołanie HTTP Guzzle
+  DO SAMEGO SIEBIE, z WEWNĄTRZ długo żyjącego workera gRPC RoadRunner, jest
+  wyraźnie wolniejsze niż z normalnego, świeżego procesu CLI**:
+  `GatewayClient::sendEvent()` (synchroniczny `Http::timeout(3)->post(...)`
+  do `http://localhost:8000/api/v1/events`) z `php artisan tinker` (świeży
+  proces) wykonuje się w ~900ms; DOKŁADNIE TO SAMO wywołanie, z tym samym
+  URL-em, z wewnątrz `grpc-worker.php` (długo żyjący worker) zajmowało
+  konsekwentnie ~2.4-2.9s (blisko własnego limitu `timeout(3)`) — za każdym
+  razem, nie sporadycznie. Surowy `curl` z tego samego kontenera do tego
+  samego URL-a był szybki (<1s). Przyczyna NIE w pełni zdiagnozowana —
+  podejrzenie: coś w sposobie, w jaki proces workera RoadRunner (komunikacja
+  z binarką `rr` przez Goridge po stdin/stdout) współdzieli/blokuje
+  deskryptory plików albo pętlę zdarzeń z curl/Guzzle, ale nie potwierdzone.
+  **To dokładnie ten rodzaj problemu, przed którym ostrzegał już komentarz w
+  `grpc-worker.php` z Fazy 1** ("przy pierwszej realnej domenie trzeba będzie
+  pilnować singletonów trzymających stan per-request") — to jest ta pierwsza
+  realna domena, i faktycznie ujawniła coś nieoczywistego. **Obejście
+  zastosowane tutaj**: podniesiony deadline (4s zamiast 2s) tylko na hopie
+  `api-gateway` → `gateway-svc` (ten, który wywołuje `sendEvent`), z
+  wyjaśniającym komentarzem w kodzie. **Świadomie NIE zdiagnozowane do
+  końca** — to należy do tej samej kategorii co "RoadRunner bez
+  supervisora" na liście ryzyk dokumentu architektury: prawdziwe
+  utwardzenie długo żyjącego procesu PHP to osobna, przyszła praca, nie coś
+  do rozwiązania przy okazji pierwszej domeny.
+
+### Zweryfikowane end-to-end (lokalnie, `ecosystem/` + `docker/`)
+
+Zautomatyzowane jako test integracyjny: `bash
+ecosystem/tests/integration/test-initcode.sh` (czarna skrzynka po HTTP,
+sam sprząta po sobie) — powtarza dokładnie poniższe punkty 1-4.
+
+1. `POST /internal/v1/init-codes` bez nagłówka klucza → `403`; z poprawnym
+   kluczem → `201` z realnym `uuid`.
+2. `GET /init/tag/{uuid}` dla świeżo utworzonego kodu → `302`, poprawny
+   `Location` (`http://localhost/?produkt=serduszko`) zbudowany z prawdziwego
+   slugu produktu pobranego przez `gateway-svc` — dowód, że łańcuch
+   `api-gateway → core-svc.Resolve → gateway-svc.ResolveRedirectTarget →
+   redirect` faktycznie działa, nie atrapa.
+3. Nieistniejący `uuid` → bezpieczne `404`, nie `500`, nie zawieszony request.
+4. Nagłówek `Host: evil.example.com` → odrzucone (allowlist działa, brak
+   open-redirect).
+5. **Kontrola regresji, zweryfikowana wprost**: nowy `InitCode` utworzony
+   natywnie w Laravelu (Eloquent, `app/Modules/Init/Models/InitCode.php`) i
+   zeskanowany przez STARĄ trasę (`http://localhost:8000/init/tag/{uuid}`,
+   `InitController::show()`, niezmieniona) — działa dokładnie jak przed tą
+   fazą (`302` na `http://localhost:8000?produkt=serduszko`). Dwa
+   niezależne systemy (Laravelowy `init_codes` i core-svc'owy `init_codes`)
+   współistnieją bez kolizji — dokładnie zgodnie z planem.
+
+### Świadomie NIE zrobione
+
+- Cutover ruchu produkcyjnego (usunięcie starych tras Laravela, przepięcie
+  panelu na `/internal/v1/**`, reguła nginx) — wymaga najpierw realnej
+  ścieżki wdrożenia `api-gateway`/`core-svc` na stage/prod, której dziś nie
+  ma. Osobny, przyszły temat.
+- Migracja istniejących wierszy `init_codes` z Laravela do core-svc — brak
+  fizycznie wydanych tagów w produkcji, więc nic realnego do przenoszenia
+  teraz; skrypt nie został napisany (niepotrzebny bez realnego cutover).
+- Pełna diagnoza przyczyny wolnego Guzzle-do-siebie w workerze gRPC (patrz
+  pułapki wyżej) — obejście (dłuższy deadline) wystarcza na tym etapie.
+
 ## Jak odpalić od zera (nowy komputer)
 
 1. **Laravel** (`docker/`) — patrz `LOCAL.md` w korzeniu repo.
@@ -358,9 +503,20 @@ urządzenia — patrz „Zakres weryfikacji" niżej. Realny test na telefonie
    `composer install` doinstaluje pakiety RoadRunner z `composer.json`.
    Potem w kontenerze: `php vendor/bin/rr get` +
    `php vendor/bin/rr download-protoc-binary`, wygeneruj klasy z
-   `proto/health/v1/health.proto` (komenda `protoc` — patrz historia tej
-   sesji albo po prostu wygeneruj ponownie), i odpal `./rr serve -c
-   .rr.yaml` w tle.
+   `proto/health/v1/health.proto` **i** `proto/storefront/v1/storefront.proto`
+   (ten drugi doszedł w Fazie 5 — komenda `protoc --proto_path=proto
+   --php_out=app/Modules/Gateway/Grpc/Generated
+   --php-grpc_out=app/Modules/Gateway/Grpc/Generated
+   --plugin=protoc-gen-php-grpc=./protoc-gen-php-grpc proto/<plik>.proto`,
+   patrz historia tej sesji). Po KAŻDYM `protoc` (nowe/zmienione klasy):
+   `composer dump-autoload -o` — `optimize-autoloader: true` w
+   `composer.json` zamraża classmap, nowe klasy bez tego są niewidoczne
+   mimo poprawnego PSR-4. Każdy nowy plik `.proto` trzeba też DOPISAĆ do
+   `grpc.proto` w `.rr.yaml` (jawna allowlista, nie auto-discovery) —
+   inaczej `unknown service` mimo poprawnie zarejestrowanego handlera.
+   Na koniec odpal `./rr serve -c .rr.yaml` w tle (po każdej zmianie w
+   PHP/`.rr.yaml`/autoloaderze: ubij stary proces i odpal ponownie — nie
+   przeładowuje się sam; najprościej `docker compose restart app`).
 4. **`web/`** — `cd web && npm install && npm run dev`. Wymaga JDK 21
    (obok domyślnego) do budowania `services/*` i Node do `web/`. Skopiuj
    `.env.local` (nieśledzony przez git — zmienne wypisane w

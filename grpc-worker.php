@@ -15,8 +15,10 @@
 require __DIR__.'/vendor/autoload.php';
 
 use App\Modules\Gateway\Grpc\HealthGrpcHandler;
+use App\Modules\Storefront\Grpc\StorefrontGrpcHandler;
 use Illuminate\Contracts\Console\Kernel;
 use Pay\Health\V1\HealthCheckServiceInterface;
+use Pay\Storefront\V1\StorefrontServiceInterface;
 use Spiral\RoadRunner\GRPC\Invoker;
 use Spiral\RoadRunner\GRPC\Server;
 use Spiral\RoadRunner\Worker;
@@ -28,5 +30,9 @@ $server = new Server(new Invoker(), ['debug' => false]);
 $server->registerService(
     HealthCheckServiceInterface::class,
     $app->make(HealthGrpcHandler::class),
+);
+$server->registerService(
+    StorefrontServiceInterface::class,
+    $app->make(StorefrontGrpcHandler::class),
 );
 $server->serve(Worker::create());

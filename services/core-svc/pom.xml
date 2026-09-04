@@ -47,6 +47,20 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-jdbc</artifactId>
     </dependency>
+    <!-- Pierwsza prawdziwa persystencja core-svc (Faza 5 — InitCode) — JPA
+         dla encji/repozytoriów, Flyway dla schematu wersjonowanego w kodzie. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
@@ -137,12 +151,22 @@
                  automatycznie dla adnotacji Spring, żeby nie łatać ręcznie
                  `open` przy każdej nowej klasie konfiguracyjnej. -->
             <plugin>spring</plugin>
+            <!-- Hibernate wymaga bezargumentowego konstruktora na @Entity —
+                 Kotlin go nie generuje domyślnie. Ten plugin dodaje go
+                 automatycznie zamiast ręcznie deklarować wszystkie pola
+                 jako nullable z wartościami domyślnymi. -->
+            <plugin>jpa</plugin>
           </compilerPlugins>
         </configuration>
         <dependencies>
           <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-maven-allopen</artifactId>
+            <version>${kotlin.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-maven-noarg</artifactId>
             <version>${kotlin.version}</version>
           </dependency>
         </dependencies>
