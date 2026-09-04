@@ -1,10 +1,15 @@
 FROM php:8.2-cli
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libonig-dev libzip-dev unzip git ca-certificates \
+        libonig-dev libzip-dev unzip git ca-certificates protobuf-compiler \
  && docker-php-ext-install pdo_mysql mbstring zip pcntl sockets \
  && docker-php-ext-enable opcache \
  && rm -rf /var/lib/apt/lists/*
+
+# protobuf-compiler (protoc): dotąd instalowany ręcznie w kontenerze po
+# starcie (apt-get install w środku, za każdym razem od zera) — od
+# Kubernetesa (Faza 5.5) na stałe w obrazie, żeby entrypoint.sh mógł sam
+# wygenerować klasy PHP z proto/ bez interwencji.
 
 # pcntl: bez niego "php artisan serve" obsluguje jedno polaczenie naraz - flow
 # "Wesprzyj" (self-call sklepu do wlasnego API bramki, /api/v1/transactions)

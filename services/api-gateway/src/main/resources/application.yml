@@ -25,6 +25,12 @@ pay:
     # wprost do odpowiedzi (open redirect). Te same 3 aliasy co
     # config('tenants.map') w Laravelu.
     allowed-hosts: localhost,please-support-me.com,stage.please-support-me.com
+    # Port, na którym FAKTYCZNIE stoi storefront (Laravel) — lokalnie inny
+    # niż port, na którym stoi api-gateway (8000 vs 8081), więc nie da się
+    # go po prostu przepisać z nagłówka Host żądania skanu. Puste = brak
+    # portu w Location (docelowy prod: storefront i api-gateway za tym
+    # samym portem 443/80, zbędne).
+    port: "8000"
   internal:
     # Sekret dla /internal/v1/** (Faza 5) — WYŁĄCZNIE do lokalnej
     # weryfikacji, patrz InternalApiKeyFilter. W żadnym środowisku

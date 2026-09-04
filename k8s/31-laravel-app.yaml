@@ -1,0 +1,90 @@
+# Odpowiednik app w docker/docker-compose.yml. hostPath = to samo repo na
+# dysku (bind-mount ":/app" w compose) — zmiana pliku na hoście jest od
+# razu widoczna w podzie. vendor/ i storage/ to PVC, NIE hostPath — ten sam
+# powód co w docker-compose (wolny mount Windows zamienia każde żądanie w
+# odczyt tysięcy plików, patrz komentarz w docker/docker-compose.yml).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: laravel-vendor
+  namespace: pay
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: laravel-storage
+  namespace: pay
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-app
+  namespace: pay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: laravel-app }
+  template:
+    metadata:
+      labels: { app: laravel-app }
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z db 3306; do echo waiting...; sleep 2; done"]
+      containers:
+        - name: laravel
+          image: pay-laravel:local
+          imagePullPolicy: Never
+          workingDir: /app
+          command: ["sh", "/entrypoint.sh"]
+          ports:
+            - { containerPort: 8000 }
+            - { containerPort: 9091 }
+          volumeMounts:
+            - { name: repo, mountPath: /app }
+            - { name: entrypoint, mountPath: /entrypoint.sh }
+            - { name: vendor, mountPath: /app/vendor }
+            - { name: storage, mountPath: /app/storage }
+          readinessProbe:
+            httpGet: { path: /, port: 8000 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 60
+      volumes:
+        - name: repo
+          hostPath:
+            path: /run/desktop/mnt/host/c/Users/marci/git/pay
+            type: Directory
+        - name: entrypoint
+          hostPath:
+            path: /run/desktop/mnt/host/c/Users/marci/git/pay/docker/entrypoint.sh
+            type: File
+        - name: vendor
+          persistentVolumeClaim: { claimName: laravel-vendor }
+        - name: storage
+          persistentVolumeClaim: { claimName: laravel-storage }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel-app
+  namespace: pay
+spec:
+  type: LoadBalancer
+  selector: { app: laravel-app }
+  ports:
+    - { name: http, port: 8000, targetPort: 8000 }
+    # 9091: gRPC (rr serve, uruchamiany przez entrypoint.sh w tle) —
+    # to tu api-gateway celuje jako PAY_GATEWAY_SVC_GRPC_HOST=laravel-app.
+    - { name: grpc, port: 9091, targetPort: 9091 }

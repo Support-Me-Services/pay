@@ -17,6 +17,11 @@ API_GATEWAY_URL="${API_GATEWAY_URL:-http://localhost:8081}"
 INTERNAL_API_KEY="${INTERNAL_API_KEY:-local-dev-only-change-me}"
 SHOP_ITEM_ID="${SHOP_ITEM_ID:-1}"
 SHOP_ITEM_SLUG="${SHOP_ITEM_SLUG:-serduszko}"
+# Pełny, oczekiwany adres storefrontu (Laravel) — CELOWO osobno od
+# API_GATEWAY_URL (inny port lokalnie: 8000 vs 8081). Test sprawdza
+# DOKŁADNY Location, nie tylko obecność parametru produkt= w środku —
+# złapało to realnego buga (brak portu w Location, patrz Faza 5.5).
+STOREFRONT_URL="${STOREFRONT_URL:-http://localhost:8000}"
 
 PASS=0
 FAIL=0
@@ -72,12 +77,20 @@ echo
 echo "4) Skan utworzonego kodu -> oczekiwane 302 na produkt '$SHOP_ITEM_SLUG'"
 scan_headers=$(curl -s -i "$API_GATEWAY_URL/init/tag/$uuid")
 scan_code=$(head -1 <<<"$scan_headers" | grep -o '[0-9][0-9][0-9]')
-location=$(grep -i '^Location:' <<<"$scan_headers" | tr -d '\r')
+location=$(grep -i '^Location:' <<<"$scan_headers" | tr -d '\r' | sed 's/^Location: *//i')
+expected_location="$STOREFRONT_URL/?produkt=$SHOP_ITEM_SLUG"
 
-if [ "$scan_code" = "302" ] && grep -q "produkt=$SHOP_ITEM_SLUG" <<<"$location"; then
-  pass "przekierowanie poprawne ($location)"
+if [ "$scan_code" = "302" ] && [ "$location" = "$expected_location" ]; then
+  pass "przekierowanie poprawne (Location: $location)"
 else
-  fail "oczekiwano 302 z Location zawierajacym produkt=$SHOP_ITEM_SLUG, dostano $scan_code / $location"
+  fail "oczekiwano 302 z Location dokladnie '$expected_location', dostano $scan_code / '$location'"
+fi
+
+echo "   -> naprawde podazam za Location, sprawdzam ze storefront odpowiada 200"
+if [ -n "$location" ]; then
+  follow_code=$(curl -s -o /dev/null -w '%{http_code}' "$location")
+  [ "$follow_code" = "200" ] && pass "storefront pod Location odpowiada 200" \
+    || fail "storefront pod Location zwrocil $follow_code (sam redirect dziala, ale cel nie odpowiada)"
 fi
 
 echo

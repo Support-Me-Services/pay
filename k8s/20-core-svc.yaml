@@ -1,0 +1,48 @@
+# Odpowiednik core-svc w ecosystem/docker-compose.yml. Obraz budowany
+# lokalnie (docker compose build core-svc w ecosystem/) — ten sam Docker,
+# więc od razu widoczny klastrowi, bez rejestru.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-svc
+  namespace: pay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: core-svc }
+  template:
+    metadata:
+      labels: { app: core-svc }
+    spec:
+      initContainers:
+        - name: wait-for-postgres-core
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres-core 5432; do echo waiting...; sleep 2; done"]
+      containers:
+        - name: core-svc
+          image: ecosystem_core-svc:latest
+          imagePullPolicy: Never
+          env:
+            - { name: SPRING_DATASOURCE_URL, value: "jdbc:postgresql://postgres-core:5432/core_svc" }
+            - { name: SPRING_DATASOURCE_USERNAME, value: core_svc }
+            - { name: SPRING_DATASOURCE_PASSWORD, value: core_svc }
+          ports:
+            - { containerPort: 8082 }
+            - { containerPort: 9090 }
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8082 }
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            failureThreshold: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-svc
+  namespace: pay
+spec:
+  type: LoadBalancer
+  selector: { app: core-svc }
+  ports:
+    - { name: rest, port: 8082, targetPort: 8082 }
+    - { name: grpc, port: 9090, targetPort: 9090 }

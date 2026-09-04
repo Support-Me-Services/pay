@@ -17,7 +17,7 @@
   <packaging>jar</packaging>
   <name>core-svc</name>
   <description>
-    Nowy backend domenowy (Kotlin/Spring Boot) — startuje celowo pusty.
+    Nowy backend domenowy (Java/Spring Boot) — startuje celowo pusty.
     Miejsce na funkcje budowane od teraz, nie na przepisanie Laravela.
     Patrz dokument architektury ekosystemu pay: zakres pierwszej domeny
     jeszcze nie ustalony.
@@ -25,8 +25,6 @@
 
   <properties>
     <java.version>21</java.version>
-    <kotlin.version>2.0.21</kotlin.version>
-    <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
     <grpc.version>1.68.2</grpc.version>
     <grpc-spring-boot-starter.version>3.1.0.RELEASE</grpc-spring-boot-starter.version>
     <protobuf.version>3.25.5</protobuf.version>
@@ -65,14 +63,6 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-reflect</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib</artifactId>
     </dependency>
 
     <!-- gRPC — serwer (implementuje kontrakty z proto/) -->
@@ -136,85 +126,6 @@
               <goal>compile</goal>
               <goal>compile-custom</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
-        <configuration>
-          <compilerPlugins>
-            <!-- Spring wymaga klas @Configuration/@Bean nie-final (CGLIB) —
-                 Kotlin domyślnie generuje final. Ten plugin otwiera je
-                 automatycznie dla adnotacji Spring, żeby nie łatać ręcznie
-                 `open` przy każdej nowej klasie konfiguracyjnej. -->
-            <plugin>spring</plugin>
-            <!-- Hibernate wymaga bezargumentowego konstruktora na @Entity —
-                 Kotlin go nie generuje domyślnie. Ten plugin dodaje go
-                 automatycznie zamiast ręcznie deklarować wszystkie pola
-                 jako nullable z wartościami domyślnymi. -->
-            <plugin>jpa</plugin>
-          </compilerPlugins>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-allopen</artifactId>
-            <version>${kotlin.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-noarg</artifactId>
-            <version>${kotlin.version}</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <id>compile</id>
-            <phase>process-sources</phase>
-            <goals><goal>compile</goal></goals>
-            <configuration>
-              <sourceDirs>
-                <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-                <sourceDir>${project.build.directory}/generated-sources/protobuf/java</sourceDir>
-                <sourceDir>${project.build.directory}/generated-sources/protobuf/grpc-java</sourceDir>
-              </sourceDirs>
-            </configuration>
-          </execution>
-          <execution>
-            <id>test-compile</id>
-            <phase>process-test-sources</phase>
-            <goals><goal>test-compile</goal></goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <release>21</release>
-        </configuration>
-        <executions>
-          <execution>
-            <id>default-compile</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>default-testCompile</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>java-compile</id>
-            <phase>compile</phase>
-            <goals><goal>compile</goal></goals>
-          </execution>
-          <execution>
-            <id>java-test-compile</id>
-            <phase>test-compile</phase>
-            <goals><goal>testCompile</goal></goals>
           </execution>
         </executions>
       </plugin>

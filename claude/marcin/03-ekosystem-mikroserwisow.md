@@ -10,14 +10,13 @@ dokumentu.
 
 Sześć komponentów:
 
-1. **`api-gateway`** (Spring Boot/Kotlin) — jedyny punkt wejścia REST dla
-   web/mobile, tłumaczy na gRPC do serwisów domenowych. Bez własnej bazy,
-   bez logiki biznesowej.
+1. **`api-gateway`** (Spring Boot/Java — patrz niżej, przepisane z Kotlina)
+   — jedyny punkt wejścia REST dla web/mobile, tłumaczy na gRPC do
+   serwisów domenowych. Bez własnej bazy, bez logiki biznesowej.
 2. **`gateway-svc`** — to jest **obecny Laravel**, przejmuje cały
-   dzisiejszy zakres (moduły Gateway + Storefront). Nie przepisujemy go na
-   Kotlina.
-3. **`core-svc`** (Spring Boot/Kotlin) — nowy backend, celowo pusty,
-   własny Postgres. Pierwsza domena jeszcze nie ustalona.
+   dzisiejszy zakres (moduły Gateway + Storefront). Nie przepisujemy go.
+3. **`core-svc`** (Spring Boot/Java) — nowy backend, pierwsza domena:
+   InitCode (Faza 5), własny Postgres.
 4. **Keycloak** — tożsamość, własny Postgres. **Nie stoi za
    `api-gateway`** — logowanie OIDC to przekierowania przeglądarki
    (z natury REST), więc przeglądarka rozmawia z nim bezpośrednio;
@@ -490,6 +489,173 @@ sam sprząta po sobie) — powtarza dokładnie poniższe punkty 1-4.
   teraz; skrypt nie został napisany (niepotrzebny bez realnego cutover).
 - Pełna diagnoza przyczyny wolnego Guzzle-do-siebie w workerze gRPC (patrz
   pułapki wyżej) — obejście (dłuższy deadline) wystarcza na tym etapie.
+
+## Przepisanie `services/api-gateway` i `services/core-svc` z Kotlina na Javę (2026-09-04)
+
+Na wyraźną prośbę użytkownika: **cały kod Kotlina w obu serwisach przepisany
+1:1 na Javę** (17 plików `.kt` → Java, `pom.xml` obu modułów oczyszczone z
+wtyczki Kotlina). Zero zmian funkcjonalnych — potwierdzone tym samym testem
+integracyjnym z Fazy 5 (`ecosystem/tests/integration/test-initcode.sh`),
+przechodzącym 8/8 po przebudowie obrazów Dockera.
+
+### Co się zmieniło technicznie
+
+- `pom.xml` (oba moduły): usunięte `kotlin.version`, `kotlin-reflect`,
+  `kotlin-stdlib`, cały blok `kotlin-maven-plugin` (w tym `allopen`/`noarg`
+  compiler pluginy) i ręczne nadpisania faz `maven-compiler-plugin`
+  (`default-compile`→`none` itd., potrzebne tylko żeby uniknąć konfliktu z
+  kompilacją Kotlina). Zamiast tego: zwykły `java.version` w
+  `<properties>` — `spring-boot-starter-parent` sam poprawnie konfiguruje
+  `maven-compiler-plugin` z tej właściwości, żadnej ręcznej konfiguracji nie
+  trzeba. `protobuf-maven-plugin` bez zmian — sam dodaje wygenerowane
+  katalogi Javy do compile source roots, więc `javac` (domyślne wiązanie
+  `compile`/`testCompile`) widzi je automatycznie.
+- Encja JPA `InitCode`: z konstruktorowego stylu Kotlina (`class InitCode(val
+  id: Long = 0, val uuid: String, var label: String, ...)`) na jawne pola +
+  gettery/settery + bezargumentowy konstruktor `protected` (wymagany przez
+  Hibernate) + konstruktor z parametrami. Bez Lombok (nie było go wcześniej,
+  nie dodawaliśmy nowej zależności tylko po to).
+- Kotlinowe `data class` (DTO w api-gateway) → Java `record` (Java 21,
+  natywnie serializowalne przez Jackson bez dodatkowej konfiguracji) —
+  **jeden plik na klasę**, nie jeden plik z pięcioma top-level klasami jak w
+  oryginalnym `InitCodeDtos.kt` (Kotlin na to pozwala, Java nie — i to
+  bardziej idiomatyczny podział i tak).
+- `Pair<Long?, Long?>` (Kotlin, `scopeOf()` w `InitCodeGrpcService`) → mały
+  prywatny `record OwnerIdentity(Long organizationId, Long ownerUserId)`
+  (Java 21) — czytelniejsze niż `Pair.first`/`Pair.second` czy tablica.
+- DSL Spring Security Kotlina (`http { csrf { disable() }; ... }`) → Java
+  lambda-based config (`http.csrf(AbstractHttpConfigurer::disable)...`) —
+  Spring Security 6 wspiera oba style, to bezpośredni, ekwiwalentny
+  odpowiednik, nie obejście.
+- `when` (Kotlin) → `switch` **wyrażeniowy** Javy 21 (`->`, nie stary
+  `case: break`) wszędzie, gdzie Kotlin używał `when` na enumach z proto
+  (`TargetType`, `ScopeCase`, kody błędów gRPC) — ta sama zwięzłość,
+  ten sam wymóg wyczerpania (`default` zamiast `else`).
+- `ResponseEntity<Any>` (Kotlin, jeden generyczny typ na wszystkie
+  odpowiedzi kontrolera) → `ResponseEntity<?>` (Java) w
+  `InternalInitCodeController` — z `Object` zamiast `?` trzeba by rzutować
+  ręcznie przy każdym `.body(x)` (niezgodność wariancji generyków Javy),
+  z wildcardem `<?>` nie, bo `ResponseEntity<Konkret>` jest naturalnym
+  podtypem `ResponseEntity<?>`.
+
+### Świadomie NIE ruszone
+
+`app/Modules/Storefront/Grpc/StorefrontGrpcHandler.php` (Laravel/PHP) —
+prośba dotyczyła wyłącznie Kotlina, PHP zostaje PHP.
+
+## Faza 5.5 — cały stack lokalnie na Kubernetesie (2026-09-04)
+
+Na wyraźną prośbę użytkownika: **cały stack (`docker/` + `ecosystem/`,
+siedem komponentów) odtworzony jako manifesty Kubernetes w `k8s/`**,
+uruchamiany na wbudowanym Kubernetesie Docker Desktop. `docker/` i
+`ecosystem/` (docker-compose) **nadal działają bez zmian** — `k8s/` to
+dodatkowa opcja, nie zamiennik. Pełny opis: `k8s/README.md`.
+
+### Drugi realny bug znaleziony przy testowaniu z przeglądarki: brak portu w Location
+
+Przekierowanie skanu (`PublicInitController`) budowało `Location` z gołego
+nagłówka `Host` żądania (`localhost`), bez portu — działało w testach
+curlem, bo test tylko grepował obecność `produkt=` w nagłówku, nigdy
+faktycznie nie podążał za przekierowaniem. W przeglądarce ujawniło się
+natychmiast: `Location: http://localhost/...` (domyślny port 80, tam nic
+nie odpowiada) zamiast `http://localhost:8000/...` (prawdziwy port
+Laravela). Przyczyna: port przychodzącego żądania to port **api-gateway**
+(8081 lokalnie), nie storefrontu (8000) — nie da się go po prostu
+przepisać. **Fix**: nowy config `pay.storefront.port` (domyślnie `8000`
+lokalnie, celowo PUSTY jako named-default dla przyszłego prod — tam
+storefront i api-gateway mają docelowo stać za tym samym portem 443/80,
+port w URL byłby zbędny) doklejany jawnie przy budowie `Location`. Test
+integracyjny (`test-initcode.sh`) wzmocniony: teraz sprawdza DOKŁADNY
+`Location` (nie tylko obecność parametru) i **faktycznie podąża za
+przekierowaniem**, sprawdzając że storefront pod tym adresem odpowiada
+200 — złapałby ten bug automatycznie, nie tylko przy ręcznym klikaniu.
+
+### Kluczowa różnica względem docker-compose: jeden namespace
+
+Wcześniej `docker/` i `ecosystem/` to dwa OSOBNE projekty docker-compose —
+stąd `host.docker.internal` jako sposób, żeby `api-gateway` dobił się do
+gRPC Laravela (`PAY_GATEWAY_SVC_GRPC_HOST=host.docker.internal`). Na
+Kubernetesie wszystko jest w jednym namespace `pay` — Laravel to zwykła
+usługa klastra (`laravel-app`), więc `PAY_GATEWAY_SVC_GRPC_HOST=laravel-app`
+i żadnej sztuczki nie trzeba. To nie obejście, to naturalne uproszczenie,
+którego docker-compose (dwa osobne projekty z historycznych powodów) nie
+dawał.
+
+### Realny, wcześniej nieodkryty bug znaleziony przy tej okazji
+
+**Kolejność migracji w `docker/entrypoint.sh` była błędna dla w pełni
+świeżej bazy** — nigdy się to nie ujawniło w zwykłym `docker/`, bo
+kontener `db` (MySQL) nigdy nie był tam naprawdę pusty (dane z wcześniejszych
+sesji zostawały, migracje po prostu pomijały już zastosowane wpisy).
+Kubernetes z nowym PVC dla MySQL uruchomił migracje na 100% czystej bazie
+po raz pierwszy — i się wysypało:
+
+- Migracje modułu `Init` (tagi NFC/QR) mają FK do `organizations`
+  (Storefront) — uruchamiane PRZED Storefrontem, jak było, walą się od razu
+  (`Failed to open the referenced table 'organizations'`).
+- Migracje Storefrontu mają zapytanie do `users` (baza) — uruchamiane
+  PRZED bazowymi migracjami, jak było, walą się (`Table 'nfc_shop1.users'
+  doesn't exist`).
+- Do tego Init i Storefront są chronologicznie POPRZEPLATANE (Init kopiuje
+  `shop_items.tag_uid` do `init_codes`, Storefront DOPIERO PÓŹNIEJ tę
+  kolumnę usuwa) — nie da się ich po prostu ustawić jedno-po-drugim jako
+  całe bloki, trzeba migrować RAZEM, jednym wywołaniem.
+
+**Fix**: `database/migrations` (bazowe) osobno i NAJPIERW, potem
+`app/Modules/Storefront/database/migrations` + `app/Modules/Init/database/migrations`
+**w jednym wywołaniu `migrate` z dwoma flagami `--path`** — Laravel scala
+pliki z obu ścieżek i sortuje je chronologicznie automatycznie, dokładnie
+rozwiązując przeplot. `app/Modules/Gateway/database/migrations` zostaje
+osobno, ostatnie (inna baza, `TENANT=pay.please-support-me.com`).
+
+To dotyczy KAŻDEGO środowiska migrowanego od zera (nowy komputer,
+`docker/` po `docker compose down` bez wolumenu, nie tylko k8s) — poprawka
+w `entrypoint.sh` jest ogólna, nie specyficzna dla Kubernetesa.
+
+### Samowystarczalny start — koniec ręcznego `docker exec`
+
+Przy okazji: `docker/entrypoint.sh` sam pobiera teraz `rr`/
+`protoc-gen-php-grpc`, generuje klasy PHP z `proto/` i odpala `rr serve` w
+tle (`protobuf-compiler` doszedł na stałe do `docker/Dockerfile`). Przez
+całą tę sesję ten krok trzeba było robić ręcznie po każdym starcie
+kontenera (`docker exec ... protoc ...`, `docker exec -d ... rr serve`) —
+teraz dzieje się sam, w obu światach (`docker/` i `k8s/`).
+
+### Co powstało
+
+- `k8s/00-namespace.yaml` … `k8s/31-laravel-app.yaml` — po jednym pliku na
+  komponent (Deployment + Service, gdzie trzeba + PVC/ConfigMap).
+  `type: LoadBalancer` wszędzie, gdzie docker-compose miał `ports:` na
+  hosta — to specjalna cecha Kubernetesa Docker Desktop: bindują się na
+  `localhost:<port>` automatycznie, bez `kubectl port-forward`.
+- PVC dla `postgres-core`, `postgres-keycloak`, `db` (MySQL) — w
+  docker-compose te trzy NIE miały nazwanych wolumenów (dane ginęły przy
+  każdym `down`); tu świadoma poprawa, bo restart poda jest w k8s
+  częstszy niż w compose.
+- `laravel-app`: hostPath na całe repo (odpowiednik bind-mount `..:/app`)
+  + osobne PVC dla `vendor/`i `storage/` (jak nazwane wolumeny w compose —
+  ten sam powód: wolny mount Windows zamienia każde żądanie w odczyt
+  tysięcy plików).
+
+### Pułapki napotkane
+
+- **`subPath` na wolumenie `hostPath` typu `File` nie działa**
+  (`CreateContainerConfigError: failed to prepare subPath for volumeMount`)
+  — gdy `hostPath` już wskazuje wprost na plik (nie katalog), `subPath` jest
+  zbędny i wręcz psuje montowanie. Fix: `mountPath` bez `subPath`, gdy
+  źródłowy `hostPath` to już ten konkretny plik.
+- **Docker Desktop miał `memoryMiB: 2048`** (2GB na cały silnik Dockera) —
+  stanowczo za mało na kontrolplane Kubernetesa + siedem komponentów
+  (2× JVM, Keycloak, 3× baza, PHP-FPM). Podniesione do 6144 (host ma 16GB
+  RAM) w `C:\Users\<user>\AppData\Roaming\Docker\settings.json` przed
+  włączeniem Kubernetesa.
+- Konwencja hostPath dla Windows w Kubernetesie Docker Desktop:
+  `C:\Users\marci\git\pay` → `/run/desktop/mnt/host/c/Users/marci/git/pay`
+  (małą literą dysk, `/run/desktop/mnt/host/<litera>/...`).
+- Kubernetes nie ma odpowiednika `depends_on: condition: service_healthy`
+  z compose — zastąpione `initContainers` z prostą pętlą `nc -z <usługa>
+  <port>` (np. `keycloak` czeka na `postgres-keycloak`, `core-svc` na
+  `postgres-core`, `laravel-app` na `db`).
 
 ## Jak odpalić od zera (nowy komputer)
 

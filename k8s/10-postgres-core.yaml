@@ -1,0 +1,61 @@
+# Baza core-svc — odpowiednik postgres-core w ecosystem/docker-compose.yml.
+# PVC nowy względem compose (tam bez nazwanego wolumenu, dane ginęły przy
+# każdym "down") — restart poda w k8s nie kasuje bazy za każdym razem.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-core-data
+  namespace: pay
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-core
+  namespace: pay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-core }
+  template:
+    metadata:
+      labels: { app: postgres-core }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - { name: POSTGRES_DB, value: core_svc }
+            - { name: POSTGRES_USER, value: core_svc }
+            - { name: POSTGRES_PASSWORD, value: core_svc }
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "core_svc"]
+            periodSeconds: 5
+            failureThreshold: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-core-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-core
+  namespace: pay
+spec:
+  type: LoadBalancer
+  selector: { app: postgres-core }
+  ports:
+    # 5432: port natywny Postgresa — TAK core-svc łączy się wewnątrz klastra
+    # (jdbc:postgresql://postgres-core:5432/core_svc, bez zmian w kodzie).
+    - { name: internal, port: 5432, targetPort: 5432 }
+    # 5433: parytet z docker-compose (5433:5432) — dostęp z hosta (psql itp.).
+    - { name: host, port: 5433, targetPort: 5432 }

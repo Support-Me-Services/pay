@@ -20,20 +20,25 @@ chmod -R 777 storage bootstrap/cache 2>/dev/null || true
 # przez panel — produkty, węzły "O nas" — nie są publicznie dostępne, 404)
 [ -L public/storage ] || php artisan storage:link
 
-# moduł Init (tagi NFC / kody QR) — PRZED storefront: migracja danych Init
-# kopiuje shop_items.tag_uid do init_codes, a migracja storefront dopiero
-# potem tę kolumnę usuwa.
-php artisan migrate --path=app/Modules/Init/database/migrations --force || true
-
-# schemat sklepu (storefront -> baza nfc_shop1 wg TENANT z .env).
-# Migrujemy tylko ścieżkę storefront: w prod schemat budowany jest Liquibase,
-# nie artisanem — patrz LOCAL.md.
-php artisan migrate --path=app/Modules/Storefront/database/migrations --force || true
-
-# schemat bazowy (tabela users — handle, is_admin, enabled_sections). Osobna
-# ścieżka, bo NIE leży w module Storefront (patrz DEPLOYMENT.md: prod migruje
-# ją też osobnym poleceniem, --path=database/migrations).
+# schemat bazowy (tabela users — handle, is_admin, enabled_sections) MUSI
+# wejść PRZED storefront: storefront ma migrację (add_user_id_to_shop_items)
+# odpytującą tabelę users. Osobna ścieżka, bo nie leży w module Storefront
+# (patrz DEPLOYMENT.md: prod migruje ją też osobnym poleceniem).
 php artisan migrate --path=database/migrations --force || true
+
+# storefront + init (tagi NFC/kody QR) RAZEM, jedno wywołanie z dwoma
+# --path — migracje obu modułów są chronologicznie POPRZEPLATANE (Init ma
+# FK do organizations ze storefrontu; storefront dopiero PÓŹNIEJ usuwa
+# shop_items.tag_uid, który wcześniejsza migracja Init kopiuje do
+# init_codes) — osobne wywołania per moduł migrowały je w złej kolejności
+# względem siebie (zadziałało tylko na bazie z historią z wcześniejszych
+# sesji, wywaliło się na 100% świeżej — patrz Faza 5.5). Wiele flag --path
+# w jednym `migrate` scala i sortuje pliki chronologicznie, tak jak trzeba.
+# W prod schemat budowany jest Liquibase, nie artisanem — patrz LOCAL.md.
+php artisan migrate \
+    --path=app/Modules/Storefront/database/migrations \
+    --path=app/Modules/Init/database/migrations \
+    --force || true
 
 # schemat bramki (Gateway -> baza nfc_pay) + sklep "shops" z kluczem API —
 # potrzebne do pełnego mock-flow płatności lokalnie (Wesprzyj -> ekran testowy
@@ -46,6 +51,29 @@ php artisan tinker --execute="
     ['name' => 'Parafia Żbików (lokalnie)', 'base_url' => 'http://localhost:8000', 'api_key' => env('GATEWAY_API_KEY_CHURCH'), 'payment_mode' => 'classic']
 );
 " || true
+
+# PoC Fazy 1 — serwer gRPC gateway-svc (RoadRunner). Dotąd uruchamiany
+# ręcznie po każdym starcie kontenera (docker exec, patrz claude/marcin) —
+# od Kubernetesa (Faza 5.5) samowystarczalny, żeby pod nie wymagał ręcznej
+# interwencji za każdym razem. protoc jest już w obrazie (Dockerfile);
+# rr/protoc-gen-php-grpc i wygenerowane klasy PHP lądują na wolumenie vendor/
+# repo (bind-mount) — jednorazowo, potem pomijane jak reszta setupu wyżej.
+[ -f rr ] || { echo "[entrypoint] pobieram binarkę rr..."; php vendor/bin/rr get; }
+[ -f protoc-gen-php-grpc ] || { echo "[entrypoint] pobieram protoc-gen-php-grpc..."; php vendor/bin/rr download-protoc-binary; }
+
+if [ ! -f app/Modules/Gateway/Grpc/Generated/Pay/Health/V1/HealthCheckServiceInterface.php ] \
+    || [ ! -f app/Modules/Gateway/Grpc/Generated/Pay/Storefront/V1/StorefrontServiceInterface.php ]; then
+    echo "[entrypoint] generuję klasy PHP z proto/..."
+    mkdir -p app/Modules/Gateway/Grpc/Generated
+    protoc --proto_path=proto --php_out=app/Modules/Gateway/Grpc/Generated \
+        --php-grpc_out=app/Modules/Gateway/Grpc/Generated \
+        --plugin=protoc-gen-php-grpc=./protoc-gen-php-grpc \
+        proto/health/v1/health.proto proto/storefront/v1/storefront.proto
+    composer dump-autoload -o
+fi
+
+echo "[entrypoint] startuję serwer gRPC (rr serve) w tle na :9091..."
+./rr serve -c .rr.yaml > storage/logs/rr.log 2>&1 &
 
 echo "[entrypoint] gotowe -> http://localhost:8000"
 # --no-reload + PHP_CLI_SERVER_WORKERS (patrz .env.docker): bez tego serwer

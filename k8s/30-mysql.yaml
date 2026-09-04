@@ -1,0 +1,72 @@
+# Odpowiednik db w docker/docker-compose.yml. Nazwa usługi celowo "db" —
+# .env.docker ma na sztywno DB_HOST=db, zero zmian w konfiguracji Laravela.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-data
+  namespace: pay
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-init
+  namespace: pay
+data:
+  init.sql: |
+    CREATE DATABASE IF NOT EXISTS nfc_pay   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE DATABASE IF NOT EXISTS nfc_shop1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+    CREATE USER IF NOT EXISTS 'nfc_pay'@'%' IDENTIFIED BY 'secret';
+    GRANT ALL PRIVILEGES ON nfc_pay.*   TO 'nfc_pay'@'%';
+    GRANT ALL PRIVILEGES ON nfc_shop1.* TO 'nfc_pay'@'%';
+    FLUSH PRIVILEGES;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  namespace: pay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: db }
+  template:
+    metadata:
+      labels: { app: db }
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - { name: MYSQL_ROOT_PASSWORD, value: root }
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/mysql }
+            - { name: init, mountPath: /docker-entrypoint-initdb.d }
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+            periodSeconds: 5
+            failureThreshold: 30
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: mysql-data }
+        - name: init
+          configMap: { name: mysql-init }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db
+  namespace: pay
+spec:
+  type: LoadBalancer
+  selector: { app: db }
+  ports:
+    - { name: internal, port: 3306, targetPort: 3306 }
+    - { name: host, port: 13306, targetPort: 3306 }
