@@ -232,3 +232,155 @@ po usunięciu). Sam billing account (`Moje konto rozliczeniowe`,
 `marcin.lula@`) PRZEŻYWA usunięcie projektu — jeśli chcesz też jego się
 pozbyć, rób to osobno w konsoli GCP (Billing → zamknij konto), nie jest to
 konieczne (pusty billing account bez podpiętych projektów nic nie kosztuje).
+
+## Faza 8 — produkcja na GKE (`pay-prod`, osobny projekt od `pay-ephemeral`)
+
+**Decyzja (patrz Faza 7 wyżej): produkcja dostaje WŁASNY, osobny klaster —
+nigdy `pay-ephemeral`.** Pełny plan (architektura sieci, retrofit Liquibase,
+blue-green, konteneryzacja Laravela, CI/CD) w
+`.claude/plans/fluffy-frolicking-galaxy.md` (ta sesja) — tu tylko runbook
+jednorazowego setupu GCP dla Fazy 8.0.
+
+**Kluczowa różnica względem setupu `please-support-me-test1` wyżej**: nowy
+projekt produkcyjny wisi pod TYM SAMYM billing accountem co dzisiejszy
+`please-support-me-499509` (właściciel: `founder@please-support-me.com`) —
+**nie zakładamy nowego billing accountu**. Dane `nfc_pay`/`nfc_shop1` Cloud
+SQL **zostają** w `please-support-me-499509` — nowy projekt/klaster łączy się
+do nich przez sieć (VPC peering), nic się nie migruje.
+
+**Kto wykonuje**: `marcin.lula@please-support-me.com` (ta sesja) nie ma
+uprawnień IAM na `please-support-me-499509` — każdy krok oznaczony niżej
+**[founder@]** musi wykonać osobiście `founder@please-support-me.com`. Kroki
+oznaczone **[marcin.lula@]** można wykonać z tej sesji/konta na nowym
+projekcie, gdy tylko projekt istnieje i jest podpięty pod billing.
+
+### Jednorazowy setup — Faza 8.0 (fundament, zero ryzyka dla produkcji)
+
+```bash
+# --- Zmienne pomocnicze (ustaw raz na początku) ---
+NEW_PROJECT=support-me-prod           # do potwierdzenia dostępności globalnej ID
+OLD_PROJECT=please-support-me-499509
+REGION=europe-central2                # SPRAWDŹ region istniejącej instancji Cloud SQL/VM
+                                       # (gcloud sql instances describe / gcloud compute
+                                       # instances list --project=$OLD_PROJECT) — użyj TEGO
+                                       # SAMEGO regionu, żeby uniknąć cross-region latency/opłat
+
+# 1. [founder@] Znajdź billing account ID istniejącego projektu produkcyjnego
+gcloud billing projects describe $OLD_PROJECT --format="value(billingAccountName)"
+# -> zwraca coś jak billingAccounts/XXXXXX-XXXXXX-XXXXXX, zanotuj jako BILLING_ACCOUNT_ID
+
+# 2. [founder@] Nowy projekt, podpięty pod ISTNIEJĄCY (produkcyjny) billing account
+gcloud projects create $NEW_PROJECT --name="Pay — produkcja (ekosystem)"
+gcloud billing projects link $NEW_PROJECT --billing-account=<BILLING_ACCOUNT_ID z kroku 1>
+
+# 3. [founder@ albo marcin.lula@, jeśli dostanie rolę Editor na nowym projekcie] Włącz API
+gcloud services enable container.googleapis.com artifactregistry.googleapis.com \
+  iam.googleapis.com iamcredentials.googleapis.com cloudresourcemanager.googleapis.com \
+  sts.googleapis.com sqladmin.googleapis.com servicenetworking.googleapis.com \
+  secretmanager.googleapis.com compute.googleapis.com \
+  --project=$NEW_PROJECT
+
+# 4. [marcin.lula@ na nowym projekcie] Klaster Autopolot REGIONALNY (nie zonalny —
+#    HA control-plane, priorytet stabilności dla systemu płatności), private nodes + Cloud NAT
+gcloud container clusters create-auto pay-prod \
+  --project=$NEW_PROJECT --region=$REGION \
+  --enable-private-nodes
+# Cloud NAT: Autopilot regionalny z --enable-private-nodes wymaga Cloud Router + NAT dla
+# ruchu wychodzącego węzłów (patrz pułapka #10, Faza 7, ecosystem notes) — dopisać jeśli
+# `create-auto` sam tego nie skonfiguruje.
+
+# 4b. [founder@ na starym projekcie, PRZED realnym cutoverem] Podnieś proaktywnie kwotę
+#     CPUS-ALL-REGIONS-per-project na nowym projekcie — Faza 7 utknęła na limicie 12
+#     reaktywnie (pułapka #11); tu robimy to z wyprzedzeniem, budżet 2x steady-state
+#     (dwie generacje pod naraz podczas blue-green). Dokładna wartość: DO USTALENIA
+#     wspólnie po oszacowaniu realnego obciążenia wszystkich serwisów.
+gcloud alpha quotas info list --project=$NEW_PROJECT --service=compute.googleapis.com \
+  --filter="quota_id:CPUS-ALL-REGIONS-per-project"
+
+# 5. [marcin.lula@] Rejestr obrazów
+gcloud artifacts repositories create pay --repository-format=docker \
+  --location=$REGION --project=$NEW_PROJECT
+
+# 6. [marcin.lula@] Service account CI (analogicznie do ephemeral, ograniczone uprawnienia)
+gcloud iam service-accounts create github-ci --project=$NEW_PROJECT
+gcloud projects add-iam-policy-binding $NEW_PROJECT \
+  --member="serviceAccount:github-ci@${NEW_PROJECT}.iam.gserviceaccount.com" \
+  --role=roles/container.developer
+gcloud projects add-iam-policy-binding $NEW_PROJECT \
+  --member="serviceAccount:github-ci@${NEW_PROJECT}.iam.gserviceaccount.com" \
+  --role=roles/artifactregistry.writer
+
+# 6b. Węzły klastra (Compute Engine default SA) potrzebują odczytu z rejestru —
+#     sam ten sam gotcha co w Fazie 7 (ErrImagePull/403 bez tego)
+gcloud projects add-iam-policy-binding $NEW_PROJECT \
+  --member="serviceAccount:$(gcloud projects describe $NEW_PROJECT --format='value(projectNumber)')-compute@developer.gserviceaccount.com" \
+  --role=roles/artifactregistry.reader
+
+# 7. Workload Identity Federation dla GitHub Actions (jak w Fazie 7, ale scoped do
+#    NOWEGO projektu i osobnego workflow production-deploy.yml)
+#    https://github.com/google-github-actions/auth#setting-up-workload-identity-federation
+#    -> sekrety repo: GCP_WORKLOAD_IDENTITY_PROVIDER_PROD, GCP_SERVICE_ACCOUNT_PROD
+#    (osobne nazwy sekretów od ephemeral, żeby oba workflowy współistniały bez kolizji)
+
+# --- Sieć: piaskownica VPC peering (Faza 8.0 cel — DOWIEŚĆ, że to działa, ZANIM
+#     cokolwiek na tym zbudujemy) ---
+
+# 8. [founder@ na starym projekcie] Sprawdź nazwę i CIDR istniejącego VPC
+gcloud compute networks list --project=$OLD_PROJECT
+gcloud compute networks subnets list --project=$OLD_PROJECT --filter="region:$REGION"
+# Zanotuj CIDR — nowy VPC (krok 9) NIE MOŻE się z nim nakładać.
+
+# 9. [marcin.lula@] Nowy VPC w nowym projekcie (custom-mode, CIDR bez nakładania z krokiem 8)
+gcloud compute networks create pay-prod-vpc --project=$NEW_PROJECT --subnet-mode=custom
+gcloud compute networks subnets create pay-prod-subnet \
+  --project=$NEW_PROJECT --network=pay-prod-vpc --region=$REGION \
+  --range=<CIDR niekolidujący z krokiem 8, np. 10.90.0.0/20>
+
+# 10. [founder@ + marcin.lula@ razem — peering jest dwustronny] Classic VPC peering
+#     między nowym a starym VPC
+gcloud compute networks peerings create pay-prod-to-old \
+  --project=$NEW_PROJECT --network=pay-prod-vpc \
+  --peer-project=$OLD_PROJECT --peer-network=<nazwa starego VPC z kroku 8> \
+  --export-custom-routes --import-custom-routes
+gcloud compute networks peerings create old-to-pay-prod \
+  --project=$OLD_PROJECT --network=<nazwa starego VPC z kroku 8> \
+  --peer-project=$NEW_PROJECT --peer-network=pay-prod-vpc \
+  --export-custom-routes --import-custom-routes
+
+# 11. [founder@ na starym projekcie] Włącz export/import custom routes też na
+#     ISTNIEJĄCYM peeringu starego VPC do sieci producenta Cloud SQL (Private
+#     Services Access) — bez tego trasa do 10.60.96.3 nie "przeleci" dalej
+#     przez peering z kroku 10 (VPC peering jest nietranzytywny)
+gcloud services vpc-peerings update --service=servicenetworking.googleapis.com \
+  --network=<nazwa starego VPC> --project=$OLD_PROJECT \
+  --export-custom-routes --import-custom-routes
+
+# 12. [founder@ na starym projekcie] Cross-project IAM: pozwól service accountowi
+#     Cloud SQL Auth Proxy (nowy projekt) łączyć się z instancjami w starym projekcie
+gcloud projects add-iam-policy-binding $OLD_PROJECT \
+  --member="serviceAccount:github-ci@${NEW_PROJECT}.iam.gserviceaccount.com" \
+  --role=roles/cloudsql.client
+# (docelowy runtime service account podów, nie tylko CI — dopisać drugi binding
+#  dla Workload Identity SA laravel-web/laravel-grpc w Fazie 8.2, gdy powstanie)
+
+# --- Weryfikacja Fazy 8.0 (cel: DOWÓD, że sieć działa, zanim cokolwiek na tym zbudujemy) ---
+# Postaw jednorazowy testowy pod w pay-prod z Cloud SQL Auth Proxy (--private-ip)
+# celujący w 10.60.96.3 (albo w tymczasową testową instancję w starym projekcie,
+# jeśli wolimy nie dotykać żywej instancji nawet read-only na tym etapie — DO USTALENIA),
+# potwierdź że `psql` przez proxy faktycznie się łączy. Dopiero to jest zielone światło
+# na Fazę 8.1.
+```
+
+**Sprawdzenie, czy backupy `nfc_pay`/`nfc_shop1` są już włączone** (potrzebne
+niezależnie od powyższego, do decyzji czy Faza 8.0/8.1 musi je dopiero włączyć):
+
+```bash
+# [founder@]
+gcloud sql instances describe <nazwa-instancji> --project=$OLD_PROJECT \
+  --format="value(settings.backupConfiguration.enabled,settings.backupConfiguration.pointInTimeRecoveryEnabled)"
+```
+
+**Otwarte do ustalenia przed/w trakcie Fazy 8.0** (patrz plan, sekcja "Otwarte
+pytania"): dokładna nazwa/ID projektu jeśli `support-me-prod` zajęte globalnie,
+docelowa kwota CPU, czy test sieciowy w kroku "Weryfikacja" celuje w żywą
+instancję (read-only) czy w tymczasową kopię.
