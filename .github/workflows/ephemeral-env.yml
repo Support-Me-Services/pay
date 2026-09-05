@@ -152,7 +152,11 @@ jobs:
           kubectl label namespace "$NS" pay/ephemeral=true --overwrite
           kubectl annotate namespace "$NS" pay/created-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
 
-          TTL_HOURS=$(echo "$COMMIT_MSG" | grep -oE '\[ttl=[0-9]+h\]' | head -1 | grep -oE '[0-9]+')
+          # `|| true` konieczne pod `set -e`: gdy w commit message nie ma [ttl=Nh]
+          # (zwykły, domyślny przypadek), ostatni grep w potoku nie znajduje nic i
+          # zwraca 1 — bez tego cały krok padał na KAŻDYM pushu bez tagu TTL
+          # (złapane na żywo: pierwszy prawdziwy test tego kodu po zmergowaniu).
+          TTL_HOURS=$(echo "$COMMIT_MSG" | grep -oE '\[ttl=[0-9]+h\]' | head -1 | grep -oE '[0-9]+' || true)
           TTL_HOURS="${TTL_HOURS:-1}"
           [ "$TTL_HOURS" -lt 1 ] && TTL_HOURS=1
           [ "$TTL_HOURS" -gt 24 ] && TTL_HOURS=24
