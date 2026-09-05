@@ -195,20 +195,39 @@ jobs:
         run: |
           set -o pipefail
           NS="${{ steps.ns.outputs.name }}"
-          kubectl port-forward -n "$NS" svc/keycloak 18180:8080 >/dev/null 2>&1 &
-          PF_PID=$!
+          PF_LOG=$(mktemp)
+          start_pf() {
+            kubectl port-forward -n "$NS" svc/keycloak 18180:8080 > "$PF_LOG" 2>&1 &
+            PF_PID=$!
+          }
+          start_pf
           trap 'kill $PF_PID 2>/dev/null || true' EXIT
-          sleep 3
+          # Czekaj na FAKTYCZNE ustanowienie tunelu (nie ślepy sleep) — bez
+          # tego pierwsze próby curl trafiają w jeszcze niegotowy tunel,
+          # dostają "connection refused", i (bez set -o pipefail na TYM
+          # etapie budowy tunelu) nie sposób odróżnić tego od "Keycloak
+          # jeszcze nie gotowy" — złapane, gdy ręczny test tym samym
+          # poleceniem zawsze się udawał, a przebieg CI zawsze padał przez
+          # całe okno retry.
+          for i in $(seq 1 10); do
+            grep -q "Forwarding from" "$PF_LOG" 2>/dev/null && break
+            sleep 1
+          done
           KC="http://localhost:18180"
           ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
           TOKEN=""
           for i in $(seq 1 24); do
+            kill -0 "$PF_PID" 2>/dev/null || { echo "port-forward padł, restartuję..."; start_pf; sleep 2; }
             TOKEN=$(curl -sf -X POST "${KC}/realms/master/protocol/openid-connect/token" \
               -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token) && [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] && break
             echo "Keycloak admin jeszcze nie gotowy do logowania, ponawiam za 10s..."
             sleep 10
           done
-          [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka po 240s"; exit 1; }
+          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+            echo "Nie udało się zalogować do Keycloaka po 240s. Log port-forward:"
+            cat "$PF_LOG"
+            exit 1
+          fi
           for CLIENT in laravel-panel-gateway laravel-panel-storefront; do
             ID=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
               "${KC}/admin/realms/pay/clients?clientId=${CLIENT}" | jq -r '.[0].id')
@@ -274,11 +293,17 @@ jobs:
           SSLIP_LARAVEL="${{ steps.laravel.outputs.sslip }}"
           # Admin API przez port-forward (localhost), nie zewnętrzny LB IP —
           # patrz komentarz przy kroku "Pobierz sekrety klientów Keycloaka"
-          # (realm master wymusza HTTPS dla ruchu zewnętrznego).
-          kubectl port-forward -n "$NS" svc/keycloak 18180:8080 >/dev/null 2>&1 &
+          # (realm master wymusza HTTPS dla ruchu zewnętrznego). Czekamy na
+          # faktyczne ustanowienie tunelu, nie ślepy sleep — patrz tamten
+          # sam komentarz o przyczynie.
+          PF_LOG=$(mktemp)
+          kubectl port-forward -n "$NS" svc/keycloak 18180:8080 > "$PF_LOG" 2>&1 &
           PF_PID=$!
           trap 'kill $PF_PID 2>/dev/null || true' EXIT
-          sleep 3
+          for i in $(seq 1 10); do
+            grep -q "Forwarding from" "$PF_LOG" 2>/dev/null && break
+            sleep 1
+          done
           KC="http://localhost:18180"
           # Świeże logowanie — token admina żyje tylko 60s, ten z kroku
           # "Pobierz sekrety" (kilka minut wcześniej) już dawno wygasł.
