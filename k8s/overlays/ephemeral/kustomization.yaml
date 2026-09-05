@@ -189,6 +189,10 @@ patches:
       # oznacza ufania realnym, nieznanym proxy jak na produkcji.
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: TRUSTED_PROXIES, value: "*" } }
       - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
+      # Ten sam powód co Recreate na Keycloaku (patrz komentarz tam) —
+      # Laravel TEŻ dostaje `kubectl set env` (KEYCLOAK_BASE_URL + sekrety)
+      # po pierwszym starcie.
+      - { op: add, path: /spec/strategy, value: { type: Recreate } }
   - target: { kind: Service, name: laravel-app }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
