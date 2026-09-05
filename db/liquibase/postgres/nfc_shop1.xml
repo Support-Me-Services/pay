@@ -1,104 +1,45 @@
 <?xml version="1.1" encoding="UTF-8" standalone="no"?>
-<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet author="Marcin (generated)" id="1782550516877-1">
-        <createTable tableName="cache">
-            <column name="key" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true"/>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet author="liquibase (generated)" id="1788637271997-1">
+        <createTable tableName="beneficiary_nodes">
+            <column autoIncrement="true" name="id" startWith="8" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="beneficiary_nodes_pkey"/>
             </column>
-            <column name="value" type="TEXT">
+            <column name="heading" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="expiration" type="INT">
+            <column name="image" type="VARCHAR(255)"/>
+            <column defaultValue="left" name="image_side" type="VARCHAR(10)">
                 <constraints nullable="false"/>
             </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-2">
-        <createTable tableName="cache_locks">
-            <column name="key" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="owner" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="expiration" type="INT">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-3">
-        <createTable tableName="categories">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column defaultValueComputed="NULL" name="parent_id" type="BIGINT"/>
-            <column name="slug" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="label" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="label_html" type="TEXT"/>
-            <column name="label_text" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="intro" type="TEXT"/>
-            <column name="icon" type="VARCHAR(255)"/>
-            <column defaultValue="none" name="source" type="VARCHAR(20)">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueNumeric="0" name="position" type="INT">
+            <column name="body_html" type="TEXT"/>
+            <column defaultValueNumeric="0" name="position" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
             <column defaultValueBoolean="true" name="active" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
-            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column defaultValue="left" name="text_align" type="VARCHAR(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="100" name="image_scale" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="image_x" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column defaultValueNumeric="0" name="image_y" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="organization_id" type="BIGINT"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-4">
-        <createTable tableName="contact_messages">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="email" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="phone" type="VARCHAR(255)"/>
-            <column name="subject" type="VARCHAR(255)"/>
-            <column name="message" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueBoolean="false" name="is_read" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-5">
-        <createTable tableName="events">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column defaultValueComputed="NULL" name="product_id" type="BIGINT"/>
-            <column name="type" type="VARCHAR(32)">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-6">
+    <changeSet author="liquibase (generated)" id="1788637271997-2">
         <createTable tableName="failed_jobs">
             <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="failed_jobs_pkey"/>
             </column>
             <column name="uuid" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -115,17 +56,37 @@
             <column name="exception" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="failed_at" type="timestamp(0)">
+            <column defaultValueComputed="now()" name="failed_at" type="TIMESTAMP WITHOUT TIME ZONE">
                 <constraints nullable="false"/>
             </column>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-7">
+    <changeSet author="liquibase (generated)" id="1788637271997-3">
+        <createTable tableName="init_codes">
+            <column autoIncrement="true" name="id" startWith="5" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="init_codes_pkey"/>
+            </column>
+            <column name="organization_id" type="BIGINT"/>
+            <column name="owner_user_id" type="BIGINT"/>
+            <column name="uuid" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="label" type="VARCHAR(255)"/>
+            <column name="shop_item_id" type="BIGINT"/>
+            <column name="target_organization_id" type="BIGINT"/>
+            <column defaultValueBoolean="true" name="active" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+        </createTable>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-4">
         <createTable tableName="job_applications">
             <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="job_applications_pkey"/>
             </column>
-            <column defaultValueComputed="NULL" name="job_position_id" type="BIGINT"/>
+            <column name="job_position_id" type="BIGINT"/>
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
@@ -142,43 +103,20 @@
             <column defaultValue="pending" name="status" type="VARCHAR(20)">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
+            <column defaultValueComputed="now()" name="created_at" type="TIMESTAMP WITHOUT TIME ZONE">
                 <constraints nullable="false"/>
             </column>
+            <column defaultValueBoolean="false" name="future_recruitment_consent" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="future_recruitment_consent_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="organization_id" type="BIGINT"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-8">
-        <createTable tableName="job_batches">
-            <column name="id" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="total_jobs" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="pending_jobs" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="failed_jobs" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="failed_job_ids" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="options" type="TEXT"/>
-            <column defaultValueComputed="NULL" name="cancelled_at" type="INT"/>
-            <column name="created_at" type="INT">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="NULL" name="finished_at" type="INT"/>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-9">
+    <changeSet author="liquibase (generated)" id="1788637271997-5">
         <createTable tableName="job_positions">
             <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="job_positions_pkey"/>
             </column>
             <column name="title" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -192,53 +130,18 @@
             <column defaultValueNumeric="0" name="sort" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
+            <column defaultValueComputed="now()" name="created_at" type="TIMESTAMP WITHOUT TIME ZONE">
                 <constraints nullable="false"/>
             </column>
+            <column name="short_description" type="TEXT"/>
+            <column name="organization_id" type="BIGINT"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-10">
-        <createTable tableName="jobs">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="queue" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="payload" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="attempts" type="SMALLINT">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="NULL" name="reserved_at" type="INTEGER"/>
-            <column name="available_at" type="INTEGER">
-                <constraints nullable="false"/>
-            </column>
-            <column name="created_at" type="INTEGER">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-11">
-        <createTable tableName="migrations">
-            <column autoIncrement="true" name="id" type="INTEGER">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="migration" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="batch" type="INT">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-12">
+    <changeSet author="liquibase (generated)" id="1788637271997-6">
         <createTable tableName="orders">
             <column name="id" type="CHAR(36)">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="orders_pkey"/>
             </column>
-            <column defaultValueComputed="NULL" name="product_id" type="BIGINT"/>
             <column name="transaction_id" type="CHAR(36)"/>
             <column name="amount" type="INTEGER">
                 <constraints nullable="false"/>
@@ -246,164 +149,48 @@
             <column defaultValue="pending" name="status" type="VARCHAR(32)">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="NULL" name="paid_at" type="timestamp(0)"/>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
+            <column defaultValueComputed="NULL::timestamp without time zone" name="paid_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column defaultValueComputed="now()" name="created_at" type="TIMESTAMP WITHOUT TIME ZONE">
                 <constraints nullable="false"/>
             </column>
+            <column name="shop_item_id" type="BIGINT"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-13">
-        <createTable tableName="parish_notes">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+    <changeSet author="liquibase (generated)" id="1788637271997-7">
+        <createTable tableName="organizations">
+            <column autoIncrement="true" name="id" startWith="3" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="organizations_pkey"/>
             </column>
-            <column name="product_id" type="BIGINT">
+            <column name="user_id" type="BIGINT">
                 <constraints nullable="false"/>
             </column>
-            <column name="body" type="TEXT">
+            <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValue="kontakt" name="type" type="VARCHAR(20)">
+            <column name="handle" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="author" type="VARCHAR(255)"/>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
-                <constraints nullable="false"/>
-            </column>
+            <column name="logo" type="VARCHAR(255)"/>
+            <column name="enabled_sections" type="JSON"/>
+            <column name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-14">
+    <changeSet author="liquibase (generated)" id="1788637271997-8">
         <createTable tableName="password_reset_tokens">
             <column name="email" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="password_reset_tokens_pkey"/>
             </column>
             <column name="token" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
+            <column defaultValueComputed="NULL::timestamp without time zone" name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-15">
-        <createTable tableName="potential_parishes">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="city" type="VARCHAR(255)"/>
-            <column name="address" type="VARCHAR(255)"/>
-            <column name="voivodeship" type="VARCHAR(255)"/>
-            <column name="denomination" type="VARCHAR(255)"/>
-            <column name="phone" type="VARCHAR(255)"/>
-            <column name="lat" type="DECIMAL(10, 7)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="lon" type="DECIMAL(10, 7)">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValue="nowa" name="status" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="NULL" name="salesperson_id" type="BIGINT"/>
-            <column name="note" type="TEXT"/>
-            <column defaultValueComputed="NULL" name="called_at" type="timestamp(0)"/>
-            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
-            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-16">
-        <createTable tableName="product_images">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="product_id" type="BIGINT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="path" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueNumeric="0" name="sort" type="INTEGER">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-17">
-        <createTable tableName="products">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="city" type="VARCHAR(255)"/>
-            <column name="phone" type="VARCHAR(255)"/>
-            <column name="website" type="VARCHAR(255)"/>
-            <column name="voivodeship" type="VARCHAR(255)"/>
-            <column name="purpose" type="VARCHAR(255)"/>
-            <column name="slug" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="description_html" type="TEXT"/>
-            <column name="pickup_instruction" type="TEXT"/>
-            <column name="price" type="INTEGER">
-                <constraints nullable="false"/>
-            </column>
-            <column name="tag_uid" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="main_image" type="VARCHAR(255)"/>
-            <column defaultValueBoolean="true" name="active" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValue="kontakt" name="status" type="VARCHAR(20)">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="NULL" name="salesperson_id" type="BIGINT"/>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-18">
-        <createTable tableName="salespeople">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column name="name" type="VARCHAR(255)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="email" type="VARCHAR(255)"/>
-            <column name="phone" type="VARCHAR(255)"/>
-            <column name="voivodeships" type="TEXT"/>
-            <column defaultValueBoolean="true" name="active" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at" type="timestamp(0)">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-19">
-        <createTable tableName="sessions">
-            <column name="id" type="VARCHAR(255)">
-                <constraints nullable="false" primaryKey="true"/>
-            </column>
-            <column defaultValueComputed="NULL" name="user_id" type="BIGINT"/>
-            <column name="ip_address" type="VARCHAR(45)"/>
-            <column name="user_agent" type="TEXT"/>
-            <column name="payload" type="TEXT">
-                <constraints nullable="false"/>
-            </column>
-            <column name="last_activity" type="INT">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-20">
+    <changeSet author="liquibase (generated)" id="1788637271997-9">
         <createTable tableName="shop_items">
             <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="shop_items_pkey"/>
             </column>
             <column name="slug" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -418,21 +205,27 @@
             <column defaultValueBoolean="false" name="is_default" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
-            <column name="tag_uid" type="VARCHAR(255)"/>
             <column defaultValueBoolean="true" name="active" type="BOOLEAN">
                 <constraints nullable="false"/>
             </column>
             <column defaultValueNumeric="0" name="sort" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
-            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
+            <column defaultValueComputed="NULL::timestamp without time zone" name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column defaultValueComputed="NULL::timestamp without time zone" name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="price" type="INTEGER"/>
+            <column name="description" type="TEXT"/>
+            <column name="thank_you_heading" type="VARCHAR(255)"/>
+            <column name="thank_you_body" type="TEXT"/>
+            <column name="thank_you_image" type="VARCHAR(255)"/>
+            <column name="organization_id" type="BIGINT"/>
+            <column name="mecenas_organization_id" type="BIGINT"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-21">
+    <changeSet author="liquibase (generated)" id="1788637271997-10">
         <createTable tableName="users">
             <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+                <constraints nullable="false" primaryKey="true" primaryKeyName="users_pkey"/>
             </column>
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
@@ -440,273 +233,237 @@
             <column name="email" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueComputed="NULL" name="email_verified_at" type="timestamp(0)"/>
+            <column defaultValueComputed="NULL::timestamp without time zone" name="email_verified_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
             <column name="password" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
             <column name="remember_token" type="VARCHAR(100)"/>
-            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
-            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
+            <column defaultValueComputed="NULL::timestamp without time zone" name="created_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column defaultValueComputed="NULL::timestamp without time zone" name="updated_at" type="TIMESTAMP WITHOUT TIME ZONE"/>
+            <column name="handle" type="VARCHAR(255)"/>
+            <column defaultValueBoolean="false" name="is_admin" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled_sections" type="JSON"/>
         </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-22">
-        <createIndex associatedWith="" indexName="cache_expiration_index" tableName="cache">
-            <column name="expiration"/>
-        </createIndex>
+    <changeSet author="liquibase (generated)" id="1788637271997-11">
+        <createTable tableName="cache">
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="cache_pkey"/>
+            </column>
+            <column name="value" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiration" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-23">
-        <createIndex associatedWith="" indexName="cache_locks_expiration_index" tableName="cache_locks">
-            <column name="expiration"/>
-        </createIndex>
+    <changeSet author="liquibase (generated)" id="1788637271997-12">
+        <createTable tableName="cache_locks">
+            <column name="key" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="cache_locks_pkey"/>
+            </column>
+            <column name="owner" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expiration" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-24">
-        <createIndex associatedWith="" indexName="categories_parent_id_index" tableName="categories">
-            <column defaultValueComputed="NULL" name="parent_id"/>
-        </createIndex>
+    <changeSet author="liquibase (generated)" id="1788637271997-13">
+        <createTable tableName="jobs">
+            <column autoIncrement="true" name="id" type="BIGINT">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="jobs_pkey"/>
+            </column>
+            <column name="queue" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payload" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attempts" type="SMALLINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reserved_at" type="INTEGER"/>
+            <column name="available_at" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-25">
-        <createIndex associatedWith="" indexName="categories_position_index" tableName="categories">
-            <column defaultValueNumeric="0" name="position"/>
-        </createIndex>
+    <changeSet author="liquibase (generated)" id="1788637271997-14">
+        <createTable tableName="sessions">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="sessions_pkey"/>
+            </column>
+            <column name="user_id" type="BIGINT"/>
+            <column name="ip_address" type="VARCHAR(45)"/>
+            <column name="user_agent" type="TEXT"/>
+            <column name="payload" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_activity" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-26">
-        <createIndex associatedWith="" indexName="categories_slug_unique" tableName="categories" unique="true">
-            <column name="slug"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-27">
-        <createIndex associatedWith="" indexName="events_product_id_type_created_at_index" tableName="events">
-            <column defaultValueComputed="NULL" name="product_id"/>
-            <column name="type"/>
-            <column defaultValueComputed="CURRENT_TIMESTAMP" name="created_at"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-28">
-        <createIndex associatedWith="" indexName="failed_jobs_uuid_unique" tableName="failed_jobs" unique="true">
+    <changeSet author="liquibase (generated)" id="1788637271997-15">
+        <createIndex indexName="failed_jobs_uuid_unique" tableName="failed_jobs" unique="true">
             <column name="uuid"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-29">
-        <createIndex associatedWith="" indexName="job_applications_job_position_id_foreign" tableName="job_applications">
-            <column defaultValueComputed="NULL" name="job_position_id"/>
+    <changeSet author="liquibase (generated)" id="1788637271997-16">
+        <createIndex indexName="init_codes_organization_id_index" tableName="init_codes">
+            <column name="organization_id"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-30">
-        <createIndex associatedWith="" indexName="job_applications_status_index" tableName="job_applications">
+    <changeSet author="liquibase (generated)" id="1788637271997-17">
+        <createIndex indexName="init_codes_owner_user_id_index" tableName="init_codes">
+            <column name="owner_user_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-18">
+        <addUniqueConstraint columnNames="uuid" constraintName="init_codes_uuid_unique" tableName="init_codes"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-19">
+        <createIndex indexName="job_applications_future_recruitment_consent_index" tableName="job_applications">
+            <column defaultValueBoolean="false" name="future_recruitment_consent"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-20">
+        <createIndex indexName="job_applications_job_position_id_foreign" tableName="job_applications">
+            <column name="job_position_id"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-21">
+        <addForeignKeyConstraint baseColumnNames="job_position_id" baseTableName="job_applications" constraintName="job_applications_job_position_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="job_positions" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-22">
+        <createIndex indexName="job_applications_status_index" tableName="job_applications">
             <column name="status"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-31">
-        <createIndex associatedWith="" indexName="jobs_queue_index" tableName="jobs">
-            <column name="queue"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-32">
-        <createIndex associatedWith="" indexName="orders_product_id_foreign" tableName="orders">
-            <column defaultValueComputed="NULL" name="product_id"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-33">
-        <createIndex associatedWith="" indexName="orders_transaction_id_index" tableName="orders">
+    <changeSet author="liquibase (generated)" id="1788637271997-23">
+        <createIndex indexName="orders_transaction_id_index" tableName="orders">
             <column name="transaction_id"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-34">
-        <createIndex associatedWith="" indexName="parish_notes_product_id_index" tableName="parish_notes">
-            <column name="product_id"/>
-        </createIndex>
+    <changeSet author="liquibase (generated)" id="1788637271997-24">
+        <addUniqueConstraint columnNames="handle" constraintName="organizations_handle_unique" tableName="organizations"/>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-35">
-        <createIndex associatedWith="" indexName="potential_parishes_city_index" tableName="potential_parishes">
-            <column name="city"/>
-        </createIndex>
+    <changeSet author="liquibase (generated)" id="1788637271997-25">
+        <addUniqueConstraint columnNames="organization_id, slug" constraintName="shop_items_organization_id_slug_unique" tableName="shop_items"/>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-36">
-        <createIndex associatedWith="" indexName="potential_parishes_salesperson_id_foreign" tableName="potential_parishes">
-            <column defaultValueComputed="NULL" name="salesperson_id"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-37">
-        <createIndex associatedWith="" indexName="potential_parishes_status_index" tableName="potential_parishes">
-            <column name="status"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-38">
-        <createIndex associatedWith="" indexName="potential_parishes_voivodeship_index" tableName="potential_parishes">
-            <column name="voivodeship"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-39">
-        <createIndex associatedWith="" indexName="product_images_product_id_foreign" tableName="product_images">
-            <column name="product_id"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-40">
-        <createIndex associatedWith="" indexName="products_salesperson_id_foreign" tableName="products">
-            <column defaultValueComputed="NULL" name="salesperson_id"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-41">
-        <createIndex associatedWith="" indexName="products_slug_unique" tableName="products" unique="true">
-            <column name="slug"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-42">
-        <createIndex associatedWith="" indexName="products_status_index" tableName="products">
-            <column name="status"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-43">
-        <createIndex associatedWith="" indexName="products_tag_uid_unique" tableName="products" unique="true">
-            <column name="tag_uid"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-44">
-        <createIndex associatedWith="" indexName="sessions_last_activity_index" tableName="sessions">
-            <column name="last_activity"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-45">
-        <createIndex associatedWith="" indexName="sessions_user_id_index" tableName="sessions">
-            <column defaultValueComputed="NULL" name="user_id"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-46">
-        <createIndex associatedWith="" indexName="shop_items_slug_unique" tableName="shop_items" unique="true">
-            <column name="slug"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-47">
-        <createIndex associatedWith="" indexName="shop_items_tag_uid_unique" tableName="shop_items" unique="true">
-            <column name="tag_uid"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-48">
-        <createIndex associatedWith="" indexName="users_email_unique" tableName="users" unique="true">
+    <changeSet author="liquibase (generated)" id="1788637271997-26">
+        <createIndex indexName="users_email_unique" tableName="users" unique="true">
             <column name="email"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-49">
-        <addForeignKeyConstraint baseColumnNames="parent_id" baseTableName="categories" constraintName="categories_parent_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="categories" validate="true"/>
+    <changeSet author="liquibase (generated)" id="1788637271997-27">
+        <addUniqueConstraint columnNames="handle" constraintName="users_handle_unique" tableName="users"/>
     </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-50">
-        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="events" constraintName="events_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-51">
-        <addForeignKeyConstraint baseColumnNames="job_position_id" baseTableName="job_applications" constraintName="job_applications_job_position_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="job_positions" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-52">
-        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="orders" constraintName="orders_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-53">
-        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="parish_notes" constraintName="parish_notes_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-54">
-        <addForeignKeyConstraint baseColumnNames="salesperson_id" baseTableName="potential_parishes" constraintName="potential_parishes_salesperson_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="salespeople" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-55">
-        <addForeignKeyConstraint baseColumnNames="product_id" baseTableName="product_images" constraintName="product_images_product_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="products" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (generated)" id="1782550516877-56">
-        <addForeignKeyConstraint baseColumnNames="salesperson_id" baseTableName="products" constraintName="products_salesperson_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="salespeople" validate="true"/>
-    </changeSet>
-    <changeSet author="Marcin (postgres)" id="check-events-type">
-        <sql>ALTER TABLE "events" ADD CONSTRAINT "events_type_check" CHECK ("type" IN ('tag_open', 'page_view', 'buy_click', 'purchase'));</sql>
-    </changeSet>
-    <changeSet author="Marcin (postgres)" id="check-orders-status">
-        <sql>ALTER TABLE "orders" ADD CONSTRAINT "orders_status_check" CHECK ("status" IN ('pending', 'paid', 'failed'));</sql>
-    </changeSet>
-    <!-- ============================================================================= -->
-    <!-- Delta 2026-07: wariant sklepowy PayU (cena+opis) + sklepy per-konto           -->
-    <!-- (users.handle, shop_items.user_id) + podstrona „Wspieramy" (beneficiary_nodes) -->
-    <!-- ============================================================================= -->
-    <changeSet author="Marcin Lula" id="20260707-shop-1">
-        <comment>Wariant sklepowy PayU: shop_items.price (grosze) + description (oferta)</comment>
-        <addColumn tableName="shop_items">
-            <column name="price" type="INTEGER"/>
-            <column name="description" type="TEXT"/>
-        </addColumn>
-    </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-2">
-        <comment>Backfill: brakująca cena = dotychczasowe min_amount</comment>
-        <sql>UPDATE shop_items SET price = min_amount WHERE price IS NULL</sql>
-    </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-3">
-        <comment>Sklepy per-konto: users.handle = slug sklepu pod /people/{handle}</comment>
-        <addColumn tableName="users">
-            <column name="handle" type="VARCHAR(255)"/>
-        </addColumn>
-    </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-4">
-        <createIndex indexName="users_handle_unique" tableName="users" unique="true">
-            <column name="handle"/>
+    <changeSet author="liquibase (generated)" id="1788637271997-28">
+        <createIndex indexName="cache_expiration_index" tableName="cache">
+            <column name="expiration"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-5">
-        <comment>Backfill handle: admin@local lub pierwsze konto -> lula-marcin; reszta -> user-{id}</comment>
-        <sql>UPDATE users SET name = 'Marcin Lula', handle = 'lula-marcin' WHERE email = 'admin@local'</sql>
-        <sql>UPDATE users SET handle = 'lula-marcin' WHERE handle IS NULL AND (SELECT c FROM (SELECT COUNT(*) c FROM users u WHERE u.handle = 'lula-marcin') z) = 0 AND id = (SELECT m FROM (SELECT MIN(id) m FROM users) y)</sql>
-        <sql>UPDATE users SET handle = CONCAT('user-', id) WHERE handle IS NULL</sql>
+    <changeSet author="liquibase (generated)" id="1788637271997-29">
+        <createIndex indexName="cache_locks_expiration_index" tableName="cache_locks">
+            <column name="expiration"/>
+        </createIndex>
     </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-6">
-        <comment>Właściciel produktu (sklepy per-konto)</comment>
-        <addColumn tableName="shop_items">
-            <column name="user_id" type="BIGINT"/>
-        </addColumn>
+    <changeSet author="liquibase (generated)" id="1788637271997-30">
+        <createIndex indexName="jobs_queue_index" tableName="jobs">
+            <column name="queue"/>
+        </createIndex>
     </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-7">
-        <createIndex indexName="shop_items_user_id_index" tableName="shop_items">
+    <changeSet author="liquibase (generated)" id="1788637271997-31">
+        <createIndex indexName="sessions_last_activity_index" tableName="sessions">
+            <column name="last_activity"/>
+        </createIndex>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-32">
+        <createIndex indexName="sessions_user_id_index" tableName="sessions">
             <column name="user_id"/>
         </createIndex>
     </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-8">
-        <comment>Backfill: istniejące produkty -> właściciel lula-marcin</comment>
-        <sql>UPDATE shop_items SET user_id = (SELECT id FROM users WHERE handle = 'lula-marcin' LIMIT 1) WHERE user_id IS NULL</sql>
-    </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-9">
-        <comment>Slug unikalny per-konto zamiast globalnie: usuń stary globalny unique</comment>
-        <dropIndex indexName="shop_items_slug_unique" tableName="shop_items"/>
-    </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-10">
-        <createIndex indexName="shop_items_user_id_slug_unique" tableName="shop_items" unique="true">
-            <column name="user_id"/>
-            <column name="slug"/>
-        </createIndex>
-    </changeSet>
-    <changeSet author="Marcin Lula" id="20260707-shop-11">
-        <comment>Podstrona „Wspieramy" (/beneficiaries) — węzły edytowalne w panelu</comment>
-        <createTable tableName="beneficiary_nodes">
-            <column autoIncrement="true" name="id" type="BIGINT">
-                <constraints nullable="false" primaryKey="true"/>
+    <changeSet author="liquibase (generated)" id="1788637271997-33">
+        <createTable tableName="job_batches">
+            <column name="id" type="VARCHAR(255)">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="job_batches_pkey"/>
             </column>
-            <column name="heading" type="VARCHAR(255)">
+            <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="image" type="VARCHAR(255)"/>
-            <column defaultValue="left" name="image_side" type="VARCHAR(10)">
+            <column name="total_jobs" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueNumeric="100" name="image_scale" type="SMALLINT">
+            <column name="pending_jobs" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueNumeric="0" name="image_x" type="SMALLINT">
+            <column name="failed_jobs" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValueNumeric="0" name="image_y" type="SMALLINT">
+            <column name="failed_job_ids" type="TEXT">
                 <constraints nullable="false"/>
             </column>
-            <column defaultValue="left" name="text_align" type="VARCHAR(10)">
+            <column name="options" type="TEXT"/>
+            <column name="cancelled_at" type="INTEGER"/>
+            <column name="created_at" type="INTEGER">
                 <constraints nullable="false"/>
             </column>
-            <column name="body_html" type="TEXT"/>
-            <column defaultValueNumeric="0" name="position" type="INTEGER">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueBoolean="true" name="active" type="BOOLEAN">
-                <constraints nullable="false"/>
-            </column>
-            <column defaultValueComputed="NULL" name="created_at" type="timestamp(0)"/>
-            <column defaultValueComputed="NULL" name="updated_at" type="timestamp(0)"/>
+            <column name="finished_at" type="INTEGER"/>
         </createTable>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-34">
+        <createTable tableName="migrations">
+            <column autoIncrement="true" name="id" type="INTEGER">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="migrations_pkey"/>
+            </column>
+            <column name="migration" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="batch" type="INTEGER">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-35">
+        <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="beneficiary_nodes" constraintName="beneficiary_nodes_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-36">
+        <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="init_codes" constraintName="init_codes_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-37">
+        <addForeignKeyConstraint baseColumnNames="owner_user_id" baseTableName="init_codes" constraintName="init_codes_owner_user_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="CASCADE" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="users" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-38">
+        <addForeignKeyConstraint baseColumnNames="shop_item_id" baseTableName="init_codes" constraintName="init_codes_shop_item_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="shop_items" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-39">
+        <addForeignKeyConstraint baseColumnNames="target_organization_id" baseTableName="init_codes" constraintName="init_codes_target_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-40">
+        <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="job_applications" constraintName="job_applications_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-41">
+        <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="job_positions" constraintName="job_positions_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-42">
+        <addForeignKeyConstraint baseColumnNames="shop_item_id" baseTableName="orders" constraintName="orders_shop_item_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="shop_items" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-43">
+        <addForeignKeyConstraint baseColumnNames="user_id" baseTableName="organizations" constraintName="organizations_user_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="NO ACTION" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="users" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-44">
+        <addForeignKeyConstraint baseColumnNames="mecenas_organization_id" baseTableName="shop_items" constraintName="shop_items_mecenas_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
+    </changeSet>
+    <changeSet author="liquibase (generated)" id="1788637271997-45">
+        <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="shop_items" constraintName="shop_items_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
     </changeSet>
 </databaseChangeLog>
