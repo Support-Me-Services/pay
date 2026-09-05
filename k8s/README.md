@@ -384,3 +384,43 @@ gcloud sql instances describe <nazwa-instancji> --project=$OLD_PROJECT \
 pytania"): dokładna nazwa/ID projektu jeśli `support-me-prod` zajęte globalnie,
 docelowa kwota CPU, czy test sieciowy w kroku "Weryfikacja" celuje w żywą
 instancję (read-only) czy w tymczasową kopię.
+
+### Stan na 2026-09-05 (Faza 8.0/8.1 — fundament + retrofit Liquibase)
+
+**Zmiana architektoniczna względem pierwotnego planu**: BEZ trwałego VPC
+peeringu między `support-me-prod` a `please-support-me-499509` — patrz plan
+(`.claude/plans/fluffy-frolicking-galaxy.md`), sekcja "Decyzja zmieniona".
+Zamiast tego: nowe instancje Cloud SQL we własnym projekcie, zasilone
+jednorazowym exportem/importem.
+
+Zrobione i zweryfikowane:
+- Projekt `support-me-prod` (billing: konto founder@ `014E08-892820-827419` —
+  pierwotnie zamierzone `011D89-0BFFA1-37A6DD` okazało się ZAMKNIĘTE).
+- VPC `pay-prod-vpc` (`10.90.0.0/20`), Cloud Router + NAT, PSA (`10.208.0.0/20`
+  zarezerwowane pod Cloud SQL).
+- Klaster GKE Autopilot regionalny `pay-prod` (`europe-central2`), private
+  nodes — RUNNING.
+- Artifact Registry `pay`, service account `github-ci` + role, WIF (pool
+  `github`, provider `github-actions`, scoped do `Support-Me-Services/pay`).
+- 3 instancje Cloud SQL (Postgres 16, `db-g1-small`, backupy+PITR):
+  `nfc-postgres-prod` (10.208.0.5, bazy `nfc_pay`+`nfc_shop1`), `core-svc-db`
+  (10.208.0.7), `keycloak-db` (10.208.0.6) — wszystkie prywatne IP, w obrębie
+  jednego projektu.
+- `nfc_pay`/`nfc_shop1` zasilone REALNYMI danymi z istniejącej instancji
+  (`gcloud sql export`→GCS→`gcloud sql import`), zweryfikowane (liczby
+  tabel/wierszy zgodne). **`nfc_shop2`** (czwarta baza odkryta na starej
+  instancji) okazała się osobną, niepowiązaną aplikacją — świadomie pominięta.
+- Baseline Liquibase dla `nfc_pay`/`nfc_shop1` zregenerowany od zera z żywego
+  schematu (nie łatany ręcznie jak poprzednio) i zsynchronizowany
+  (`changelog-sync`) — `liquibase status` potwierdza zero pending na obu.
+- `core-svc` przełączony z Flyway na Liquibase (kompletnie, jak w decyzji
+  planu) — zweryfikowane lokalnie i na `core-svc-db`.
+
+**Ważne dla przyszłych sesji**: mutujące operacje `gcloud`/`kubectl` dotykające
+sieci lub baz danych są w tej sesji blokowane przez klasyfikator auto-mode —
+Claude przygotowuje gotowe manifesty/komendy, ale użytkownik uruchamia je
+osobiście ze zwykłego Terminala (kubectl ma już skonfigurowany kontekst na
+`pay-prod`).
+
+Zostaje z Fazy 8.1: Keycloak (zarządza własnym schematem, nic do zrobienia).
+Następne: Faza 8.2 (konteneryzacja Laravela).
