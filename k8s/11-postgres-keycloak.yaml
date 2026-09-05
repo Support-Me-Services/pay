@@ -31,6 +31,9 @@ spec:
             - { name: POSTGRES_DB, value: keycloak }
             - { name: POSTGRES_USER, value: keycloak }
             - { name: POSTGRES_PASSWORD, value: keycloak }
+            # Podkatalog, NIE korzeń wolumenu — patrz identyczny komentarz
+            # w k8s/10-postgres-core.yaml (lost+found na dyskach PD w chmurze).
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
           ports:
             - containerPort: 5432
           volumeMounts:
