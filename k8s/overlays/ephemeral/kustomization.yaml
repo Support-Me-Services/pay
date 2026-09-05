@@ -39,28 +39,42 @@ images:
 
 patches:
   # --- bazy wewnętrzne: bez zewnętrznego IP (koszt LB + niepotrzebna
-  # ekspozycja bazy danych w internecie na czas testu) ---
+  # ekspozycja bazy danych w internecie na czas testu) + JAWNE, MAŁE
+  # resources.requests — bez tego Autopilot dokłada własne domyślne
+  # (500m/2Gi na kontener!), co razem z narzutem systemowym GKE na
+  # węźle (~4.5 vCPU/węzeł) wypychało całość na DRUGI węzeł 8-vCPU,
+  # a globalna kwota CPUS-ALL-REGIONS (12, nie do podniesienia
+  # samoobsługowo na świeżym projekcie — NOT_ENOUGH_USAGE_HISTORY) na
+  # to nie pozwala. Cel: zmieścić WSZYSTKO na jednym węźle. ---
   - target: { kind: Service, name: db }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Deployment, name: db }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "384Mi" } } }
   - target: { kind: Service, name: postgres-core }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Deployment, name: postgres-core }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "256Mi" } } }
+  - target: { kind: Deployment, name: postgres-keycloak }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "256Mi" } } }
+      # (postgres-keycloak Service jest już ClusterIP domyślnie — bez zmian)
+
+  # --- core-svc / api-gateway: obraz z rejestru zamiast lokalnego ---
   - target: { kind: Service, name: core-svc }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
-      # (postgres-keycloak jest już ClusterIP domyślnie — bez zmian)
-
-  # --- core-svc / api-gateway: obraz z rejestru zamiast lokalnego, Autopilot
-  # wymaga resources.requests ---
   - target: { kind: Deployment, name: core-svc }
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
-      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "384Mi" } } }
   - target: { kind: Deployment, name: api-gateway }
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
-      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "384Mi" } } }
 
   # --- Keycloak: realm z ConfigMapy (nie hostPath — nie istnieje na GKE),
   # losowe hasło admina z Secretu wytworzonego przez CI, resources.requests
@@ -75,7 +89,7 @@ patches:
         value: pay-realm.json
       - op: add
         path: /spec/template/spec/containers/0/resources
-        value: { requests: { cpu: "500m", memory: "1Gi" } }
+        value: { requests: { cpu: "250m", memory: "768Mi" } }
   # Zmiana env po NAZWIE (merge strategiczny), nie po indeksie — indeksy w
   # k8s/12-keycloak.yaml są kruche (już raz się pomyliłem licząc ręcznie).
   # KEYCLOAK_ADMIN_PASSWORD: z wygenerowanego przez CI Secretu, nie "admin"
@@ -113,7 +127,7 @@ patches:
       - { op: remove, path: /spec/template/spec/containers/0/volumeMounts/1 }
       - { op: remove, path: /spec/template/spec/containers/0/volumeMounts/0 }
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
-      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "500m", memory: "1Gi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
       - { op: add, path: /spec/template/spec/containers/0/env, value: [] }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_BASE_URL, value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnętrznego IP Keycloaka" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_INTERNAL_BASE_URL, value: "http://keycloak:8080" } }

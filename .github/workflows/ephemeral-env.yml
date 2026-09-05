@@ -159,7 +159,7 @@ jobs:
         id: keycloak
         run: |
           NS="${{ steps.ns.outputs.name }}"
-          kubectl rollout status deployment/keycloak -n "$NS" --timeout=400s
+          kubectl rollout status deployment/keycloak -n "$NS" --timeout=600s
           for i in $(seq 1 30); do
             IP=$(kubectl get svc keycloak -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             [ -n "$IP" ] && break
@@ -169,7 +169,7 @@ jobs:
           SSLIP="$(echo "$IP" | tr '.' '-').sslip.io"
           echo "sslip=$SSLIP" >> "$GITHUB_OUTPUT"
           kubectl set env deployment/keycloak -n "$NS" KC_HOSTNAME="http://${SSLIP}:8180"
-          kubectl rollout status deployment/keycloak -n "$NS" --timeout=180s
+          kubectl rollout status deployment/keycloak -n "$NS" --timeout=300s
 
       # --- świeży import realmu maskuje sekrety klientów w eksporcie (znany
       # problem z Fazy 6) — pobierz PRAWDZIWE sekrety z Admin API ---
@@ -198,8 +198,8 @@ jobs:
       - name: Czekaj na core-svc i api-gateway
         run: |
           NS="${{ steps.ns.outputs.name }}"
-          kubectl rollout status deployment/core-svc -n "$NS" --timeout=400s
-          kubectl rollout status deployment/api-gateway -n "$NS" --timeout=400s
+          kubectl rollout status deployment/core-svc -n "$NS" --timeout=600s
+          kubectl rollout status deployment/api-gateway -n "$NS" --timeout=600s
 
       # --- Laravel: dogrywamy prawdziwy URL Keycloaka + sekrety klientów,
       # restart, potem czekamy na WŁASNY zewnętrzny IP ---
@@ -212,7 +212,7 @@ jobs:
             KEYCLOAK_BASE_URL="http://${SSLIP}:8180" \
             KEYCLOAK_CLIENT_SECRET_GATEWAY="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_SECRET }}" \
             KEYCLOAK_CLIENT_SECRET_STOREFRONT="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_SECRET }}"
-          kubectl rollout status deployment/laravel-app -n "$NS" --timeout=400s
+          kubectl rollout status deployment/laravel-app -n "$NS" --timeout=600s
           for i in $(seq 1 30); do
             IP=$(kubectl get svc laravel-app -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             [ -n "$IP" ] && break
