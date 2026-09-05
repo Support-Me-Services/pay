@@ -1120,3 +1120,77 @@ Git Bash → `cmd.exe` przy pliku `.cmd` (nie native `.exe`).
 Kolejne kroki po gotowości klastra: `k8s/README.md`, sekcja "Jednorazowy
 setup", punkty 7-10 (Artifact Registry i service account/WIF już zrobione
 — zostaje `kubectl apply` housekeepera i pierwszy test).
+
+## Faza 7v2 — Ingress GKE na 443 (HTTPS, self-signed) zamiast 3 portów
+
+Powód: telefon użytkownika na LTE dostał `ERR_ADDRESS_UNREACHABLE` na
+`http://<ip>.sslip.io:8000` — operator komórkowy blokuje niestandardowe
+porty. Rozwiązanie: jeden wspólny Ingress (klasa `gce`) na 443, routing po
+hoście (subdomeny `laravel./keycloak./api.<ip>.sslip.io`), certyfikat
+self-signed wielo-SAN generowany PO poznaniu IP Ingressa (ten sam wzorzec
+co KC_HOSTNAME/redirect URI z Fazy 7v1). Szczegóły w `k8s/overlays/
+ephemeral/ingress.yaml` i `.github/workflows/ephemeral-env.yml`.
+
+### Pułapki napotkane (#13-18)
+
+13. **`/` w Keycloaku 26 przekierowuje (302), `/` w api-gateway wymaga
+    autoryzacji (401)** — GKE Ingress dziedziczy health check z
+    `readinessProbe` poda za NIM; bez własnej sondy domyślny check na `/`
+    oczekujący 200 wiecznie 502owałby. Naprawa: dodany `readinessProbe`
+    na `/realms/master` (200, JSON) do `k8s/12-keycloak.yaml` (BAZOWY
+    manifest, ogólna poprawka) — api-gateway już miał poprawną sondę
+    (`/api/v1/health`).
+14. **Dodanie PIERWSZEGO Ingressa na klastrze uruchamia dodatkowe systemowe
+    pody GKE** (`l7-default-backend`, `gmp-operator`, `kube-state-metrics`,
+    `egress-nat-controller` i kilka innych — feature'y aktywowane
+    pierwszy raz) — na STARYM węźle (sprzed Ingressa, dobranym mniejszym
+    rozmiarem) zabrakło miejsca, a węzeł NIE skaluje się do zera nawet po
+    usunięciu namespace'u (narzut systemowy zostaje). Drugiego węzła nie
+    dało się dodać (globalna kwota CPUS-ALL-REGIONS=12, patrz pułapka
+    #11). Naprawa: jeszcze mocniej zmniejszone `resources.requests`
+    (150m→80m dla lekkich usług, 250m→150m dla Keycloaka/Laravela — same
+    requests nie ograniczają REALNEGO zużycia CPU, tylko decyzję
+    schedulera).
+15. **Placeholder `KC_HOSTNAME` w kustomization.yaml był zwykłym opisowym
+    tekstem ze spacjami, nie poprawnym URL-em** — Keycloak parsuje
+    KC_HOSTNAME jako URL PRZY KAŻDYM starcie i z taką wartością zawsze
+    pada (`Illegal character in authority`). Wcześniejsze udane przebiegi
+    (bez sondy gotowości) miały szczęście w wyścigu z `kubectl rollout
+    status` — z dodaną sondą (#13) ten wyścig przestał się udawać.
+    Naprawa: usunięte nadpisanie, zostaje poprawna wartość z bazowego
+    manifestu (`http://localhost:8180`), i tak nigdy faktycznie
+    nieużywana poza samym udanym startem.
+16. **Domyślna `RollingUpdate` przy 1 replice chce chwilowo mieć DWA pody
+    Keycloaka naraz** (maxSurge=25% zaokrąglone w górę do 1) — restart po
+    `kubectl set env KC_HOSTNAME=...` wisiał w nieskończoność, bo nowy pod
+    nigdy się nie mieścił (ta sama kwota CPU co #14), a stary nigdy nie
+    ginął (RollingUpdate czeka na gotowość nowego, zanim usunie stary).
+    Naprawa: `strategy: { type: Recreate }` dla Keycloaka w nakładce
+    ephemeral.
+17. **`progressDeadlineSeconds` (domyślnie 600s) liczy się od UTWORZENIA
+    poda, nie od momentu, gdy CI zaczyna sprawdzać status** — krok
+    "Czekaj na Ingress..." (przed Keycloakiem w sekwencji) sam potrafi
+    zająć kilkanaście minut (Ingress GKE wolno się provisionuje), więc
+    zanim `kubectl rollout status` w ogóle zaczął patrzeć na Keycloaka,
+    jego 600-sekundowy zegar był już wyczerpany — `rollout status` padał
+    NATYCHMIAST ("exceeded its progress deadline"), niezależnie od
+    `--timeout` przekazanego w CI. Naprawa: `progressDeadlineSeconds:
+    1800` na keycloak/laravel-app/core-svc/api-gateway w nakładce.
+18. **Ingress GKE zostawia WOLNO znikające finalizery**
+    (`networking.gke.io/ingress-finalizer-V2`,
+    `networking.gke.io/neg-finalizer`) — `kubectl delete namespace`
+    kończy się realnie dopiero po kilkunastu minutach (albo dłużej —
+    zdarzyło się, że kontroler utknął mimo że rzeczywiste zasoby GCE
+    (forwarding rule, backend service, NEG) były już skasowane po stronie
+    GCP, a k8s-owy obiekt śledzący wciąż wisiał z finalizerem). Redeploy
+    tego samego brancha PRZED zakończeniem poprzedniego kasowania
+    dostaje `unable to create new content ... namespace is being
+    terminated`. Naprawa: krok "Namespace + etykiety TTL" w workflow
+    teraz CZEKA (do 10 min) na zniknięcie poprzedniego namespace'u przed
+    próbą utworzenia nowego. Do ręcznego odblokowania (jeśli finalizer
+    utknie na dłużej niż to rozsądne): najpierw sprawdzić `gcloud compute
+    backend-services list`/`network-endpoint-groups list`, potwierdzić że
+    realne zasoby GCP już zniknęły, dopiero wtedy `kubectl patch ingress/
+    servicenetworkendpointgroups... --type=json -p='[{"op":"remove",
+    "path":"/metadata/finalizers"}]'` — NIGDY na odwrót (ryzyko
+    osierocenia płatnych zasobów GCP).

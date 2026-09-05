@@ -121,10 +121,21 @@ jobs:
           cache-to: type=gha,mode=max,scope=api-gateway
 
       # --- namespace + sekret admina Keycloaka (losowy, NIE "admin"/"admin" —
-      # środowisko jest publiczne przez godzinę) ---
+      # środowisko jest publiczne przez godzinę). Ingress GKE potrafi
+      # zostawić po sobie WOLNO znikające finalizery (ingress-finalizer-V2,
+      # neg-finalizer) — kasowanie poprzedniego namespace'u (housekeeper po
+      # godzinie, albo redeploy tego samego brancha) może więc jeszcze
+      # trwać, gdy ten krok próbuje utworzyć namespace od nowa ("unable to
+      # create new content ... namespace is being terminated"). Czekamy,
+      # zamiast od razu próbować. ---
       - name: Namespace + etykiety TTL (housekeeper czyta pay/created-at)
         run: |
           NS="${{ steps.ns.outputs.name }}"
+          for i in $(seq 1 60); do
+            kubectl get namespace "$NS" -o jsonpath='{.status.phase}' 2>/dev/null | grep -q Terminating || break
+            echo "Poprzedni namespace $NS wciąż się kasuje (finalizery Ingressa), czekam 10s..."
+            sleep 10
+          done
           kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
           kubectl label namespace "$NS" pay/ephemeral=true --overwrite
           kubectl annotate namespace "$NS" pay/created-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite

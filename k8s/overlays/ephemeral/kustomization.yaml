@@ -72,10 +72,12 @@ patches:
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
       - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
   - target: { kind: Deployment, name: api-gateway }
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
       - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
 
   # --- laravel-app/api-gateway/keycloak: ClusterIP zamiast LoadBalancer —
   # wystawione teraz przez WSPÓLNY Ingress (ingress.yaml) na 443, nie po
@@ -111,6 +113,15 @@ patches:
       - op: add
         path: /spec/strategy
         value: { type: Recreate }
+      # progressDeadlineSeconds domyślnie 600s, liczone od UTWORZENIA
+      # poda — a to następuje na długo PRZED tym, jak CI w ogóle zacznie
+      # sprawdzać status (krok "Czekaj na Ingress..." przed tym potrafi
+      # sam zająć kilkanaście minut, plus Keycloak startuje ~2-3 min).
+      # Bez podniesienia tego, kubectl rollout status widzi "zegar już
+      # wyczerpany" i pada NATYCHMIAST, niezależnie od --timeout w CI.
+      - op: add
+        path: /spec/progressDeadlineSeconds
+        value: 1800
   # Zmiana env po NAZWIE (merge strategiczny), nie po indeksie — indeksy w
   # k8s/12-keycloak.yaml są kruche (już raz się pomyliłem licząc ręcznie).
   # KEYCLOAK_ADMIN_PASSWORD: z wygenerowanego przez CI Secretu, nie "admin"
@@ -177,6 +188,7 @@ patches:
       # Bezpieczne tu: to izolowany namespace/pod, "ufaj wszystkim" nie
       # oznacza ufania realnym, nieznanym proxy jak na produkcji.
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: TRUSTED_PROXIES, value: "*" } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
   - target: { kind: Service, name: laravel-app }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
