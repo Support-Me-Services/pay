@@ -178,20 +178,32 @@ jobs:
       # tego miejsca kilka minut — loguje się więc na świeżo, osobno).
       # set -o pipefail + jawna walidacja TOKEN/ID/SECRET — bez tego
       # `curl -f` na błędzie HTTP + `jq` na pustym wejściu ciche przechodzą
-      # dalej z pustym wynikiem zamiast przerwać skrypt (złapane w
-      # pierwszym realnym teście: Keycloak bywa "Ready" wg sondy zanim jego
-      # wbudowany użytkownik admina faktycznie już działa — wyścig, stąd
-      # pętla retry niżej).
+      # dalej z pustym wynikiem zamiast przerwać skrypt.
+      #
+      # Admin API WYŁĄCZNIE przez `kubectl port-forward` (localhost), NIE
+      # przez zewnętrzny LoadBalancer IP: realm `master` (wbudowany,
+      # nie ma go w pay-realm.json — w przeciwieństwie do realmu `pay`,
+      # który już ma sslRequired=none) wymusza HTTPS dla ruchu z adresów
+      # ZEWNĘTRZNYCH ("HTTPS required", HTTP 403) — nasz runner łączący
+      # się przez publiczny IP LoadBalancera jest z perspektywy Keycloaka
+      # ruchem zewnętrznym. Ruch przez port-forward (proxy przez API
+      # Kubernetesa) Keycloak widzi jako lokalny/wewnętrzny, więc ten
+      # wymóg go nie dotyczy. Realnych użytkowników w przeglądarce to NIE
+      # dotyczy — logują się do realmu `pay`, nie `master`.
       - name: Pobierz sekrety klientów Keycloaka
         id: kc-secrets
         run: |
           set -o pipefail
           NS="${{ steps.ns.outputs.name }}"
-          SSLIP="${{ steps.keycloak.outputs.sslip }}"
+          kubectl port-forward -n "$NS" svc/keycloak 18180:8080 >/dev/null 2>&1 &
+          PF_PID=$!
+          trap 'kill $PF_PID 2>/dev/null || true' EXIT
+          sleep 3
+          KC="http://localhost:18180"
           ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
           TOKEN=""
           for i in $(seq 1 12); do
-            TOKEN=$(curl -sf -X POST "http://${SSLIP}:8180/realms/master/protocol/openid-connect/token" \
+            TOKEN=$(curl -sf -X POST "${KC}/realms/master/protocol/openid-connect/token" \
               -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token) && [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] && break
             echo "Keycloak admin jeszcze nie gotowy do logowania, ponawiam za 5s..."
             sleep 5
@@ -199,10 +211,10 @@ jobs:
           [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka po 60s"; exit 1; }
           for CLIENT in laravel-panel-gateway laravel-panel-storefront; do
             ID=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
-              "http://${SSLIP}:8180/admin/realms/pay/clients?clientId=${CLIENT}" | jq -r '.[0].id')
+              "${KC}/admin/realms/pay/clients?clientId=${CLIENT}" | jq -r '.[0].id')
             [ -n "$ID" ] && [ "$ID" != "null" ] || { echo "Brak klienta ${CLIENT} w realmie"; exit 1; }
             SECRET=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
-              "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}/client-secret" | jq -r .value)
+              "${KC}/admin/realms/pay/clients/${ID}/client-secret" | jq -r .value)
             [ -n "$SECRET" ] && [ "$SECRET" != "null" ] || { echo "Nie udało się pobrać sekretu klienta ${CLIENT}"; exit 1; }
             echo "::add-mask::${SECRET}"
             VAR=$(echo "$CLIENT" | tr '[:lower:]-' '[:upper:]_')
@@ -259,26 +271,33 @@ jobs:
         run: |
           set -o pipefail
           NS="${{ steps.ns.outputs.name }}"
-          SSLIP="${{ steps.keycloak.outputs.sslip }}"
           SSLIP_LARAVEL="${{ steps.laravel.outputs.sslip }}"
+          # Admin API przez port-forward (localhost), nie zewnętrzny LB IP —
+          # patrz komentarz przy kroku "Pobierz sekrety klientów Keycloaka"
+          # (realm master wymusza HTTPS dla ruchu zewnętrznego).
+          kubectl port-forward -n "$NS" svc/keycloak 18180:8080 >/dev/null 2>&1 &
+          PF_PID=$!
+          trap 'kill $PF_PID 2>/dev/null || true' EXIT
+          sleep 3
+          KC="http://localhost:18180"
           # Świeże logowanie — token admina żyje tylko 60s, ten z kroku
           # "Pobierz sekrety" (kilka minut wcześniej) już dawno wygasł.
           ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
-          TOKEN=$(curl -sf -X POST "http://${SSLIP}:8180/realms/master/protocol/openid-connect/token" \
+          TOKEN=$(curl -sf -X POST "${KC}/realms/master/protocol/openid-connect/token" \
             -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token)
           [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka"; exit 1; }
           for PAIR in "LARAVEL_PANEL_GATEWAY:${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_ID }}" \
                       "LARAVEL_PANEL_STOREFRONT:${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_ID }}"; do
             ID="${PAIR#*:}"
             CLIENT=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
-              "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}")
+              "${KC}/admin/realms/pay/clients/${ID}")
             UPDATED=$(echo "$CLIENT" | jq \
               --arg cb "http://${SSLIP_LARAVEL}:8000/panel/auth/callback" \
               --arg lo "http://${SSLIP_LARAVEL}:8000/panel/login" \
               --arg wo "http://${SSLIP_LARAVEL}:8000" \
               '.redirectUris += [$cb] | ."attributes"."post.logout.redirect.uris" += ("+" + $lo) | .webOrigins += [$wo]')
             curl -sf -X PUT -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
-              -d "$UPDATED" "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}" >/dev/null
+              -d "$UPDATED" "${KC}/admin/realms/pay/clients/${ID}" >/dev/null
           done
 
       - name: Podsumowanie
