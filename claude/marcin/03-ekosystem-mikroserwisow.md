@@ -1131,6 +1131,14 @@ self-signed wielo-SAN generowany PO poznaniu IP Ingressa (ten sam wzorzec
 co KC_HOSTNAME/redirect URI z Fazy 7v1). Szczegóły w `k8s/overlays/
 ephemeral/ingress.yaml` i `.github/workflows/ephemeral-env.yml`.
 
+### ✅ Zweryfikowane end-to-end (2026-09-05, 7. próba z Ingressem)
+
+Po 6 nieudanych próbach (kolejne odkryte pułapki #13-18 poniżej) siódma
+przeszła w całości. Potwierdzone bezpośrednim curl na żywym środowisku:
+`https://laravel.<ip>.sslip.io/` → 200, `https://api.<ip>.sslip.io/api/v1/health`
+→ cały łańcuch gRPC odpowiada, `https://keycloak.<ip>.sslip.io/realms/pay/
+.well-known/openid-configuration` → poprawny HTTPS issuer.
+
 ### Pułapki napotkane (#13-18)
 
 13. **`/` w Keycloaku 26 przekierowuje (302), `/` w api-gateway wymaga
