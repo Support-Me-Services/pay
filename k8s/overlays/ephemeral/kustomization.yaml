@@ -28,13 +28,13 @@ configMapGenerator:
 
 images:
   - name: pay-laravel:local
-    newName: europe-central2-docker.pkg.dev/please-support-me-test/pay/laravel
+    newName: europe-central2-docker.pkg.dev/please-support-me-test1/pay/laravel
     newTag: ci-placeholder
   - name: ecosystem_core-svc:latest
-    newName: europe-central2-docker.pkg.dev/please-support-me-test/pay/core-svc
+    newName: europe-central2-docker.pkg.dev/please-support-me-test1/pay/core-svc
     newTag: ci-placeholder
   - name: ecosystem_api-gateway:latest
-    newName: europe-central2-docker.pkg.dev/please-support-me-test/pay/api-gateway
+    newName: europe-central2-docker.pkg.dev/please-support-me-test1/pay/api-gateway
     newTag: ci-placeholder
 
 patches:

@@ -117,7 +117,7 @@ klaster z produkcją, nawet jeśli dziś celuje tylko w namespace'y z etykietą
 `pay/ephemeral=true`). Nie warto tej izolacji poświęcać dla ~$73/mies.
 
 Push na branchu `feature/**` automatycznie stawia cały stos na dedykowanym
-klastrze GKE w OSOBNYM projekcie GCP (`please-support-me-test`, osobny
+klastrze GKE w OSOBNYM projekcie GCP (`please-support-me-test1`, osobny
 billing account niż produkcja — patrz sekcja wyżej o izolacji),
 w osobnym namespace per branch, i kasuje go samoczynnie po godzinie
 bezczynności. Szczegóły
@@ -145,36 +145,36 @@ odłożone poza v1.
 
 **Krok 0 (ręcznie, w konsoli GCP — tego nie da się zrobić przez gcloud/CLI
 bez interakcji z formularzem płatności): załóż NOWY, osobny billing
-account** dla `please-support-me-test` — https://console.cloud.google.com/billing/create
+account** dla `please-support-me-test1` — https://console.cloud.google.com/billing/create
 — z własną metodą płatności, całkowicie oddzielny od billing accountu
 produkcji (`please-support-me-499509`). Zanotuj jego ID
 (`gcloud billing accounts list` po założeniu pokaże `ACCOUNT_ID`).
 
 ```bash
 # 1. Nowy projekt, podpięty pod nowy (nie produkcyjny!) billing account
-gcloud projects create please-support-me-test --name="Pay — środowiska testowe"
-gcloud billing projects link please-support-me-test --billing-account=<ACCOUNT_ID z kroku 0>
+gcloud projects create please-support-me-test1 --name="Pay — środowiska testowe"
+gcloud billing projects link please-support-me-test1 --billing-account=<ACCOUNT_ID z kroku 0>
 
 # 2. Włącz wymagane API (świeży projekt nie ma włączonego niczego)
 gcloud services enable container.googleapis.com artifactregistry.googleapis.com \
   iam.googleapis.com iamcredentials.googleapis.com cloudresourcemanager.googleapis.com \
-  --project=please-support-me-test
+  --project=please-support-me-test1
 
 # 3. Klaster (Autopilot — bez zarządzania węzłami, płatność per zużyty zasób)
 gcloud container clusters create-auto pay-ephemeral \
-  --project=please-support-me-test --region=europe-central2
+  --project=please-support-me-test1 --region=europe-central2
 
 # 4. Rejestr obrazów
 gcloud artifacts repositories create pay --repository-format=docker \
-  --location=europe-central2 --project=please-support-me-test
+  --location=europe-central2 --project=please-support-me-test1
 
 # 5. Service account CI z uprawnieniami OGRANICZONYMI do tego, co potrzebne
-gcloud iam service-accounts create github-ci --project=please-support-me-test
-gcloud projects add-iam-policy-binding please-support-me-test \
-  --member="serviceAccount:github-ci@please-support-me-test.iam.gserviceaccount.com" \
+gcloud iam service-accounts create github-ci --project=please-support-me-test1
+gcloud projects add-iam-policy-binding please-support-me-test1 \
+  --member="serviceAccount:github-ci@please-support-me-test1.iam.gserviceaccount.com" \
   --role=roles/container.developer
-gcloud projects add-iam-policy-binding please-support-me-test \
-  --member="serviceAccount:github-ci@please-support-me-test.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding please-support-me-test1 \
+  --member="serviceAccount:github-ci@please-support-me-test1.iam.gserviceaccount.com" \
   --role=roles/artifactregistry.writer
 
 # 6. Workload Identity Federation — GitHub Actions loguje się bez klucza JSON
@@ -202,3 +202,24 @@ kubectl delete namespace pay-eph-<slug-brancha>
 
 (albo po prostu zamknij/zmerguj PR — drugi trigger w workflow robi to samo
 automatycznie).
+
+### Wyczyszczenie WSZYSTKIEGO jedną komendą
+
+Cała infrastruktura testowa (klaster, rejestr obrazów, service account,
+Workload Identity Federation, wszystkie namespace'y branchy) żyje w JEDNYM,
+dedykowanym projekcie GCP (`please-support-me-test1`) na WŁASNYM billing
+accouncie — nic z tego nie dotyka produkcji. Dlatego wyczyszczenie
+wszystkiego to dosłownie jedna komenda:
+
+```bash
+gcloud projects delete please-support-me-test1
+```
+
+Kasuje projekt i WSZYSTKO w nim (klaster GKE, obrazy w Artifact Registry,
+service account, WIF, wszystkie namespace'y) nieodwracalnie — po tym trzeba
+by przejść cały "Jednorazowy setup" od nowa (z nowym ID projektu, ten
+konkretny jest już zużyty raz i zostanie zarezerwowany przez Google nawet
+po usunięciu). Sam billing account (`Moje konto rozliczeniowe`,
+`marcin.lula@`) PRZEŻYWA usunięcie projektu — jeśli chcesz też jego się
+pozbyć, rób to osobno w konsoli GCP (Billing → zamknij konto), nie jest to
+konieczne (pusty billing account bez podpiętych projektów nic nie kosztuje).

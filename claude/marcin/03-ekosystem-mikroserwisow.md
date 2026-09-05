@@ -977,37 +977,64 @@ Przydział kont Google (dwa istniejące na tej maszynie):
   użytkownika w konsoli GCP (ja nie mogę zakładać billing accountów —
   wymaga formularza płatności).
 
-Nowy projekt GCP pod testy: **`please-support-me-test`** (jeszcze NIE
+Nowy projekt GCP pod testy: **`please-support-me-test1`** (jeszcze NIE
 utworzony). Klaster w nim: **`pay-ephemeral`** (nazwa już użyta we
 wszystkich plikach — `.github/workflows/ephemeral-env.yml`,
 `k8s/README.md`, `k8s/overlays/ephemeral/kustomization.yaml`).
 
-### Stan na przerwanie sesji (kontynuacja na innym komputerze)
+### Stan: jednorazowy setup GCP WYKONANY (2026-09-05)
 
-**Wszystkie pliki są gotowe i spójne, ZERO zasobów GCP jeszcze
-utworzonych.** Ostatnia rzecz zablokowana: token `gcloud auth` dla
-`marcin.lula@please-support-me.com` wygasł, wymaga interaktywnego
-`gcloud auth login marcin.lula@please-support-me.com` (nie da się zrobić
-nieinteraktywnie z sesji Claude — dokładnie ten sam problem co wcześniej
-z `founder@`, patrz pułapka #4 wyżej).
+Projekt `please-support-me-test` był już zajęty globalnie (ID projektu
+jest unikalne w całym GCP, nie tylko w tej organizacji) — użyty
+**`please-support-me-test1`** zamiast, wszystkie pliki zaktualizowane
+konsekwentnie (workflow, kustomization, README, ta notatka).
 
-**Następne kroki, w kolejności** (pełne komendy: `k8s/README.md`, sekcja
-"Jednorazowy setup"):
-1. `gcloud auth login marcin.lula@please-support-me.com` (ręcznie,
-   interaktywnie).
-2. `gcloud billing accounts list --account=marcin.lula@please-support-me.com`
-   — potwierdzić ID nowo założonego billing accountu.
-3. `gcloud projects create please-support-me-test` + `gcloud billing
-   projects link` do tego ID.
-4. Włączyć API (`container`, `artifactregistry`, `iam`, `iamcredentials`,
-   `cloudresourcemanager`).
-5. Klaster Autopilot `pay-ephemeral` (region `europe-central2`).
-6. Artifact Registry `pay`.
-7. Service account `github-ci` + role `container.developer` +
-   `artifactregistry.writer` (ograniczone, NIE Owner/Editor).
-8. Workload Identity Federation (GitHub Actions bez klucza JSON) — wynik:
-   sekrety repo GitHub `GCP_WORKLOAD_IDENTITY_PROVIDER`,
-   `GCP_SERVICE_ACCOUNT`.
-9. `kubectl apply -f k8s/housekeeper/` (raz, ręcznie).
-10. Pierwszy realny test: branch `feature/...`, push, sprawdzić
-    Actions → podsumowanie z URL-ami → zalogować się przez przeglądarkę.
+Wykonane realnie na GCP (kontem `marcin.lula@please-support-me.com`):
+1. ✅ Projekt `please-support-me-test1` utworzony.
+2. ✅ Billing account `017076-18B8FF-57CB09` ("Moje konto rozliczeniowe")
+   podpięty.
+3. ✅ API włączone: `container`, `artifactregistry`, `iam`,
+   `iamcredentials`, `cloudresourcemanager`, `sts`.
+4. ✅ Artifact Registry `pay` (region `europe-central2`).
+5. ✅ Service account `github-ci@please-support-me-test1.iam.gserviceaccount.com`
+   z rolami `container.developer` + `artifactregistry.writer` (potwierdzone
+   `get-iam-policy`, NIE Owner/Editor).
+6. ✅ Workload Identity Federation: pula `github` + provider
+   `github-actions` (`issuer-uri=token.actions.githubusercontent.com`),
+   **attribute-condition ograniczony do dokładnie jednego repo**
+   (`assertion.repository=='Support-Me-Services/pay'` — bez tego
+   DOWOLNY publiczny/prywatny workflow na GitHub mógłby impersonować to
+   konto serwisowe). Binding `roles/iam.workloadIdentityUser` na
+   `github-ci` ograniczony do tego samego repo przez `principalSet://...
+   /attribute.repository/Support-Me-Services/pay`.
+7. ⏳ Klaster Autopilot `pay-ephemeral` (`europe-central2`) — W TRAKCIE
+   tworzenia w tle w momencie zapisu tej notatki (Autopilot: 5-10 min).
+8. ⬜ `kubectl apply -f k8s/housekeeper/` — do zrobienia PO gotowości
+   klastra (potrzebuje `gcloud container clusters get-credentials
+   pay-ephemeral --region=europe-central2 --project=please-support-me-test1`
+   najpierw).
+9. ⬜ Sekrety repo GitHub `GCP_WORKLOAD_IDENTITY_PROVIDER` (wartość:
+   `projects/770107734741/locations/global/workloadIdentityPools/github/
+   providers/github-actions`) i `GCP_SERVICE_ACCOUNT` (wartość:
+   `github-ci@please-support-me-test1.iam.gserviceaccount.com`) — NIE
+   udało się ustawić automatycznie (`gh` CLI nie jest zainstalowane na tej
+   maszynie) — użytkownik musi dodać je ręcznie w
+   https://github.com/Support-Me-Services/pay/settings/secrets/actions/new.
+10. ⬜ Pierwszy realny test: branch `feature/...`, push, sprawdzić Actions
+    → podsumowanie z URL-ami → zalogować się przez przeglądarkę.
+
+**Pułapka #5 (nowa)**: `gcloud.cmd` wywoływany z tej powłoki (Git Bash na
+Windows) **wywala się z myląco niepowiązanym błędem `'C:\Program' is not
+recognized...`, gdy KTÓRYKOLWIEK argument zawiera SPACJĘ** wewnątrz
+cudzysłowu (np. `--attribute-condition="assertion.repository == '...'"`
+ze spacjami wokół `==`, albo wieloliniowa komenda z `\` na końcu linii z
+`--name="Coś z spacjami"`) — nawet gdy cała komenda jest poprawnie
+zacytowana w bash. Naprawia to WYŁĄCZNIE usunięcie spacji z wartości
+argumentu (np. `assertion.repository=='...'` bez spacji wokół `==`,
+`--name=bez-spacji`), nie sposób zacytowania. Dotyczy tylko tej jednej
+sesji/maszyny — najpewniej kwirk przekazywania argumentów przez warstwę
+Git Bash → `cmd.exe` przy pliku `.cmd` (nie native `.exe`).
+
+Kolejne kroki po gotowości klastra: `k8s/README.md`, sekcja "Jednorazowy
+setup", punkty 7-10 (Artifact Registry i service account/WIF już zrobione
+— zostaje `kubectl apply` housekeepera i pierwszy test).

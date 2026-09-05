@@ -20,10 +20,10 @@ on:
     types: [closed]
 
 env:
-  PROJECT_ID: please-support-me-test
+  PROJECT_ID: please-support-me-test1
   REGION: europe-central2
   CLUSTER: pay-ephemeral
-  REGISTRY: europe-central2-docker.pkg.dev/please-support-me-test/pay
+  REGISTRY: europe-central2-docker.pkg.dev/please-support-me-test1/pay
 
 permissions:
   contents: read
