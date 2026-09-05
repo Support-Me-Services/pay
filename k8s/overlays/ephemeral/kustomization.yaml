@@ -122,8 +122,19 @@ patches:
                   - name: KEYCLOAK_ADMIN_PASSWORD
                     value: null
                     valueFrom: { secretKeyRef: { name: keycloak-admin, key: password } }
-                  - name: KC_HOSTNAME
-                    value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnetrznego IP"
+                  # BEZ nadpisania KC_HOSTNAME tutaj — zostaje wartość z bazowego
+                  # manifestu (http://localhost:8180, składniowo POPRAWNY URL).
+                  # Wcześniejszy placeholder ("PLACEHOLDER-ustawiane przez CI...")
+                  # to zwykły tekst ze spacjami — Keycloak parsuje KC_HOSTNAME
+                  # jako URL PRZY KAŻDYM starcie i z TAKĄ wartością zawsze pada
+                  # ("Illegal character in authority") — wcześniejsze udane
+                  # przebiegi miały szczęście w wyścigu z kubectl rollout status
+                  # (bez sondy gotowości poniżej rollout status nie czekał na
+                  # realną gotowość HTTP); z dodaną sondą /realms/master ten
+                  # wyścig już się nie udaje. CI i tak nadpisuje KC_HOSTNAME
+                  # przez `kubectl set env` po poznaniu prawdziwego adresu —
+                  # ta wartość bazowa nigdy nie jest faktycznie używana do
+                  # niczego poza samym startem.
                   - name: KC_PROXY_HEADERS
                     value: "xforwarded"
   - target: { kind: Service, name: keycloak }
