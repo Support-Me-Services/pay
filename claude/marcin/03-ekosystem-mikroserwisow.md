@@ -1202,3 +1202,30 @@ przeszła w całości. Potwierdzone bezpośrednim curl na żywym środowisku:
     servicenetworkendpointgroups... --type=json -p='[{"op":"remove",
     "path":"/metadata/finalizers"}]'` — NIGDY na odwrót (ryzyko
     osierocenia płatnych zasobów GCP).
+
+## Housekeeper faktycznie NIE działał — activeDeadlineSeconds za krótki
+
+Odkryte 2026-09-05, ~1h po pierwszym udanym Ingressie: namespace testowy
+przekroczył godzinną TTL o 11 minut, mimo działającego `housekeeper`.
+`kubectl get jobs -n pay-system` pokazał "Failed 0/1", czas trwania
+dokładnie 120s = `activeDeadlineSeconds`. Przyczyna: klaster (skalujący
+się do minimum między testami) potrzebował więcej niż 120s na
+przydzielenie węzła dla poda housekeepera — zadanie ginęło z
+przekroczonym deadline'em, ZANIM skrypt czyszczący w ogóle zdążył
+wystartować. Ten sam skrypt uruchomiony ręcznie z zewnątrz (bez
+czekania na scheduling w klastrze) zadziałał natychmiast. Naprawione:
+`activeDeadlineSeconds: 120 → 600` w `k8s/housekeeper/02-cronjob.yaml`.
+
+**Wniosek na przyszłość**: `housekeeper` może cicho nie działać — warto
+od czasu do czasu sprawdzić `kubectl get jobs -n pay-system` (Failed =
+zły znak) zamiast ślepo ufać, że namespace'y znikają same. Posprzątane
+ręcznie przy tej okazji: namespace + osierocone zasoby GCP (backend
+services, NEG-i po Ingressie — ten sam wzorzec co pułapka #18).
+
+Przy tej samej okazji dodana polityka czyszczenia Artifact Registry
+(obrazy starsze niż 3 dni kasowane automatycznie — bez tego repo rosłoby
+bez końca, 752MB już po ~24 przebiegach jednego dnia):
+```
+gcloud artifacts repositories set-cleanup-policies pay --location=europe-central2 \
+  --project=please-support-me-test1 --policy=<plik.json>
+```
