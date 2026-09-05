@@ -1007,21 +1007,28 @@ Wykonane realnie na GCP (kontem `marcin.lula@please-support-me.com`):
    konto serwisowe). Binding `roles/iam.workloadIdentityUser` na
    `github-ci` ograniczony do tego samego repo przez `principalSet://...
    /attribute.repository/Support-Me-Services/pay`.
-7. ⏳ Klaster Autopilot `pay-ephemeral` (`europe-central2`) — W TRAKCIE
-   tworzenia w tle w momencie zapisu tej notatki (Autopilot: 5-10 min).
-8. ⬜ `kubectl apply -f k8s/housekeeper/` — do zrobienia PO gotowości
-   klastra (potrzebuje `gcloud container clusters get-credentials
-   pay-ephemeral --region=europe-central2 --project=please-support-me-test1`
-   najpierw).
+7. ✅ Klaster Autopilot `pay-ephemeral` (`europe-central2`, 3 węzły,
+   `RUNNING`). Po drodze: brakujący `gke-gcloud-auth-plugin` wymagał
+   uprawnień administratora do zainstalowania (SDK w `Program Files`) —
+   `gcloud components install gke-gcloud-auth-plugin --quiet` odmawia w
+   trybie nieinteraktywnym ("Cannot use bundled Python... non-interactive
+   mode"), zadziałało BEZ `--quiet`, ręcznie, w oknie administratora.
+8. ✅ `kubectl apply -f k8s/housekeeper/` — namespace `pay-system`,
+   ServiceAccount/ClusterRole/ClusterRoleBinding, CronJob zweryfikowany
+   (`kubectl get cronjob -n pay-system` → schedule `*/5 * * * *`).
 9. ⬜ Sekrety repo GitHub `GCP_WORKLOAD_IDENTITY_PROVIDER` (wartość:
    `projects/770107734741/locations/global/workloadIdentityPools/github/
    providers/github-actions`) i `GCP_SERVICE_ACCOUNT` (wartość:
    `github-ci@please-support-me-test1.iam.gserviceaccount.com`) — NIE
    udało się ustawić automatycznie (`gh` CLI nie jest zainstalowane na tej
-   maszynie) — użytkownik musi dodać je ręcznie w
+   maszynie) — użytkownik dodaje ręcznie w
    https://github.com/Support-Me-Services/pay/settings/secrets/actions/new.
+   DO POTWIERDZENIA czy już zrobione, zanim pierwszy push zadziała.
 10. ⬜ Pierwszy realny test: branch `feature/...`, push, sprawdzić Actions
     → podsumowanie z URL-ami → zalogować się przez przeglądarkę.
+
+**Jednorazowy setup GCP jest w całości wykonany (punkty 1-8).** Zostaje
+tylko potwierdzenie sekretów GitHub (użytkownik, ręcznie) i pierwszy test.
 
 **Pułapka #5 (nowa)**: `gcloud.cmd` wywoływany z tej powłoki (Git Bash na
 Windows) **wywala się z myląco niepowiązanym błędem `'C:\Program' is not
