@@ -151,12 +151,15 @@ jobs:
 
       # --- Keycloak: czekaj na pod + zewnętrzny IP, dociągnij KC_HOSTNAME
       # (nie da się go znać PRZED apply — LB dostaje IP dopiero po utworzeniu
-      # Service'u), poczekaj na restart z poprawną wartością ---
+      # Service'u), poczekaj na restart z poprawną wartością. Timeouty 400s
+      # (nie 180s) — pierwsze harmonogramowanie na świeżym klastrze Autopilot
+      # potrafi wywołać utworzenie NOWEGO node poola (kilka minut), nie tylko
+      # start kontenera — złapane w pierwszym realnym teście Fazy 7. ---
       - name: Czekaj na Keycloak i ustaw KC_HOSTNAME
         id: keycloak
         run: |
           NS="${{ steps.ns.outputs.name }}"
-          kubectl rollout status deployment/keycloak -n "$NS" --timeout=180s
+          kubectl rollout status deployment/keycloak -n "$NS" --timeout=400s
           for i in $(seq 1 30); do
             IP=$(kubectl get svc keycloak -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             [ -n "$IP" ] && break
@@ -166,7 +169,7 @@ jobs:
           SSLIP="$(echo "$IP" | tr '.' '-').sslip.io"
           echo "sslip=$SSLIP" >> "$GITHUB_OUTPUT"
           kubectl set env deployment/keycloak -n "$NS" KC_HOSTNAME="http://${SSLIP}:8180"
-          kubectl rollout status deployment/keycloak -n "$NS" --timeout=120s
+          kubectl rollout status deployment/keycloak -n "$NS" --timeout=180s
 
       # --- świeży import realmu maskuje sekrety klientów w eksporcie (znany
       # problem z Fazy 6) — pobierz PRAWDZIWE sekrety z Admin API ---
@@ -195,8 +198,8 @@ jobs:
       - name: Czekaj na core-svc i api-gateway
         run: |
           NS="${{ steps.ns.outputs.name }}"
-          kubectl rollout status deployment/core-svc -n "$NS" --timeout=180s
-          kubectl rollout status deployment/api-gateway -n "$NS" --timeout=180s
+          kubectl rollout status deployment/core-svc -n "$NS" --timeout=400s
+          kubectl rollout status deployment/api-gateway -n "$NS" --timeout=400s
 
       # --- Laravel: dogrywamy prawdziwy URL Keycloaka + sekrety klientów,
       # restart, potem czekamy na WŁASNY zewnętrzny IP ---
@@ -209,7 +212,7 @@ jobs:
             KEYCLOAK_BASE_URL="http://${SSLIP}:8180" \
             KEYCLOAK_CLIENT_SECRET_GATEWAY="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_SECRET }}" \
             KEYCLOAK_CLIENT_SECRET_STOREFRONT="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_SECRET }}"
-          kubectl rollout status deployment/laravel-app -n "$NS" --timeout=300s
+          kubectl rollout status deployment/laravel-app -n "$NS" --timeout=400s
           for i in $(seq 1 30); do
             IP=$(kubectl get svc laravel-app -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
             [ -n "$IP" ] && break

@@ -177,6 +177,15 @@ gcloud projects add-iam-policy-binding please-support-me-test1 \
   --member="serviceAccount:github-ci@please-support-me-test1.iam.gserviceaccount.com" \
   --role=roles/artifactregistry.writer
 
+# 5b. Węzły klastra (Compute Engine default SA, NIE github-ci — inna
+#     tożsamość) potrzebują PRAWA ODCZYTU z rejestru, żeby w ogóle ściągnąć
+#     obrazy — bez tego wszystkie pody wiszą w ErrImagePull/403 Forbidden
+#     (złapane w pierwszym realnym teście Fazy 7, patrz notatka poniżej).
+#     <PROJECT_NUMBER>: `gcloud projects describe please-support-me-test1 --format="value(projectNumber)"`.
+gcloud projects add-iam-policy-binding please-support-me-test1 \
+  --member="serviceAccount:<PROJECT_NUMBER>-compute@developer.gserviceaccount.com" \
+  --role=roles/artifactregistry.reader
+
 # 6. Workload Identity Federation — GitHub Actions loguje się bez klucza JSON
 #    (dokładne komendy: https://github.com/google-github-actions/auth#setting-up-workload-identity-federation)
 #    Rezultat: sekrety repo GitHub GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT
