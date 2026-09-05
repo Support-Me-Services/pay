@@ -229,7 +229,7 @@ jobs:
         run: |
           NS="${{ steps.ns.outputs.name }}"
           kubectl rollout status deployment/keycloak -n "$NS" --timeout=600s
-          kubectl set env deployment/keycloak -n "$NS" KC_HOSTNAME="https://${{ steps.ingress.outputs.keycloak_host }}"
+          kubectl set env deployment/keycloak -n "$NS" -c keycloak KC_HOSTNAME="https://${{ steps.ingress.outputs.keycloak_host }}"
           kubectl rollout status deployment/keycloak -n "$NS" --timeout=300s
 
       # --- świeży import realmu maskuje sekrety klientów w eksporcie (znany
@@ -313,10 +313,17 @@ jobs:
       # --- Laravel: dogrywamy prawdziwy URL Keycloaka + sekrety klientów.
       # Zewnętrzny adres to teraz WSPÓLNY Ingress (poznany w kroku
       # "Czekaj na Ingress...") — Laravel nie ma już własnego LB/IP. ---
+      # -c laravel: BEZ jawnego wskazania kontenera, `kubectl set env` na
+      # tym Deploymencie trafiał w initContainer (wait-for-db), nie w
+      # główny kontener aplikacji — logowanie kończyło się redirectem na
+      # dosłowny tekst placeholdera zamiast prawdziwego URL-a Keycloaka
+      # (złapane w przeglądarce: przycisk "Zaloguj przez Keycloak" dawał
+      # 404, bo Location: nie był prawidłowym URL-em). Ten sam problem
+      # naprawiony analogicznie w kroku "Czekaj na Keycloak" (-c keycloak).
       - name: Ustaw config Keycloaka na Laravelu
         run: |
           NS="${{ steps.ns.outputs.name }}"
-          kubectl set env deployment/laravel-app -n "$NS" \
+          kubectl set env deployment/laravel-app -n "$NS" -c laravel \
             KEYCLOAK_BASE_URL="https://${{ steps.ingress.outputs.keycloak_host }}" \
             KEYCLOAK_CLIENT_SECRET_GATEWAY="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_SECRET }}" \
             KEYCLOAK_CLIENT_SECRET_STOREFRONT="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_SECRET }}"
