@@ -173,25 +173,42 @@ jobs:
 
       # --- świeży import realmu maskuje sekrety klientów w eksporcie (znany
       # problem z Fazy 6) — pobierz PRAWDZIWE sekrety z Admin API ---
+      # Token admina Keycloaka żyje tylko 60s (expires_in) — NIE przekazujemy
+      # go dalej jako output (krok "Zarejestruj redirect URI" dzieli od
+      # tego miejsca kilka minut — loguje się więc na świeżo, osobno).
+      # set -o pipefail + jawna walidacja TOKEN/ID/SECRET — bez tego
+      # `curl -f` na błędzie HTTP + `jq` na pustym wejściu ciche przechodzą
+      # dalej z pustym wynikiem zamiast przerwać skrypt (złapane w
+      # pierwszym realnym teście: Keycloak bywa "Ready" wg sondy zanim jego
+      # wbudowany użytkownik admina faktycznie już działa — wyścig, stąd
+      # pętla retry niżej).
       - name: Pobierz sekrety klientów Keycloaka
         id: kc-secrets
         run: |
+          set -o pipefail
           NS="${{ steps.ns.outputs.name }}"
           SSLIP="${{ steps.keycloak.outputs.sslip }}"
           ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
-          TOKEN=$(curl -sf -X POST "http://${SSLIP}:8180/realms/master/protocol/openid-connect/token" \
-            -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token)
+          TOKEN=""
+          for i in $(seq 1 12); do
+            TOKEN=$(curl -sf -X POST "http://${SSLIP}:8180/realms/master/protocol/openid-connect/token" \
+              -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token) && [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] && break
+            echo "Keycloak admin jeszcze nie gotowy do logowania, ponawiam za 5s..."
+            sleep 5
+          done
+          [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka po 60s"; exit 1; }
           for CLIENT in laravel-panel-gateway laravel-panel-storefront; do
             ID=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
               "http://${SSLIP}:8180/admin/realms/pay/clients?clientId=${CLIENT}" | jq -r '.[0].id')
+            [ -n "$ID" ] && [ "$ID" != "null" ] || { echo "Brak klienta ${CLIENT} w realmie"; exit 1; }
             SECRET=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
               "http://${SSLIP}:8180/admin/realms/pay/clients/${ID}/client-secret" | jq -r .value)
+            [ -n "$SECRET" ] && [ "$SECRET" != "null" ] || { echo "Nie udało się pobrać sekretu klienta ${CLIENT}"; exit 1; }
             echo "::add-mask::${SECRET}"
             VAR=$(echo "$CLIENT" | tr '[:lower:]-' '[:upper:]_')
             echo "${VAR}_ID=${ID}" >> "$GITHUB_OUTPUT"
             echo "${VAR}_SECRET=${SECRET}" >> "$GITHUB_OUTPUT"
           done
-          echo "token=${TOKEN}" >> "$GITHUB_OUTPUT"
 
       # --- api-gateway/core-svc już zaaplikowane wyżej (JWKS URI zawsze
       # wewnątrzklastrowy, nie zależy od zewnętrznych IP) — tylko czekamy ---
@@ -240,9 +257,16 @@ jobs:
       # DOPISUJEMY do istniejącej listy (nie kasujemy localhost/prod). ---
       - name: Zarejestruj redirect URI Laravela w Keycloaku
         run: |
+          set -o pipefail
+          NS="${{ steps.ns.outputs.name }}"
           SSLIP="${{ steps.keycloak.outputs.sslip }}"
           SSLIP_LARAVEL="${{ steps.laravel.outputs.sslip }}"
-          TOKEN="${{ steps.kc-secrets.outputs.token }}"
+          # Świeże logowanie — token admina żyje tylko 60s, ten z kroku
+          # "Pobierz sekrety" (kilka minut wcześniej) już dawno wygasł.
+          ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
+          TOKEN=$(curl -sf -X POST "http://${SSLIP}:8180/realms/master/protocol/openid-connect/token" \
+            -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token)
+          [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka"; exit 1; }
           for PAIR in "LARAVEL_PANEL_GATEWAY:${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_ID }}" \
                       "LARAVEL_PANEL_STOREFRONT:${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_ID }}"; do
             ID="${PAIR#*:}"
