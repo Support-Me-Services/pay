@@ -202,13 +202,13 @@ jobs:
           KC="http://localhost:18180"
           ADMIN_PW=$(kubectl get secret keycloak-admin -n "$NS" -o jsonpath='{.data.password}' | base64 -d)
           TOKEN=""
-          for i in $(seq 1 12); do
+          for i in $(seq 1 24); do
             TOKEN=$(curl -sf -X POST "${KC}/realms/master/protocol/openid-connect/token" \
               -d "username=admin&password=${ADMIN_PW}&grant_type=password&client_id=admin-cli" | jq -r .access_token) && [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] && break
-            echo "Keycloak admin jeszcze nie gotowy do logowania, ponawiam za 5s..."
-            sleep 5
+            echo "Keycloak admin jeszcze nie gotowy do logowania, ponawiam za 10s..."
+            sleep 10
           done
-          [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka po 60s"; exit 1; }
+          [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "Nie udało się zalogować do Keycloaka po 240s"; exit 1; }
           for CLIENT in laravel-panel-gateway laravel-panel-storefront; do
             ID=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
               "${KC}/admin/realms/pay/clients?clientId=${CLIENT}" | jq -r '.[0].id')
