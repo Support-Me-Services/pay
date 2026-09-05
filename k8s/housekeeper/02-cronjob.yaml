@@ -13,7 +13,14 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 120
+      # 120s okazało się za mało w praktyce — CronJob potrafi czekać dłużej
+      # niż to na przydzielenie węzła (klaster skaluje się do zera/prawie
+      # zera między testami, ten sam efekt co spowalniał każdy przebieg CI
+      # dziś cały dzień), więc zadanie ginęło z ProgressDeadlineExceeded
+      # ZANIM skrypt w ogóle zdążył ruszyć — namespace nigdy nie kasował
+      # się automatycznie. Złapane na żywo: ten sam skrypt uruchomiony
+      # ręcznie (bez czekania na scheduling) zadziałał natychmiast.
+      activeDeadlineSeconds: 600
       template:
         spec:
           serviceAccountName: housekeeper
