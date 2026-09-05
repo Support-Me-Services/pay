@@ -14,6 +14,10 @@ storage/logs
 .env.*
 !.env.example
 !.env.docker
+# NIE services/ — services/core-svc i services/api-gateway budują się z
+# TEGO SAMEGO korzenia repo (patrz .github/workflows/ephemeral-env.yml),
+# .dockerignore obowiązuje globalnie dla każdego builda z tym kontekstem
+# (wykluczenie tu złamałoby COPY services/core-svc w ich Dockerfile'ach —
+# dokładnie to się stało przy pierwszym przebiegu CI Fazy 7).
 k8s
 ecosystem
-services

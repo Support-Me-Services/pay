@@ -32,6 +32,12 @@ spec:
             - { name: POSTGRES_DB, value: core_svc }
             - { name: POSTGRES_USER, value: core_svc }
             - { name: POSTGRES_PASSWORD, value: core_svc }
+            # Podkatalog, NIE korzeń wolumenu — dyski PD w chmurze (GKE)
+            # mają świeżo sformatowany ext4 z automatycznym lost+found,
+            # co initdb widzi jako "katalog niepusty" i odmawia startu.
+            # Lokalnie (hostpath-provisioner Docker Desktop) nieszkodliwe,
+            # więc problem nie ujawnił się wcześniej — złapane w Fazie 7.
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
           ports:
             - containerPort: 5432
           volumeMounts:

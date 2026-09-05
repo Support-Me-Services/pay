@@ -18,6 +18,7 @@ namespace: pay-ephemeral-placeholder
 
 resources:
   - ../../base
+  - ingress.yaml
 
 configMapGenerator:
   - name: keycloak-realm
@@ -39,28 +40,53 @@ images:
 
 patches:
   # --- bazy wewnętrzne: bez zewnętrznego IP (koszt LB + niepotrzebna
-  # ekspozycja bazy danych w internecie na czas testu) ---
+  # ekspozycja bazy danych w internecie na czas testu) + JAWNE, MAŁE
+  # resources.requests — bez tego Autopilot dokłada własne domyślne
+  # (500m/2Gi na kontener!), co razem z narzutem systemowym GKE na
+  # węźle (~4.5 vCPU/węzeł) wypychało całość na DRUGI węzeł 8-vCPU,
+  # a globalna kwota CPUS-ALL-REGIONS (12, nie do podniesienia
+  # samoobsługowo na świeżym projekcie — NOT_ENOUGH_USAGE_HISTORY) na
+  # to nie pozwala. Cel: zmieścić WSZYSTKO na jednym węźle. ---
   - target: { kind: Service, name: db }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Deployment, name: db }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }
   - target: { kind: Service, name: postgres-core }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Deployment, name: postgres-core }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "256Mi" } } }
+  - target: { kind: Deployment, name: postgres-keycloak }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "256Mi" } } }
+      # (postgres-keycloak Service jest już ClusterIP domyślnie — bez zmian)
+
+  # --- core-svc / api-gateway: obraz z rejestru zamiast lokalnego ---
   - target: { kind: Service, name: core-svc }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
-      # (postgres-keycloak jest już ClusterIP domyślnie — bez zmian)
-
-  # --- core-svc / api-gateway: obraz z rejestru zamiast lokalnego, Autopilot
-  # wymaga resources.requests ---
   - target: { kind: Deployment, name: core-svc }
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
-      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
   - target: { kind: Deployment, name: api-gateway }
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
-      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "250m", memory: "512Mi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
+
+  # --- laravel-app/api-gateway/keycloak: ClusterIP zamiast LoadBalancer —
+  # wystawione teraz przez WSPÓLNY Ingress (ingress.yaml) na 443, nie po
+  # jednym LB/IP na usługę (patrz nagłówek pliku: port 8000/8081/8180
+  # blokowany przez część sieci komórkowych + oszczędność kwoty
+  # IN_USE_ADDRESSES). ---
+  - target: { kind: Service, name: api-gateway }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
 
   # --- Keycloak: realm z ConfigMapy (nie hostPath — nie istnieje na GKE),
   # losowe hasło admina z Secretu wytworzonego przez CI, resources.requests
@@ -75,7 +101,27 @@ patches:
         value: pay-realm.json
       - op: add
         path: /spec/template/spec/containers/0/resources
-        value: { requests: { cpu: "500m", memory: "1Gi" } }
+        value: { requests: { cpu: "150m", memory: "768Mi" } }
+      # Recreate zamiast domyślnego RollingUpdate — CI restartuje Keycloaka
+      # (kubectl set env KC_HOSTNAME) PO pierwszym starcie, a RollingUpdate
+      # chce chwilowo mieć DWA pody Keycloaka naraz (maxSurge=25% przy 1
+      # replice zaokrągla w górę do 1) — przy tak wąskim budżecie CPU
+      # (globalna kwota CPUS-ALL-REGIONS, patrz claude/marcin) nowy pod
+      # nigdy się nie mieści, stary nigdy nie ginie, restart wisi w
+      # nieskończoność. Kilka sekund przerwy w automatyzacji CI (nikt
+      # jeszcze nie testuje) to nieistotny koszt.
+      - op: add
+        path: /spec/strategy
+        value: { type: Recreate }
+      # progressDeadlineSeconds domyślnie 600s, liczone od UTWORZENIA
+      # poda — a to następuje na długo PRZED tym, jak CI w ogóle zacznie
+      # sprawdzać status (krok "Czekaj na Ingress..." przed tym potrafi
+      # sam zająć kilkanaście minut, plus Keycloak startuje ~2-3 min).
+      # Bez podniesienia tego, kubectl rollout status widzi "zegar już
+      # wyczerpany" i pada NATYCHMIAST, niezależnie od --timeout w CI.
+      - op: add
+        path: /spec/progressDeadlineSeconds
+        value: 1800
   # Zmiana env po NAZWIE (merge strategiczny), nie po indeksie — indeksy w
   # k8s/12-keycloak.yaml są kruche (już raz się pomyliłem licząc ręcznie).
   # KEYCLOAK_ADMIN_PASSWORD: z wygenerowanego przez CI Secretu, nie "admin"
@@ -98,8 +144,24 @@ patches:
                   - name: KEYCLOAK_ADMIN_PASSWORD
                     value: null
                     valueFrom: { secretKeyRef: { name: keycloak-admin, key: password } }
-                  - name: KC_HOSTNAME
-                    value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnetrznego IP"
+                  # BEZ nadpisania KC_HOSTNAME tutaj — zostaje wartość z bazowego
+                  # manifestu (http://localhost:8180, składniowo POPRAWNY URL).
+                  # Wcześniejszy placeholder ("PLACEHOLDER-ustawiane przez CI...")
+                  # to zwykły tekst ze spacjami — Keycloak parsuje KC_HOSTNAME
+                  # jako URL PRZY KAŻDYM starcie i z TAKĄ wartością zawsze pada
+                  # ("Illegal character in authority") — wcześniejsze udane
+                  # przebiegi miały szczęście w wyścigu z kubectl rollout status
+                  # (bez sondy gotowości poniżej rollout status nie czekał na
+                  # realną gotowość HTTP); z dodaną sondą /realms/master ten
+                  # wyścig już się nie udaje. CI i tak nadpisuje KC_HOSTNAME
+                  # przez `kubectl set env` po poznaniu prawdziwego adresu —
+                  # ta wartość bazowa nigdy nie jest faktycznie używana do
+                  # niczego poza samym startem.
+                  - name: KC_PROXY_HEADERS
+                    value: "xforwarded"
+  - target: { kind: Service, name: keycloak }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
 
   # --- Laravel: obraz z zapieczonym kodem (Dockerfile.ci) zamiast hostPath —
   # wolumeny repo/entrypoint znikają, vendor/storage jako emptyDir (środowisko
@@ -113,10 +175,24 @@ patches:
       - { op: remove, path: /spec/template/spec/containers/0/volumeMounts/1 }
       - { op: remove, path: /spec/template/spec/containers/0/volumeMounts/0 }
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
-      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "500m", memory: "1Gi" } } }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "512Mi" } } }
       - { op: add, path: /spec/template/spec/containers/0/env, value: [] }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_BASE_URL, value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnętrznego IP Keycloaka" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_INTERNAL_BASE_URL, value: "http://keycloak:8080" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_REALM, value: "pay" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_CLIENT_SECRET_GATEWAY, value: "PLACEHOLDER-ustawiane przez CI po pobraniu z Keycloak Admin API" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_CLIENT_SECRET_STOREFRONT, value: "PLACEHOLDER-ustawiane przez CI po pobraniu z Keycloak Admin API" } }
+      # TLS kończy się na Ingressie, do poda leci już zwykłe HTTP —
+      # bez zaufania nagłówkowi X-Forwarded-Proto Laravel myślałby, że
+      # cały ruch jest HTTP (błędne URL-e, cookie bez flagi Secure).
+      # Bezpieczne tu: to izolowany namespace/pod, "ufaj wszystkim" nie
+      # oznacza ufania realnym, nieznanym proxy jak na produkcji.
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: TRUSTED_PROXIES, value: "*" } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
+      # Ten sam powód co Recreate na Keycloaku (patrz komentarz tam) —
+      # Laravel TEŻ dostaje `kubectl set env` (KEYCLOAK_BASE_URL + sekrety)
+      # po pierwszym starcie.
+      - { op: add, path: /spec/strategy, value: { type: Recreate } }
+  - target: { kind: Service, name: laravel-app }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }

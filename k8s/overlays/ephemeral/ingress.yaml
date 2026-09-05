@@ -1,0 +1,52 @@
+# Faza 7 — Ingress GKE (klasa gce) na porcie 443 zamiast 3 osobnych
+# LoadBalancerów na sslip.io. Rozwiązuje dwa problemy: (1) niektóre sieci
+# komórkowe blokują niestandardowe porty (8000/8081/8180), 443 przechodzi
+# wszędzie; (2) jeden zewnętrzny IP zamiast trzech — mniej zużycia kwoty
+# IN_USE_ADDRESSES (patrz pułapka #10 w claude/marcin/03-ekosystem-mikroserwisow.md).
+#
+# host/tls.hosts poniżej to PLACEHOLDERY — prawdziwe hostname sslip.io
+# zależą od adresu IP, który Ingress dostaje dopiero PO utworzeniu.
+# CI (workflow) je dogrywa: `kubectl patch ingress` na host'ach + realny
+# certyfikat self-signed w Secret `ephemeral-tls`, dokładnie ten sam wzorzec
+# co KC_HOSTNAME/redirect URI Keycloaka (deploy → poznaj IP → dograj config).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ephemeral
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  tls:
+    - secretName: ephemeral-tls
+      hosts: ["placeholder-laravel.sslip.io"]
+  rules:
+    - host: placeholder-laravel.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: laravel-app
+                port:
+                  number: 8000
+    - host: placeholder-keycloak.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: keycloak
+                port:
+                  number: 8080
+    - host: placeholder-api.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8081

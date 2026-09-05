@@ -43,6 +43,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->redirectGuestsTo('/panel/login');
+
+        // Faza 7 — efemeryczne środowisko za Ingressem GKE: TLS kończy się
+        // na Ingressie, do poda leci już zwykłe HTTP (nagłówek
+        // X-Forwarded-Proto mówi Laravelowi, że oryginalne żądanie było
+        // HTTPS). Domyślnie (env pusty) BEZ zmian — produkcja stoi za
+        // nginx na tej samej maszynie co PHP-FPM, ustawia $_SERVER
+        // bezpośrednio, nie przez nagłówki, więc nigdy tego nie potrzebowała.
+        if ($proxies = env('TRUSTED_PROXIES')) {
+            $middleware->trustProxies(at: $proxies === '*' ? '*' : explode(',', $proxies));
+        }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Wygasła sesja/token CSRF (np. formularz otwarty dłużej niż

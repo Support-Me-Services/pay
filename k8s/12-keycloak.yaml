@@ -42,6 +42,16 @@ spec:
             - { name: KC_HOSTNAME, value: "http://localhost:8180" }
           ports:
             - containerPort: 8080
+          # /realms/master zwraca 200 (JSON) — / w Keycloaku 26 przekierowuje
+          # (302) do konsoli admina, co GKE Ingress (dziedziczący health
+          # check z tej sondy dla podów za NIM) czytałby jako niezdrowy
+          # backend i wiecznie 502-ował, mimo że Keycloak działa poprawnie
+          # (złapane przy Ingressie w Fazie 7).
+          readinessProbe:
+            httpGet: { path: /realms/master, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 60
           volumeMounts:
             - name: realm
               mountPath: /opt/keycloak/data/import/pay-realm.json
