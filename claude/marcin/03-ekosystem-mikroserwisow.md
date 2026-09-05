@@ -1030,6 +1030,81 @@ Wykonane realnie na GCP (kontem `marcin.lula@please-support-me.com`):
 **Jednorazowy setup GCP jest w całości wykonany (punkty 1-8).** Zostaje
 tylko potwierdzenie sekretów GitHub (użytkownik, ręcznie) i pierwszy test.
 
+### ✅ Zweryfikowane end-to-end (2026-09-05, 12. próba workflow)
+
+Po 11 nieudanych przebiegach (patrz pułapki #6-#12 niżej — każdy odkrywał
+kolejny, prawdziwy, wcześniej nieznany problem) dwunasty przebieg przeszedł
+w całości. Potwierdzone bezpośrednim curl na żywym środowisku:
+- `http://<laravel-ip>.sslip.io:8000/` → HTTP 200.
+- `http://<api-gateway-ip>.sslip.io:8081/api/v1/health` → 200, cały
+  łańcuch odpowiada (`api-gateway` → `core-svc` przez gRPC → Laravel/
+  RoadRunner przez gRPC).
+- `http://<keycloak-ip>.sslip.io:8180/realms/pay/.well-known/openid-configuration`
+  → 200, poprawny `issuer` wskazujący na adres sslip.io.
+
+Namespace kasowany ręcznie po każdej nieudanej próbie (`kubectl delete
+namespace ... `) — bez tego kolejne przebiegi startowałyby z
+nawarstwionymi, częściowo martwymi generacjami podów z poprzednich prób.
+
+### Pułapki napotkane przy pierwszym realnym teście (dodatkowe, #6-#12)
+
+6. **`Dockerfile.ci`, etap `composer-deps` na obrazie `composer:2` (bez
+   rozszerzeń PHP)** — `composer install` odmówił: `spiral/goridge`,
+   `roadrunner-worker`, `roadrunner-grpc` wymagają `ext-sockets` do
+   weryfikacji zgodności platformy. Naprawa: wspólny etap `php-base`
+   (z `docker-php-ext-install ... sockets`), z którego korzysta zarówno
+   `composer-deps`, jak i finalny obraz.
+7. **`.dockerignore` wykluczał `services/`** — złamało to obrazy
+   `core-svc`/`api-gateway`, które budują się z TEGO SAMEGO kontekstu
+   repo-root i kopiują `services/core-svc`/`services/api-gateway`.
+   `.dockerignore` obowiązuje globalnie dla KAŻDEGO builda z danym
+   kontekstem, nie per-Dockerfile.
+8. **Węzły klastra bez prawa odczytu z Artifact Registry** — `github-ci`
+   dostał tylko `artifactregistry.writer` (do pushowania z CI), ale to
+   INNA tożsamość niż ta, której węzły GKE używają do ściągania obrazów
+   (domyślne konto `<project-number>-compute@developer.gserviceaccount.com`).
+   Bez `artifactregistry.reader` na TYM koncie: wszystkie pody wiszą w
+   `ErrImagePull`/403.
+9. **`postgres` (oficjalny obraz) odmawia initdb, gdy katalog danych
+   niepusty** — dyski PD w GKE mają świeżo sformatowany ext4 z
+   automatycznym `lost+found` w korzeniu. Lokalnie (hostpath-provisioner
+   Docker Desktop) nieszkodliwe, więc nie ujawniło się wcześniej mimo że
+   manifesty są te same od Fazy 5.5. Naprawa: `PGDATA=/var/lib/postgresql/
+   data/pgdata` (podkatalog, nie korzeń wolumenu) w OBU bazach Postgresa
+   — w bazowych manifestach `k8s/10-*`/`k8s/11-*`, nie w nakładce
+   ephemeral (dotyczyłoby każdego realnego wdrożenia w chmurze).
+10. **Węzły z publicznym IP wyczerpywały kwotę `IN_USE_ADDRESSES` (limit 4
+    na świeżym projekcie)** razem z 3 LoadBalancerami — blokowało
+    skalowanie (`GCE quota exceeded`). Naprawa: klaster odtworzony z
+    `--enable-private-nodes` + Cloud NAT (Cloud Router + NAT gateway,
+    wymagane dla ruchu wychodzącego węzłów prywatnych — GKE tego nie
+    stawia automatycznie).
+11. **Nawet po prywatnych węzłach: globalna kwota `CPUS-ALL-REGIONS-per-project`
+    (limit 12, nie regionalna — osobna, dużo bardziej restrykcyjna)**
+    blokowała drugi węzeł 8-vCPU (pierwszy już 95% pełny samym narzutem
+    systemowym GKE + moimi podami). Świeże projekty NIE mogą jej
+    samoobsługowo podnieść (`ineligibilityReason: NOT_ENOUGH_USAGE_HISTORY`,
+    potwierdzone przez `gcloud beta quotas info list` I ręcznie w konsoli
+    — pole akceptuje tylko wartości ≤ obecnego limitu). Naprawa: jawne,
+    małe `resources.requests` na WSZYSTKICH kontenerach w nakładce
+    ephemeral (wcześniej 3 bazy nie miały żadnych — Autopilot dokładał
+    własne 500m/2Gi każda) — zmieściło wszystko na jednym węźle.
+12. **Realm `master` (wbudowany w Keycloaka, NIE ma go w `pay-realm.json`
+    w przeciwieństwie do realmu `pay`, który ma `sslRequired: none`)
+    wymusza HTTPS dla ruchu z adresów ZEWNĘTRZNYCH** — login admina przez
+    zewnętrzny LoadBalancer IP dostawał 403 "HTTPS required". Naprawa:
+    Admin API (logowanie + operacje na kliencie) przez `kubectl
+    port-forward` (localhost) zamiast zewnętrznego IP — Keycloak widzi
+    taki ruch jako lokalny/wewnętrzny, wymóg go nie dotyczy. Realnych
+    użytkowników w przeglądarce to NIE dotyczy (logują się do realmu
+    `pay`, nie `master`). Dodatkowo: `port-forward` w tle w kroku CI
+    wymaga jawnego czekania na linię "Forwarding from" w jego logu przed
+    pierwszym użyciem — ślepy `sleep 3` czasem nie wystarczał (tunel
+    jeszcze nie gotowy → pierwsze próby curl dostają "connection
+    refused", nieodróżnialne bez logowania od "Keycloak jeszcze nie
+    gotowy", co maskowało prawdziwą przyczynę przez kilka kolejnych
+    nieudanych przebiegów).
+
 **Pułapka #5 (nowa)**: `gcloud.cmd` wywoływany z tej powłoki (Git Bash na
 Windows) **wywala się z myląco niepowiązanym błędem `'C:\Program' is not
 recognized...`, gdy KTÓRYKOLWIEK argument zawiera SPACJĘ** wewnątrz
