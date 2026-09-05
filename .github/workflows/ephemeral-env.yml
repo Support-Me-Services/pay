@@ -136,6 +136,19 @@ jobs:
             --from-literal=password="$(openssl rand -hex 16)" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      # Ingress (Faza 7 v2, patrz ingress.yaml) wymaga, żeby Secret
+      # `ephemeral-tls` ISTNIAŁ już w momencie apply — treść na razie
+      # nieważna (byle CN), prawdziwy certyfikat (z poprawnymi SAN-ami)
+      # dogrywamy w kroku "Czekaj na Ingress...", gdy poznamy realny IP.
+      - name: Placeholder Secret TLS (Ingress wymaga go PRZED apply)
+        run: |
+          NS="${{ steps.ns.outputs.name }}"
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout /tmp/placeholder.key -out /tmp/placeholder.crt -subj "/CN=placeholder"
+          kubectl create secret tls ephemeral-tls -n "$NS" \
+            --cert=/tmp/placeholder.crt --key=/tmp/placeholder.key \
+            --dry-run=client -o yaml | kubectl apply -f -
+
       # --- render nakładki ephemeral z realnym namespace/tagami obrazów,
       # potem apply. --load-restrictor=LoadRestrictionsNone: k8s/overlays/
       # ephemeral celowo odwołuje się do już istniejących k8s/*.yaml (zero
@@ -149,26 +162,63 @@ jobs:
           sed -i "s/newTag: ci-placeholder/newTag: ${SHA}/" k8s/overlays/ephemeral/kustomization.yaml
           kustomize build --load-restrictor=LoadRestrictionsNone k8s/overlays/ephemeral | kubectl apply -f -
 
-      # --- Keycloak: czekaj na pod + zewnętrzny IP, dociągnij KC_HOSTNAME
-      # (nie da się go znać PRZED apply — LB dostaje IP dopiero po utworzeniu
-      # Service'u), poczekaj na restart z poprawną wartością. Timeouty 400s
-      # (nie 180s) — pierwsze harmonogramowanie na świeżym klastrze Autopilot
-      # potrafi wywołać utworzenie NOWEGO node poola (kilka minut), nie tylko
-      # start kontenera — złapane w pierwszym realnym teście Fazy 7. ---
+      # --- Ingress GKE (klasa gce) potrafi potrzebować NAPRAWDĘ dużo czasu
+      # na pierwsze wystawienie (tworzy prawdziwy load balancer HTTP(S):
+      # forwarding rule, target proxy, backend services, health checki —
+      # wolniejsze niż zwykły Service LoadBalancer L4, stąd hojny timeout
+      # 15 minut, nie kilka jak dla zwykłego LB). Po poznaniu IP:
+      # generujemy PRAWDZIWY certyfikat self-signed z SAN-ami dla
+      # wszystkich 3 subdomen sslip.io i podmieniamy Secret + reguły hosta
+      # w Ingressie (te w ingress.yaml to tylko placeholdery — realny host
+      # zależy od IP, poznajemy go dopiero teraz). ---
+      - name: Czekaj na Ingress i wygeneruj certyfikat
+        id: ingress
+        run: |
+          set -o pipefail
+          NS="${{ steps.ns.outputs.name }}"
+          IP=""
+          for i in $(seq 1 90); do
+            IP=$(kubectl get ingress ephemeral -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+            [ -n "$IP" ] && break
+            sleep 10
+          done
+          [ -n "$IP" ] || { echo "Ingress nie dostał zewnętrznego IP w 15 minut"; kubectl describe ingress ephemeral -n "$NS"; exit 1; }
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          BASE="$(echo "$IP" | tr '.' '-').sslip.io"
+          LARAVEL_HOST="laravel.${BASE}"
+          KEYCLOAK_HOST="keycloak.${BASE}"
+          API_HOST="api.${BASE}"
+          echo "laravel_host=$LARAVEL_HOST" >> "$GITHUB_OUTPUT"
+          echo "keycloak_host=$KEYCLOAK_HOST" >> "$GITHUB_OUTPUT"
+          echo "api_host=$API_HOST" >> "$GITHUB_OUTPUT"
+
+          openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+            -keyout /tmp/ephemeral.key -out /tmp/ephemeral.crt -subj "/CN=${LARAVEL_HOST}" \
+            -addext "subjectAltName=DNS:${LARAVEL_HOST},DNS:${KEYCLOAK_HOST},DNS:${API_HOST}"
+          kubectl create secret tls ephemeral-tls -n "$NS" \
+            --cert=/tmp/ephemeral.crt --key=/tmp/ephemeral.key \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+          kubectl patch ingress ephemeral -n "$NS" --type=json -p="[
+            {\"op\":\"replace\",\"path\":\"/spec/tls/0/hosts\",\"value\":[\"${LARAVEL_HOST}\",\"${KEYCLOAK_HOST}\",\"${API_HOST}\"]},
+            {\"op\":\"replace\",\"path\":\"/spec/rules/0/host\",\"value\":\"${LARAVEL_HOST}\"},
+            {\"op\":\"replace\",\"path\":\"/spec/rules/1/host\",\"value\":\"${KEYCLOAK_HOST}\"},
+            {\"op\":\"replace\",\"path\":\"/spec/rules/2/host\",\"value\":\"${API_HOST}\"}
+          ]"
+
+      # --- Keycloak: czekaj na rollout, ustaw KC_HOSTNAME na prawdziwy
+      # adres HTTPS (Ingress kończy TLS, do poda leci już zwykłe HTTP —
+      # stąd https:// w KC_HOSTNAME mimo braku TLS na samym podie, i
+      # KC_PROXY_HEADERS=xforwarded w manifeście, żeby Keycloak zaufał
+      # nagłówkowi od Ingressa). Timeout 600s — patrz komentarz o świeżym
+      # klastrze Autopilot i nowych node poolach w poprzedniej wersji tego
+      # kroku (git blame). ---
       - name: Czekaj na Keycloak i ustaw KC_HOSTNAME
         id: keycloak
         run: |
           NS="${{ steps.ns.outputs.name }}"
           kubectl rollout status deployment/keycloak -n "$NS" --timeout=600s
-          for i in $(seq 1 30); do
-            IP=$(kubectl get svc keycloak -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-            [ -n "$IP" ] && break
-            sleep 10
-          done
-          [ -n "$IP" ] || { echo "Keycloak LoadBalancer nie dostał zewnętrznego IP w 5 minut"; exit 1; }
-          SSLIP="$(echo "$IP" | tr '.' '-').sslip.io"
-          echo "sslip=$SSLIP" >> "$GITHUB_OUTPUT"
-          kubectl set env deployment/keycloak -n "$NS" KC_HOSTNAME="http://${SSLIP}:8180"
+          kubectl set env deployment/keycloak -n "$NS" KC_HOSTNAME="https://${{ steps.ingress.outputs.keycloak_host }}"
           kubectl rollout status deployment/keycloak -n "$NS" --timeout=300s
 
       # --- świeży import realmu maskuje sekrety klientów w eksporcie (znany
@@ -249,49 +299,27 @@ jobs:
           kubectl rollout status deployment/core-svc -n "$NS" --timeout=600s
           kubectl rollout status deployment/api-gateway -n "$NS" --timeout=600s
 
-      # --- Laravel: dogrywamy prawdziwy URL Keycloaka + sekrety klientów,
-      # restart, potem czekamy na WŁASNY zewnętrzny IP ---
-      - name: Ustaw config Keycloaka na Laravelu i czekaj na IP
-        id: laravel
+      # --- Laravel: dogrywamy prawdziwy URL Keycloaka + sekrety klientów.
+      # Zewnętrzny adres to teraz WSPÓLNY Ingress (poznany w kroku
+      # "Czekaj na Ingress...") — Laravel nie ma już własnego LB/IP. ---
+      - name: Ustaw config Keycloaka na Laravelu
         run: |
           NS="${{ steps.ns.outputs.name }}"
-          SSLIP="${{ steps.keycloak.outputs.sslip }}"
           kubectl set env deployment/laravel-app -n "$NS" \
-            KEYCLOAK_BASE_URL="http://${SSLIP}:8180" \
+            KEYCLOAK_BASE_URL="https://${{ steps.ingress.outputs.keycloak_host }}" \
             KEYCLOAK_CLIENT_SECRET_GATEWAY="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_GATEWAY_SECRET }}" \
             KEYCLOAK_CLIENT_SECRET_STOREFRONT="${{ steps.kc-secrets.outputs.LARAVEL_PANEL_STOREFRONT_SECRET }}"
           kubectl rollout status deployment/laravel-app -n "$NS" --timeout=600s
-          for i in $(seq 1 30); do
-            IP=$(kubectl get svc laravel-app -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-            [ -n "$IP" ] && break
-            sleep 10
-          done
-          [ -n "$IP" ] || { echo "laravel-app LoadBalancer nie dostał zewnętrznego IP w 5 minut"; exit 1; }
-          SSLIP_LARAVEL="$(echo "$IP" | tr '.' '-').sslip.io"
-          echo "sslip=$SSLIP_LARAVEL" >> "$GITHUB_OUTPUT"
 
-      - name: Adres api-gateway
-        id: api-gateway
-        run: |
-          NS="${{ steps.ns.outputs.name }}"
-          for i in $(seq 1 30); do
-            IP=$(kubectl get svc api-gateway -n "$NS" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-            [ -n "$IP" ] && break
-            sleep 10
-          done
-          [ -n "$IP" ] || { echo "api-gateway LoadBalancer nie dostał zewnętrznego IP w 5 minut"; exit 1; }
-          echo "sslip=$(echo "$IP" | tr '.' '-').sslip.io" >> "$GITHUB_OUTPUT"
-
-      # --- dopisz adres Laravela do dozwolonych redirect URI obu klientów —
-      # dopiero teraz, bo poznaliśmy go dopiero PO wystawieniu jego Service'u.
+      # --- dopisz adres Laravela do dozwolonych redirect URI obu klientów.
       # PUT nadpisuje całą reprezentację klienta, więc najpierw GET i
       # DOPISUJEMY do istniejącej listy (nie kasujemy localhost/prod). ---
       - name: Zarejestruj redirect URI Laravela w Keycloaku
         run: |
           set -o pipefail
           NS="${{ steps.ns.outputs.name }}"
-          SSLIP_LARAVEL="${{ steps.laravel.outputs.sslip }}"
-          # Admin API przez port-forward (localhost), nie zewnętrzny LB IP —
+          LARAVEL_HOST="${{ steps.ingress.outputs.laravel_host }}"
+          # Admin API przez port-forward (localhost), nie zewnętrzny Ingress —
           # patrz komentarz przy kroku "Pobierz sekrety klientów Keycloaka"
           # (realm master wymusza HTTPS dla ruchu zewnętrznego). Czekamy na
           # faktyczne ustanowienie tunelu, nie ślepy sleep — patrz tamten
@@ -317,12 +345,33 @@ jobs:
             CLIENT=$(curl -sf -H "Authorization: Bearer ${TOKEN}" \
               "${KC}/admin/realms/pay/clients/${ID}")
             UPDATED=$(echo "$CLIENT" | jq \
-              --arg cb "http://${SSLIP_LARAVEL}:8000/panel/auth/callback" \
-              --arg lo "http://${SSLIP_LARAVEL}:8000/panel/login" \
-              --arg wo "http://${SSLIP_LARAVEL}:8000" \
+              --arg cb "https://${LARAVEL_HOST}/panel/auth/callback" \
+              --arg lo "https://${LARAVEL_HOST}/panel/login" \
+              --arg wo "https://${LARAVEL_HOST}" \
               '.redirectUris += [$cb] | ."attributes"."post.logout.redirect.uris" += ("+" + $lo) | .webOrigins += [$wo]')
             curl -sf -X PUT -H "Authorization: Bearer ${TOKEN}" -H "Content-Type: application/json" \
               -d "$UPDATED" "${KC}/admin/realms/pay/clients/${ID}" >/dev/null
+          done
+
+      # --- Sprawdź, że Ingress FAKTYCZNIE routuje (nie tylko "ma IP") —
+      # health check GKE dla podów bez zdrowej sondy potrafi wiecznie
+      # 502-ować mimo poprawnie wdrożonych podów (patrz readinessProbe
+      # /realms/master dodany do k8s/12-keycloak.yaml właśnie z tego
+      # powodu). -k: self-signed cert, nie ma się czym przejmować tutaj. ---
+      - name: Zweryfikuj routing Ingressa
+        run: |
+          IP="${{ steps.ingress.outputs.ip }}"
+          for HOST in "${{ steps.ingress.outputs.laravel_host }}" "${{ steps.ingress.outputs.keycloak_host }}" "${{ steps.ingress.outputs.api_host }}"; do
+            OK=""
+            for i in $(seq 1 30); do
+              CODE=$(curl -sk -o /dev/null -w "%{http_code}" --resolve "${HOST}:443:${IP}" "https://${HOST}/" --max-time 10 || true)
+              case "$CODE" in
+                200|301|302|401|403) OK=1; break ;;
+              esac
+              echo "Ingress jeszcze nie routuje do ${HOST} (HTTP ${CODE:-brak}), ponawiam za 10s..."
+              sleep 10
+            done
+            [ -n "$OK" ] || { echo "Ingress nie zaczął routować do ${HOST} w 5 minut"; exit 1; }
           done
 
       - name: Podsumowanie
@@ -334,11 +383,14 @@ jobs:
             echo ""
             echo "| Usługa | Adres |"
             echo "|---|---|"
-            echo "| Laravel (Storefront/panel) | http://${{ steps.laravel.outputs.sslip }}:8000 |"
-            echo "| api-gateway | http://${{ steps.api-gateway.outputs.sslip }}:8081 |"
-            echo "| Keycloak (login/admin) | http://${{ steps.keycloak.outputs.sslip }}:8180 |"
+            echo "| Laravel (Storefront/panel) | https://${{ steps.ingress.outputs.laravel_host }} |"
+            echo "| api-gateway | https://${{ steps.ingress.outputs.api_host }} |"
+            echo "| Keycloak (login/admin) | https://${{ steps.ingress.outputs.keycloak_host }} |"
             echo ""
-            echo "Login admina Keycloaka: \`admin\` / (patrz Secret \`keycloak-admin\` w namespace \`${{ steps.ns.outputs.name }}\`)."
+            echo "Certyfikat jest self-signed (środowisko testowe) — przeglądarka pokaże"
+            echo "ostrzeżenie \"połączenie nie jest prywatne\", kliknij Zaawansowane →"
+            echo "Przejdź do strony. Login admina Keycloaka: \`admin\` / (patrz Secret"
+            echo "\`keycloak-admin\` w namespace \`${{ steps.ns.outputs.name }}\`)."
             echo ""
             echo "_Uwaga: efemeryczne środowisko testuje wyłącznie tenant Storefront — patrz k8s/README.md._"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -353,10 +405,10 @@ jobs:
             });
             if (prs.data.length === 0) return;
             const body = [
-              `**Efemeryczne środowisko testowe gotowe** (zniknie po godzinie):`,
-              `- Laravel: http://${{ steps.laravel.outputs.sslip }}:8000`,
-              `- api-gateway: http://${{ steps.api-gateway.outputs.sslip }}:8081`,
-              `- Keycloak: http://${{ steps.keycloak.outputs.sslip }}:8180`,
+              `**Efemeryczne środowisko testowe gotowe** (zniknie po godzinie, cert self-signed — "Zaawansowane → Przejdź do strony"):`,
+              `- Laravel: https://${{ steps.ingress.outputs.laravel_host }}`,
+              `- api-gateway: https://${{ steps.ingress.outputs.api_host }}`,
+              `- Keycloak: https://${{ steps.ingress.outputs.keycloak_host }}`,
             ].join("\n");
             await github.rest.issues.createComment({
               owner: context.repo.owner, repo: context.repo.repo,

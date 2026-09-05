@@ -18,6 +18,7 @@ namespace: pay-ephemeral-placeholder
 
 resources:
   - ../../base
+  - ingress.yaml
 
 configMapGenerator:
   - name: keycloak-realm
@@ -76,6 +77,15 @@ patches:
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
       - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "150m", memory: "384Mi" } } }
 
+  # --- laravel-app/api-gateway/keycloak: ClusterIP zamiast LoadBalancer —
+  # wystawione teraz przez WSPÓLNY Ingress (ingress.yaml) na 443, nie po
+  # jednym LB/IP na usługę (patrz nagłówek pliku: port 8000/8081/8180
+  # blokowany przez część sieci komórkowych + oszczędność kwoty
+  # IN_USE_ADDRESSES). ---
+  - target: { kind: Service, name: api-gateway }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
+
   # --- Keycloak: realm z ConfigMapy (nie hostPath — nie istnieje na GKE),
   # losowe hasło admina z Secretu wytworzonego przez CI, resources.requests
   # (JVM Keycloaka potrzebuje więcej niż domyślne minimum Autopilota) ---
@@ -114,6 +124,11 @@ patches:
                     valueFrom: { secretKeyRef: { name: keycloak-admin, key: password } }
                   - name: KC_HOSTNAME
                     value: "PLACEHOLDER-ustawiane przez CI (kubectl set env) po poznaniu zewnetrznego IP"
+                  - name: KC_PROXY_HEADERS
+                    value: "xforwarded"
+  - target: { kind: Service, name: keycloak }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
 
   # --- Laravel: obraz z zapieczonym kodem (Dockerfile.ci) zamiast hostPath —
   # wolumeny repo/entrypoint znikają, vendor/storage jako emptyDir (środowisko
@@ -134,3 +149,12 @@ patches:
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_REALM, value: "pay" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_CLIENT_SECRET_GATEWAY, value: "PLACEHOLDER-ustawiane przez CI po pobraniu z Keycloak Admin API" } }
       - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: KEYCLOAK_CLIENT_SECRET_STOREFRONT, value: "PLACEHOLDER-ustawiane przez CI po pobraniu z Keycloak Admin API" } }
+      # TLS kończy się na Ingressie, do poda leci już zwykłe HTTP —
+      # bez zaufania nagłówkowi X-Forwarded-Proto Laravel myślałby, że
+      # cały ruch jest HTTP (błędne URL-e, cookie bez flagi Secure).
+      # Bezpieczne tu: to izolowany namespace/pod, "ufaj wszystkim" nie
+      # oznacza ufania realnym, nieznanym proxy jak na produkcji.
+      - { op: add, path: /spec/template/spec/containers/0/env/-, value: { name: TRUSTED_PROXIES, value: "*" } }
+  - target: { kind: Service, name: laravel-app }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
