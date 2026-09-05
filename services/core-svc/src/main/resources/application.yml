@@ -11,13 +11,14 @@ spring:
     username: core_svc
     password: core_svc
   jpa:
-    # Flyway jest jedynym właścicielem schematu — Hibernate tylko waliduje,
+    # Liquibase jest jedynym właścicielem schematu — Hibernate tylko waliduje,
     # że encje się z nim zgadzają (nigdy nie generuje/zmienia DDL sam).
     hibernate:
       ddl-auto: validate
     open-in-view: false
-  flyway:
+  liquibase:
     enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
 
 management:
   endpoints:
