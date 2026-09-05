@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-organizations
+      author: cms-svc
+      comment: >
+        Organizacja — byt nad kontem: jedno konto (Keycloak) może zarządzać
+        wieloma organizacjami. Właściciel = owner_keycloak_sub (string),
+        NIE numeryczny user_id z MySQL-owej tabeli Laravela — ta ma docelowo
+        zniknąć, więc nowy serwis nigdy się od niej nie uzależnia (ten sam
+        brak-FK-między-serwisami co core-svc/InitCode).
+      changes:
+        - createTable:
+            tableName: organizations
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: owner_keycloak_sub, type: varchar(64), constraints: { nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: handle, type: varchar(255), constraints: { nullable: false, unique: true, uniqueConstraintName: uk_organizations_handle } }
+              - column: { name: logo, type: varchar(255) }
+              # NULL = wszystkie sekcje widoczne (domyślnie, self-service toggle) — mirror
+              # Laravela (tam kolumna json). Przechowywane jako zwykły tekst (JSON
+              # zserializowany w cms-svc), nie natywny typ jsonb — prościej i pewniej
+              # zgodne z Hibernate ddl-auto=validate niż dopasowywanie @JdbcTypeCode(JSON).
+              - column: { name: enabled_sections, type: text }
+              - column: { name: created_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_organizations_owner_keycloak_sub
+            tableName: organizations
+            columns:
+              - column: { name: owner_keycloak_sub }

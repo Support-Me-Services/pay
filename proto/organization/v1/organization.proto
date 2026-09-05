@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package pay.organization.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.organization.v1";
+option java_outer_classname = "OrganizationProto";
+
+// Organizacja — byt nad kontem: jedno konto (Keycloak) może zarządzać
+// wieloma organizacjami. Właściciel = owner_keycloak_sub, NIE numeryczny
+// user_id z tabeli Laravela (ta ma docelowo zniknąć — patrz cms-svc README).
+// Root encja, od której zależą BeneficiaryNode/JobPosition/JobApplication/
+// ShopItem (wszystkie referują organization_id).
+service OrganizationService {
+  rpc Create(CreateOrganizationRequest) returns (OrganizationResponse);
+  rpc Update(UpdateOrganizationRequest) returns (OrganizationResponse);
+  rpc Delete(DeleteOrganizationRequest) returns (DeleteOrganizationResponse);
+  rpc Get(GetOrganizationRequest) returns (OrganizationResponse);
+  // Rozwiązanie po handle (slug) — publiczne strony /people/{handle}/...
+  rpc GetByHandle(GetOrganizationByHandleRequest) returns (OrganizationResponse);
+  rpc ListByOwner(ListOrganizationsByOwnerRequest) returns (ListOrganizationsResponse);
+}
+
+// NULL/unset (has_enabled_sections() == false) = wszystkie sekcje widoczne
+// (domyślnie) — pusta lista to CELOWO "brak żadnej sekcji", inny stan.
+message EnabledSections {
+  repeated string sections = 1;
+}
+
+message CreateOrganizationRequest {
+  string owner_keycloak_sub = 1;
+  string name = 2;
+  string handle = 3;
+  optional string logo = 4;
+}
+
+message UpdateOrganizationRequest {
+  int64 id = 1;
+  string owner_keycloak_sub = 2; // do weryfikacji własności
+  string name = 3;
+  optional string logo = 4;
+  EnabledSections enabled_sections = 5;
+}
+
+message DeleteOrganizationRequest {
+  int64 id = 1;
+  string owner_keycloak_sub = 2;
+}
+
+message DeleteOrganizationResponse {
+  bool deleted = 1;
+}
+
+message GetOrganizationRequest {
+  int64 id = 1;
+}
+
+message GetOrganizationByHandleRequest {
+  string handle = 1;
+}
+
+message ListOrganizationsByOwnerRequest {
+  string owner_keycloak_sub = 1;
+}
+
+message ListOrganizationsResponse {
+  repeated OrganizationResponse organizations = 1;
+}
+
+message OrganizationResponse {
+  int64 id = 1;
+  string owner_keycloak_sub = 2;
+  string name = 3;
+  string handle = 4;
+  optional string logo = 5;
+  EnabledSections enabled_sections = 6;
+}

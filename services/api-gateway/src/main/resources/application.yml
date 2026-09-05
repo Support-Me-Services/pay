@@ -5,6 +5,9 @@ pay:
   core-svc:
     grpc-host: localhost
     grpc-port: 9090
+  cms-svc:
+    grpc-host: localhost
+    grpc-port: 9093
   gateway-svc:
     # gateway-svc (Laravel/RoadRunner, PoC Fazy 1) żyje w OSOBNYM stacku
     # Dockera (docker/, nie ecosystem/) — patrz ecosystem/docker-compose.yml

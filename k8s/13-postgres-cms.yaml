@@ -1,0 +1,62 @@
+# Baza cms-svc — mirror 10-postgres-core.yaml (własna, dedykowana baza,
+# osobna od postgres-core/postgres-keycloak/db, jak ustalono w planie).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-cms-data
+  namespace: pay
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-cms
+  namespace: pay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-cms }
+  template:
+    metadata:
+      labels: { app: postgres-cms }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - { name: POSTGRES_DB, value: cms_svc }
+            - { name: POSTGRES_USER, value: cms_svc }
+            - { name: POSTGRES_PASSWORD, value: cms_svc }
+            # Podkatalog, NIE korzeń wolumenu — patrz komentarz w
+            # 10-postgres-core.yaml (lost+found na świeżych dyskach PD w chmurze).
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "cms_svc"]
+            periodSeconds: 5
+            failureThreshold: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-cms-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-cms
+  namespace: pay
+spec:
+  type: LoadBalancer
+  selector: { app: postgres-cms }
+  ports:
+    # 5432: port natywny Postgresa — tak cms-svc łączy się wewnątrz klastra.
+    - { name: internal, port: 5432, targetPort: 5432 }
+    # 5435: parytet z docker-compose (5435:5432) — dostęp z hosta (psql itp.).
+    - { name: host, port: 5435, targetPort: 5432 }

@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-shop-items
+      author: cms-svc
+      comment: >
+        Produkty sklepu donacyjnego (NFC). Każdy item ma minimalną kwotę
+        (grosze) i/lub stałą cenę, opcjonalne definiowalne podziękowanie,
+        oraz opcjonalnego "mecenasa" (samoodniesienie do organizations).
+        slug unikalny W OBRĘBIE organizacji, nie globalnie.
+      changes:
+        - createTable:
+            tableName: shop_items
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: organization_id, type: bigint, constraints: { nullable: true, foreignKeyName: fk_shop_items_organization, references: organizations(id) } }
+              - column: { name: slug, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: image, type: varchar(255) }
+              - column: { name: min_amount, type: integer, constraints: { nullable: false } }
+              - column: { name: price, type: integer }
+              - column: { name: description, type: text }
+              - column: { name: is_default, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: sort, type: integer, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: thank_you_heading, type: varchar(255) }
+              - column: { name: thank_you_body, type: text }
+              - column: { name: thank_you_image, type: varchar(255) }
+              - column: { name: mecenas_organization_id, type: bigint, constraints: { nullable: true, foreignKeyName: fk_shop_items_mecenas_organization, references: organizations(id) } }
+              - column: { name: created_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: shop_items
+            columnNames: organization_id, slug
+            constraintName: uk_shop_items_organization_slug

@@ -22,6 +22,8 @@ spec:
           env:
             - { name: PAY_CORE_SVC_GRPC_HOST, value: core-svc }
             - { name: PAY_CORE_SVC_GRPC_PORT, value: "9090" }
+            - { name: PAY_CMS_SVC_GRPC_HOST, value: cms-svc }
+            - { name: PAY_CMS_SVC_GRPC_PORT, value: "9093" }
             - { name: PAY_GATEWAY_SVC_GRPC_HOST, value: laravel-app }
             - { name: PAY_GATEWAY_SVC_GRPC_PORT, value: "9091" }
             - { name: PAY_KEYCLOAK_JWK_SET_URI, value: "http://keycloak:8080/realms/pay/protocol/openid-connect/certs" }

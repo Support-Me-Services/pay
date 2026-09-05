@@ -18,6 +18,20 @@ services:
       timeout: 5s
       retries: 20
 
+  postgres-cms:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: cms_svc
+      POSTGRES_USER: cms_svc
+      POSTGRES_PASSWORD: cms_svc
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cms_svc"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   postgres-keycloak:
     image: postgres:16
     environment:
@@ -66,6 +80,21 @@ services:
       postgres-core:
         condition: service_healthy
 
+  cms-svc:
+    build:
+      context: ..
+      dockerfile: services/cms-svc/Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-cms:5432/cms_svc
+      SPRING_DATASOURCE_USERNAME: cms_svc
+      SPRING_DATASOURCE_PASSWORD: cms_svc
+    ports:
+      - "8083:8083"
+      - "9093:9093"
+    depends_on:
+      postgres-cms:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: ..
@@ -73,6 +102,8 @@ services:
     environment:
       PAY_CORE_SVC_GRPC_HOST: core-svc
       PAY_CORE_SVC_GRPC_PORT: "9090"
+      PAY_CMS_SVC_GRPC_HOST: cms-svc
+      PAY_CMS_SVC_GRPC_PORT: "9093"
       # gateway-svc (Laravel/RoadRunner) żyje w OSOBNYM stacku (docker/, nie
       # tutaj) — host.docker.internal to Docker Desktop, nie nazwa serwisu.
       PAY_GATEWAY_SVC_GRPC_HOST: host.docker.internal
@@ -84,4 +115,5 @@ services:
       - "8081:8081"
     depends_on:
       - core-svc
+      - cms-svc
       - keycloak

@@ -1229,3 +1229,65 @@ bez końca, 752MB już po ~24 przebiegach jednego dnia):
 gcloud artifacts repositories set-cleanup-policies pay --location=europe-central2 \
   --project=please-support-me-test1 --policy=<plik.json>
 ```
+
+## Faza 6 (2026-09-05): `cms-svc` — pierwszy krok w kierunku zniknięcia PHP
+
+Użytkownik zdecydował docelowo wyeliminować **cały PHP** z projektu —
+Laravel ma zostać w całości zastąpiony serwisami Java (wzorem `core-svc`)
++ frontendem w `web/` (Next.js). To duży, wieloetapowy program; `cms-svc`
+to jego pierwszy realny krok. Kluczowe decyzje (przez pytania
+doprecyzowujące, `feature/cms-svc`):
+
+- **Strategia: big-bang**, nie moduł-po-module jak przy InitCode — budujemy
+  komplet nowych serwisów równolegle do działającego Laravela, jedno duże
+  wdrożenie na koniec przełącza wszystko naraz. Ścieżka wdrożenia
+  produkcyjnego dla usług JVM (VPS = nginx+PHP-FPM, zero Dockera/JVM) i
+  przepisanie frontendu na `web/` są świadomie odłożone — nie blokują
+  budowy serwisów teraz.
+- `cms-svc` = **Organization, BeneficiaryNode, JobPosition+JobApplication
+  (kariery), ShopItem, Lead** — przeniesione z `app/Modules/Storefront` i
+  `app/Modules/Gateway::Lead`. Płatności/transakcje/tagi (Gateway) i
+  Cart/Order/checkout (Storefront) ZOSTAJĄ w Laravelu — przyszłe, osobne
+  kroki tego samego programu.
+- **Świadoma różnica względem `core-svc`**: schemat zarządzany przez
+  **Liquibase** (`src/main/resources/db/changelog/`), nie Flyway — wybór
+  użytkownika, nie pomyłka. `hibernate.ddl-auto: validate` (Liquibase
+  jedynym właścicielem schematu) tak samo jak we Flywayu w `core-svc`.
+- **Własność encji = `owner_keycloak_sub` (string), NIE numeryczny
+  `user_id`** z MySQL-owej tabeli Laravela (`organizations.user_id` w
+  źródle). Ta tabela ma docelowo zniknąć razem z resztą PHP — nowy serwis
+  nigdy nie powinien się od niej uzależniać. Ten sam brak-FK-między-
+  serwisami co już w `core-svc`/`InitCode` (żadnych realnych kluczy obcych
+  do tabel spoza własnej bazy Postgres serwisu).
+- Port REST `8083`, gRPC `9093` (8081/8082=api-gateway/core-svc,
+  9090/9091=core-svc/gateway-svc zajęte), własna baza `postgres-cms`
+  (`localhost:5435` lokalnie, port `5435` też w k8s Service dla parytetu).
+- Struktura kodu identyczna z `core-svc` (mirror `coresvc/initcode/` →
+  `cmssvc/{organization,beneficiary,career,shopitem,lead}/`), 5 nowych
+  kontraktów gRPC (`proto/{organization,beneficiary,career,shopitem,lead}/v1/`),
+  integracja w `api-gateway` przez `grpc/CmsSvcGrpcConfig.java` +
+  `Internal*Controller` per dziedzina pod `/internal/v1/**` — WYŁĄCZNIE do
+  wywołania przez Laravel w trakcie okresu przejściowego (ten sam
+  `X-Internal-Api-Key` mechanizm co `/internal/v1/init-codes`, patrz
+  `SecurityConfig`/`InternalApiKeyFilter` — pasują automatycznie, bez zmian,
+  bo matchują cały prefiks `/internal/`).
+- `enabled_sections` (JSON w Laravelu) przechowywane w cms-svc jako zwykła
+  kolumna `text` z ręczną (de)serializacją JSON przez Jackson w
+  `OrganizationGrpcService`, NIE natywny typ Postgres `jsonb` z
+  `@JdbcTypeCode(SqlTypes.JSON)` — prostszy, przewidywalny wybór pod
+  `hibernate.ddl-auto: validate` (unika ryzyka niezgodności typu przy
+  starcie), pełnoprawny json na poziomie proto (`EnabledSections` message,
+  `repeated string`) nie jest tym ruszany.
+
+**Stan weryfikacji**: `mvn -DskipTests package` przechodzi czysto dla
+`cms-svc` i `api-gateway` (kompilacja, w tym codegen gRPC dla 5 nowych
+kontraktów proto) — potwierdzone. **Weryfikacja end-to-end (Postgres +
+realny round-trip REST→gRPC→JPA przez wszystkie 5 dziedzin) świadomie
+NIE wykonana w tej sesji** — Docker Desktop był celowo wyłączony (oszczędzanie
+zasobów), użytkownik wybrał zostawić to na kompilacji i zweryfikować żywym
+testem samodzielnie później. **Przed pierwszym prawdziwym użyciem
+koniecznie odpalić**: `docker compose up -d postgres-cms cms-svc
+api-gateway` w `ecosystem/`, sprawdzić `/actuator/health` obu serwisów, i
+przejść przez `curl` co najmniej jedną mutację (Create) na każdej z 5
+dziedzin przez `/internal/v1/**` na api-gateway — dokładnie jak przy
+InitCode w Fazie 5.

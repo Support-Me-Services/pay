@@ -1,0 +1,17 @@
+databaseChangeLog:
+  # Greenfield baza — budujemy docelowy kształt tabel wprost, jeden changelog
+  # = jedna tabela w jej FINALNEJ postaci, bez replikowania historii
+  # kolejnych ALTER-i z migracji Laravela (tamta historia jest udokumentowana
+  # w planie/claude/marcin, nie musi się tu powtarzać krok po kroku).
+  - include:
+      file: db/changelog/changes/001-create-organizations.yaml
+  - include:
+      file: db/changelog/changes/002-create-beneficiary-nodes.yaml
+  - include:
+      file: db/changelog/changes/003-create-job-positions.yaml
+  - include:
+      file: db/changelog/changes/004-create-job-applications.yaml
+  - include:
+      file: db/changelog/changes/005-create-shop-items.yaml
+  - include:
+      file: db/changelog/changes/006-create-leads.yaml

@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-job-applications
+      author: cms-svc
+      comment: >
+        Zgłoszenia rekrutacyjne (aplikacje na oferty pracy) wraz z CV.
+        job_position_id = NULL oznacza aplikację spontaniczną — ta MIMO TO
+        ma właściciela (organization_id ustawiany niezależnie).
+      changes:
+        - createTable:
+            tableName: job_applications
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: job_position_id, type: bigint, constraints: { nullable: true, foreignKeyName: fk_job_applications_job_position, references: job_positions(id) } }
+              - column: { name: organization_id, type: bigint, constraints: { nullable: true, foreignKeyName: fk_job_applications_organization, references: organizations(id) } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: email, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: phone, type: varchar(50) }
+              - column: { name: message, type: text }
+              - column: { name: cv_path, type: varchar(255) }
+              - column: { name: cv_original_name, type: varchar(255) }
+              - column: { name: is_read, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(20), defaultValue: pending, constraints: { nullable: false } }
+              - column: { name: future_recruitment_consent, type: boolean, defaultValueBoolean: false, constraints: { nullable: false } }
+              - column: { name: future_recruitment_consent_at, type: "timestamptz" }
+              - column: { name: created_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_job_applications_organization_id
+            tableName: job_applications
+            columns:
+              - column: { name: organization_id }
+        - createIndex:
+            indexName: idx_job_applications_status
+            tableName: job_applications
+            columns:
+              - column: { name: status }

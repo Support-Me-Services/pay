@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package pay.beneficiary.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.beneficiary.v1";
+option java_outer_classname = "BeneficiaryProto";
+
+// Węzły podstrony "Wspieramy"/"O nas" (organization_id, nullable — mirror
+// Laravela) — edytowalne z panelu, kolejność (position) ustawiana
+// przeciąganiem.
+service BeneficiaryNodeService {
+  rpc Create(CreateBeneficiaryNodeRequest) returns (BeneficiaryNodeResponse);
+  rpc Update(UpdateBeneficiaryNodeRequest) returns (BeneficiaryNodeResponse);
+  rpc Delete(DeleteBeneficiaryNodeRequest) returns (DeleteBeneficiaryNodeResponse);
+  rpc ListByOrganization(ListBeneficiaryNodesRequest) returns (ListBeneficiaryNodesResponse);
+}
+
+message CreateBeneficiaryNodeRequest {
+  optional int64 organization_id = 1;
+  string heading = 2;
+  optional string image = 3;
+  string image_side = 4;   // left | right
+  int32 image_scale = 5;   // % (100 = dopasowanie)
+  int32 image_x = 6;       // przesunięcie poziome %
+  int32 image_y = 7;       // przesunięcie pionowe %
+  string text_align = 8;   // left | center | right
+  optional string body_html = 9;
+  int32 position = 10;
+}
+
+message UpdateBeneficiaryNodeRequest {
+  int64 id = 1;
+  optional int64 organization_id = 2; // do weryfikacji własności
+  string heading = 3;
+  optional string image = 4;
+  string image_side = 5;
+  int32 image_scale = 6;
+  int32 image_x = 7;
+  int32 image_y = 8;
+  string text_align = 9;
+  optional string body_html = 10;
+  int32 position = 11;
+  bool active = 12;
+}
+
+message DeleteBeneficiaryNodeRequest {
+  int64 id = 1;
+  optional int64 organization_id = 2;
+}
+
+message DeleteBeneficiaryNodeResponse {
+  bool deleted = 1;
+}
+
+message ListBeneficiaryNodesRequest {
+  optional int64 organization_id = 1;
+  bool active_only = 2; // publiczne strony chcą tylko active=true
+}
+
+message ListBeneficiaryNodesResponse {
+  repeated BeneficiaryNodeResponse nodes = 1;
+}
+
+message BeneficiaryNodeResponse {
+  int64 id = 1;
+  optional int64 organization_id = 2;
+  string heading = 3;
+  optional string image = 4;
+  string image_side = 5;
+  int32 image_scale = 6;
+  int32 image_x = 7;
+  int32 image_y = 8;
+  string text_align = 9;
+  optional string body_html = 10;
+  int32 position = 11;
+  bool active = 12;
+}

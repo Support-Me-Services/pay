@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package pay.shopitem.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.shopitem.v1";
+option java_outer_classname = "ShopItemProto";
+
+// Produkty sklepu donacyjnego (NFC) — slug unikalny W OBRĘBIE organizacji,
+// nie globalnie (mirror Laravela). GetBySlug jest publiczne — używane przez
+// strony sklepu i przez rozwiązywanie skanów NFC/QR (patrz core-svc/InitCode
+// -> Resolve, którego target_id dla SHOP_ITEM trafia tutaj po szczegóły).
+service ShopItemService {
+  rpc Create(CreateShopItemRequest) returns (ShopItemResponse);
+  rpc Update(UpdateShopItemRequest) returns (ShopItemResponse);
+  rpc Delete(DeleteShopItemRequest) returns (DeleteShopItemResponse);
+  rpc Get(GetShopItemRequest) returns (ShopItemResponse);
+  rpc GetBySlug(GetShopItemBySlugRequest) returns (ShopItemResponse);
+  rpc ListByOrganization(ListShopItemsRequest) returns (ListShopItemsResponse);
+}
+
+message CreateShopItemRequest {
+  optional int64 organization_id = 1;
+  string slug = 2;
+  string name = 3;
+  optional string image = 4;
+  int32 min_amount = 5;
+  optional int32 price = 6;
+  optional string description = 7;
+  bool is_default = 8;
+  int32 sort = 9;
+}
+
+message UpdateShopItemRequest {
+  int64 id = 1;
+  optional int64 organization_id = 2; // do weryfikacji własności
+  string slug = 3;
+  string name = 4;
+  optional string image = 5;
+  int32 min_amount = 6;
+  optional int32 price = 7;
+  optional string description = 8;
+  bool is_default = 9;
+  bool active = 10;
+  int32 sort = 11;
+  optional string thank_you_heading = 12;
+  optional string thank_you_body = 13;
+  optional string thank_you_image = 14;
+  optional int64 mecenas_organization_id = 15;
+}
+
+message DeleteShopItemRequest {
+  int64 id = 1;
+  optional int64 organization_id = 2;
+}
+
+message DeleteShopItemResponse {
+  bool deleted = 1;
+}
+
+message GetShopItemRequest {
+  int64 id = 1;
+}
+
+message GetShopItemBySlugRequest {
+  int64 organization_id = 1;
+  string slug = 2;
+}
+
+message ListShopItemsRequest {
+  optional int64 organization_id = 1;
+  bool active_only = 2;
+}
+
+message ListShopItemsResponse {
+  repeated ShopItemResponse items = 1;
+}
+
+message ShopItemResponse {
+  int64 id = 1;
+  optional int64 organization_id = 2;
+  string slug = 3;
+  string name = 4;
+  optional string image = 5;
+  int32 min_amount = 6;
+  optional int32 price = 7;
+  optional string description = 8;
+  bool is_default = 9;
+  bool active = 10;
+  int32 sort = 11;
+  optional string thank_you_heading = 12;
+  optional string thank_you_body = 13;
+  optional string thank_you_image = 14;
+  optional int64 mecenas_organization_id = 15;
+}

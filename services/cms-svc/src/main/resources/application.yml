@@ -1,0 +1,31 @@
+server:
+  port: 8083
+
+grpc:
+  server:
+    port: 9093
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5435/cms_svc
+    username: cms_svc
+    password: cms_svc
+  jpa:
+    # Liquibase jest jedynym właścicielem schematu — Hibernate tylko
+    # waliduje, że encje się z nim zgadzają (ta sama zasada co we Flywayu
+    # w core-svc, inne narzędzie migracji).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-leads
+      author: cms-svc
+      comment: >
+        Leady ze strony lądowania Gatewaya — jeden globalny formularz
+        kontaktowy, BEZ właściciela/organizacji (mirror 1:1 tabeli `leads`
+        z app/Modules/Gateway).
+      changes:
+        - createTable:
+            tableName: leads
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: email, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: phone, type: varchar(50), constraints: { nullable: false } }
+              - column: { name: company, type: varchar(255) }
+              - column: { name: message, type: text, constraints: { nullable: false } }
+              - column: { name: created_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }

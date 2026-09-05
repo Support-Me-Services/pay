@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-beneficiary-nodes
+      author: cms-svc
+      comment: >
+        Węzły podstrony "Wspieramy"/"O nas" — edytowalne z panelu. Każdy
+        węzeł: nagłówek + grafika (po lewej/prawej, z kadrowaniem) + tekst
+        (rich text HTML), kolejność ustawiana przeciąganiem w panelu.
+      changes:
+        - createTable:
+            tableName: beneficiary_nodes
+            columns:
+              - column: { name: id, type: bigint, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: organization_id, type: bigint, constraints: { nullable: true, foreignKeyName: fk_beneficiary_nodes_organization, references: organizations(id) } }
+              - column: { name: heading, type: varchar(255), constraints: { nullable: false } }
+              - column: { name: image, type: varchar(255) }
+              - column: { name: image_side, type: varchar(10), defaultValue: left, constraints: { nullable: false } }
+              - column: { name: image_scale, type: smallint, defaultValueNumeric: 100, constraints: { nullable: false } }
+              - column: { name: image_x, type: smallint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: image_y, type: smallint, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: text_align, type: varchar(10), defaultValue: left, constraints: { nullable: false } }
+              - column: { name: body_html, type: text }
+              - column: { name: position, type: integer, defaultValueNumeric: 0, constraints: { nullable: false } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: created_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+              - column: { name: updated_at, type: "timestamptz", defaultValueComputed: now(), constraints: { nullable: false } }
+        - createIndex:
+            indexName: idx_beneficiary_nodes_organization_id
+            tableName: beneficiary_nodes
+            columns:
+              - column: { name: organization_id }
