@@ -100,6 +100,17 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/resources
         value: { requests: { cpu: "150m", memory: "768Mi" } }
+      # Recreate zamiast domyślnego RollingUpdate — CI restartuje Keycloaka
+      # (kubectl set env KC_HOSTNAME) PO pierwszym starcie, a RollingUpdate
+      # chce chwilowo mieć DWA pody Keycloaka naraz (maxSurge=25% przy 1
+      # replice zaokrągla w górę do 1) — przy tak wąskim budżecie CPU
+      # (globalna kwota CPUS-ALL-REGIONS, patrz claude/marcin) nowy pod
+      # nigdy się nie mieści, stary nigdy nie ginie, restart wisi w
+      # nieskończoność. Kilka sekund przerwy w automatyzacji CI (nikt
+      # jeszcze nie testuje) to nieistotny koszt.
+      - op: add
+        path: /spec/strategy
+        value: { type: Recreate }
   # Zmiana env po NAZWIE (merge strategiczny), nie po indeksie — indeksy w
   # k8s/12-keycloak.yaml są kruche (już raz się pomyliłem licząc ręcznie).
   # KEYCLOAK_ADMIN_PASSWORD: z wygenerowanego przez CI Secretu, nie "admin"
