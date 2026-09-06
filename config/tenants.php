@@ -20,6 +20,12 @@ return [
         'localhost'                   => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH'), 'keycloak_client_id' => 'laravel-panel-storefront', 'keycloak_client_secret' => env('KEYCLOAK_CLIENT_SECRET_STOREFRONT')],
         'please-support-me.com'       => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH'), 'keycloak_client_id' => 'laravel-panel-storefront', 'keycloak_client_secret' => env('KEYCLOAK_CLIENT_SECRET_STOREFRONT')],
         'stage.please-support-me.com' => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH'), 'keycloak_client_id' => 'laravel-panel-storefront', 'keycloak_client_secret' => env('KEYCLOAK_CLIENT_SECRET_STOREFRONT')],
+        // Faza 8 — domena testowa dla nowego środowiska produkcyjnego
+        // (support-me-prod/pay-prod), CAŁKOWICIE osobna od please-support-me.com
+        // (inny TLD, inny rejestrator — home.pl) — zero współdzielonej strefy DNS
+        // ze starą produkcją, testowanie bez żadnego ryzyka dla dzisiejszych
+        // użytkowników. Patrz .claude/plans/fluffy-frolicking-galaxy.md.
+        'please-support-me.eu'        => ['module' => 'storefront', 'kind' => 'church', 'db' => 'nfc_shop1', 'gateway_api_key' => env('GATEWAY_API_KEY_CHURCH'), 'keycloak_client_id' => 'laravel-panel-storefront', 'keycloak_client_secret' => env('KEYCLOAK_CLIENT_SECRET_STOREFRONT')],
         'pay.please-support-me.com'   => ['module' => 'gateway',    'kind' => null,     'db' => 'nfc_pay',   'gateway_api_key' => null, 'keycloak_client_id' => 'laravel-panel-gateway', 'keycloak_client_secret' => env('KEYCLOAK_CLIENT_SECRET_GATEWAY')],
     ],
 

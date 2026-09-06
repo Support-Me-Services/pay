@@ -1,0 +1,36 @@
+# Faza 8 — Ingress publiczny TYLKO dla domeny testowej please-support-me.eu
+# (home.pl, całkowicie osobna od please-support-me.com — zero współdzielonej
+# strefy DNS ze starą produkcją). Certyfikat zarządzany przez Google (auto-
+# odnawialny), wymaga działającego DNS wskazującego na zarezerwowany IP
+# PRZED wystawieniem (walidacja domeny). Patrz
+# .claude/plans/fluffy-frolicking-galaxy.md — świadomie NIE dotyczy
+# pay.please-support-me.com/please-support-me.com (to Faza 8.5, osobna
+# decyzja, realny ruch produkcyjny).
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: please-support-me-eu-cert
+spec:
+  domains:
+    - please-support-me.eu
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: please-support-me-eu-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "please-support-me-eu-ip"
+    networking.gke.io/managed-certificates: "please-support-me-eu-cert"
+spec:
+  rules:
+    - host: please-support-me.eu
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: laravel
+                port:
+                  number: 8000
