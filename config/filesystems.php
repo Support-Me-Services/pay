@@ -33,7 +33,16 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // 'serve' WYŁĄCZONE: framework auto-rejestruje trasę
+            // `GET storage/{path}` do serwowania TEGO dysku, kolidującą
+            // 1:1 z naszą własną `routes/web.php` (proxy dysku 'public' do
+            // GCS pod tym samym URL-em, patrz komentarz tam) — złapane na
+            // żywo: nasza trasa nigdy nie była osiągalna, framework
+            // przechwytywał żądanie pierwszy. Dysk 'local' (prywatne CV) i
+            // tak nigdy nie był serwowany tą generyczną trasą — pobieranie
+            // idzie przez dedykowaną, kontrolowaną logikę w
+            // ApplicationController (autoryzacja, nie goły URL).
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
