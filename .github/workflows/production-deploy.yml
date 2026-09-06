@@ -1,0 +1,159 @@
+# Faza 8.3 — pipeline CI/CD dla produkcji (support-me-prod, klaster pay-prod).
+# Osobny plik od ephemeral-env.yml (ten dalej obsługuje feature/** →
+# please-support-me-test1, bez zmian). Patrz .claude/plans/fluffy-frolicking-galaxy.md.
+#
+# Zakres tej wersji (Faza 8.3, scaffolding): backup → build/push → Liquibase
+# update (expand-only) → deploy. CELOWO bez mechanizmu blue-green/przełączania
+# ruchu (Faza 8.4) — dziś jeden Deployment per usługa, rolling update.
+# Realny ruch publiczny nadal idzie przez stary VM (Faza 8.5, osobna decyzja).
+#
+# Trigger: push do brancha `release` (docelowo tylko przez merge z
+# release-<wersja>, patrz plan — restrykcja branch protection to osobny krok).
+on:
+  push:
+    branches: [release]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  PROJECT_ID: support-me-prod
+  REGION: europe-central2
+  CLUSTER: pay-prod
+  REGISTRY: europe-central2-docker.pkg.dev/support-me-prod/pay
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ustal wersję (SHA skróconego commita)
+        id: version
+        run: echo "version=$(echo ${{ github.sha }} | cut -c1-12)" >> "$GITHUB_OUTPUT"
+
+      - name: Uwierzytelnienie GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER_PROD }}
+          service_account: github-ci@support-me-prod.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Dane uwierzytelniające klastra
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER }}
+          location: ${{ env.REGION }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Backup wszystkich baz PRZED czymkolwiek innym
+        run: |
+          set -euo pipefail
+          for instance in nfc-postgres-prod core-svc-db keycloak-db; do
+            echo "Backup $instance..."
+            gcloud sql backups create --instance="$instance" --project="$PROJECT_ID" --async
+          done
+          # --async: trzy backupy naraz, bez czekania sekwencyjnie — ale
+          # musimy poczekać, aż WSZYSTKIE się faktycznie skończą, zanim ruszymy
+          # dalej (deploy nie powinien wyprzedzić potwierdzonego backupu).
+          for instance in nfc-postgres-prod core-svc-db keycloak-db; do
+            echo "Czekam na backup $instance..."
+            for i in $(seq 1 30); do
+              status=$(gcloud sql backups list --instance="$instance" --project="$PROJECT_ID" \
+                --sort-by=~startTime --limit=1 --format="value(status)")
+              [ "$status" = "SUCCESSFUL" ] && break
+              [ "$status" = "FAILED" ] && { echo "Backup $instance FAILED"; exit 1; }
+              sleep 20
+            done
+            [ "$status" = "SUCCESSFUL" ] || { echo "Backup $instance nie skończył się na czas"; exit 1; }
+          done
+
+      - name: Docker auth do Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build + push core-svc
+        run: |
+          docker build -t ${{ env.REGISTRY }}/core-svc:${{ steps.version.outputs.version }} \
+            -f services/core-svc/Dockerfile .
+          docker push ${{ env.REGISTRY }}/core-svc:${{ steps.version.outputs.version }}
+
+      - name: Build + push api-gateway
+        run: |
+          docker build -t ${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }} \
+            -f services/api-gateway/Dockerfile .
+          docker push ${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }}
+
+      - name: Build + push laravel + laravel-ssr
+        run: |
+          docker build -t ${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }} \
+            -f docker/Dockerfile.prod .
+          docker push ${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }}
+          docker build --target frontend -t ${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }} \
+            -f docker/Dockerfile.prod .
+          docker push ${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }}
+
+      - name: Liquibase update (expand-only) — nfc_pay, nfc_shop1, core-svc-db
+        run: |
+          set -euo pipefail
+          kubectl create configmap release-changelogs-$GITHUB_RUN_ID \
+            --from-file=nfc_pay.xml=db/liquibase/postgres/nfc_pay.xml \
+            --from-file=nfc_shop1.xml=db/liquibase/postgres/nfc_shop1.xml \
+            --from-file=core-svc.xml=services/core-svc/src/main/resources/db/changelog/db.changelog-master.xml
+          # Job w klastrze — jedyny sposób dotarcia do Cloud SQL po prywatnym IP
+          # z poziomu tego runnera (GitHub Actions nie jest w VPC).
+          cat <<EOF | kubectl apply -f -
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: liquibase-update-$GITHUB_RUN_ID
+          spec:
+            backoffLimit: 0
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: liquibase
+                    image: liquibase/liquibase:4.29
+                    command: ["bash", "-c"]
+                    args:
+                      - |
+                        set -e
+                        liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_pay --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_pay.xml update
+                        liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_shop1 --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_shop1.xml update
+                        liquibase --url=jdbc:postgresql://10.208.0.7:5432/core_svc --username=core_svc --password="\$CORE_SVC_PW" --search-path=/changelogs --changelog-file=core-svc.xml update
+                    env:
+                      - name: NFC_PAY_PW
+                        valueFrom: { secretKeyRef: { name: laravel-db, key: password } }
+                      - name: CORE_SVC_PW
+                        valueFrom: { secretKeyRef: { name: core-svc-db, key: password } }
+                    volumeMounts:
+                      - name: changelogs
+                        mountPath: /changelogs
+                volumes:
+                  - name: changelogs
+                    configMap:
+                      name: release-changelogs-$GITHUB_RUN_ID
+          EOF
+          kubectl wait --for=condition=complete --timeout=300s job/liquibase-update-$GITHUB_RUN_ID || \
+            (kubectl logs job/liquibase-update-$GITHUB_RUN_ID; exit 1)
+          kubectl logs job/liquibase-update-$GITHUB_RUN_ID
+          kubectl delete job liquibase-update-$GITHUB_RUN_ID
+          kubectl delete configmap release-changelogs-$GITHUB_RUN_ID
+
+      - name: Deploy (rolling update — BEZ blue-green, patrz Faza 8.4)
+        run: |
+          kubectl set image deployment/core-svc core-svc=${{ env.REGISTRY }}/core-svc:${{ steps.version.outputs.version }}
+          kubectl set image deployment/api-gateway api-gateway=${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }}
+          kubectl set image deployment/laravel laravel=${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }} laravel-ssr=${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }}
+          kubectl rollout status deployment/core-svc --timeout=300s
+          kubectl rollout status deployment/api-gateway --timeout=300s
+          kubectl rollout status deployment/laravel --timeout=300s
+
+      - name: Smoke test (wewnętrzny, przez pod api-gateway)
+        run: |
+          POD=$(kubectl get pods -l app=api-gateway -o jsonpath='{.items[0].metadata.name}')
+          kubectl exec "$POD" -- curl -sf localhost:8081/api/v1/health | tee /dev/stderr | \
+            grep -q '"coreSvc":{"status":"SERVING"' && \
+            grep -q '"gatewaySvc":{"status":"SERVING"' <<< "$(kubectl exec "$POD" -- curl -s localhost:8081/api/v1/health)"
