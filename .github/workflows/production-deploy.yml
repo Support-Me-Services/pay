@@ -154,7 +154,7 @@ jobs:
                         - key: core-svc-001.xml
                           path: db/changelog/changesets/001-create-init-codes.xml
           EOF
-          kubectl wait --for=condition=complete --timeout=300s job/liquibase-update-$GITHUB_RUN_ID || \
+          kubectl wait --for=condition=complete --timeout=600s job/liquibase-update-$GITHUB_RUN_ID || \
             (kubectl logs job/liquibase-update-$GITHUB_RUN_ID; exit 1)
           kubectl logs job/liquibase-update-$GITHUB_RUN_ID
 
