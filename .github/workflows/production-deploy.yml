@@ -101,7 +101,8 @@ jobs:
           kubectl create configmap release-changelogs-$GITHUB_RUN_ID \
             --from-file=nfc_pay.xml=db/liquibase/postgres/nfc_pay.xml \
             --from-file=nfc_shop1.xml=db/liquibase/postgres/nfc_shop1.xml \
-            --from-file=core-svc.xml=services/core-svc/src/main/resources/db/changelog/db.changelog-master.xml
+            --from-file=core-svc-master.xml=services/core-svc/src/main/resources/db/changelog/db.changelog-master.xml \
+            --from-file=core-svc-001.xml=services/core-svc/src/main/resources/db/changelog/changesets/001-create-init-codes.xml
           # Job w klastrze — jedyny sposób dotarcia do Cloud SQL po prywatnym IP
           # z poziomu tego runnera (GitHub Actions nie jest w VPC).
           cat <<EOF | kubectl apply -f -
@@ -123,7 +124,7 @@ jobs:
                         set -e
                         liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_pay --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_pay.xml update
                         liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_shop1 --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_shop1.xml update
-                        liquibase --url=jdbc:postgresql://10.208.0.7:5432/core_svc --username=core_svc --password="\$CORE_SVC_PW" --search-path=/changelogs --changelog-file=core-svc.xml update
+                        liquibase --url=jdbc:postgresql://10.208.0.7:5432/core_svc --username=core_svc --password="\$CORE_SVC_PW" --search-path=/changelogs --changelog-file=db/changelog/db.changelog-master.xml update
                     env:
                       - name: NFC_PAY_PW
                         valueFrom: { secretKeyRef: { name: laravel-db, key: password } }
@@ -136,12 +137,32 @@ jobs:
                   - name: changelogs
                     configMap:
                       name: release-changelogs-$GITHUB_RUN_ID
+                      # Remapowanie \`path\` na strukturę katalogów DOKŁADNIE
+                      # zgodną z tym, czego używa aplikacja przez classpath
+                      # (services/core-svc/src/main/resources/db/changelog/...)
+                      # — Liquibase zapisuje changeset pod ścieżką pliku jako
+                      # jego tożsamość w databasechangelog; niezgodność tu
+                      # spowodowałaby próbę odtworzenia już istniejącej tabeli
+                      # (dokładnie ten błąd, który już raz złapaliśmy ręcznie).
+                      items:
+                        - key: nfc_pay.xml
+                          path: nfc_pay.xml
+                        - key: nfc_shop1.xml
+                          path: nfc_shop1.xml
+                        - key: core-svc-master.xml
+                          path: db/changelog/db.changelog-master.xml
+                        - key: core-svc-001.xml
+                          path: db/changelog/changesets/001-create-init-codes.xml
           EOF
           kubectl wait --for=condition=complete --timeout=300s job/liquibase-update-$GITHUB_RUN_ID || \
             (kubectl logs job/liquibase-update-$GITHUB_RUN_ID; exit 1)
           kubectl logs job/liquibase-update-$GITHUB_RUN_ID
-          kubectl delete job liquibase-update-$GITHUB_RUN_ID
-          kubectl delete configmap release-changelogs-$GITHUB_RUN_ID
+
+      - name: Sprzątanie Joba/ConfigMap Liquibase (zawsze, nawet po błędzie)
+        if: always()
+        run: |
+          kubectl delete job liquibase-update-$GITHUB_RUN_ID --ignore-not-found
+          kubectl delete configmap release-changelogs-$GITHUB_RUN_ID --ignore-not-found
 
       - name: Deploy (rolling update — BEZ blue-green, patrz Faza 8.4)
         run: |
