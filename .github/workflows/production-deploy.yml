@@ -164,11 +164,28 @@ jobs:
           kubectl delete job liquibase-update-$GITHUB_RUN_ID --ignore-not-found
           kubectl delete configmap release-changelogs-$GITHUB_RUN_ID --ignore-not-found
 
-      - name: Deploy (rolling update — BEZ blue-green, patrz Faza 8.4)
+      - name: Deploy (kubectl apply pełnych manifestów — NIE tylko `set image`)
+        # `kubectl set image` samo w sobie NIE stosuje żadnej innej zmiany z
+        # manifestu (env, resources, probes...) — złapane na żywo: zmiana env
+        # var (KEYCLOAK_BASE_URL) w pliku nigdy nie trafiła do poda, dopóki
+        # ktoś ręcznie nie zrobił pełnego `kubectl apply`. `sed` podstawia
+        # wersję w miejscu tagu `:latest`-podobnego placeholdera w plikach —
+        # pliki w repo NIE mają wpisanej wersji na stałe (są `git`-owe źródło
+        # prawdy dla WSZYSTKIEGO poza samym tagiem obrazu).
         run: |
-          kubectl set image deployment/core-svc core-svc=${{ env.REGISTRY }}/core-svc:${{ steps.version.outputs.version }}
-          kubectl set image deployment/api-gateway api-gateway=${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }}
-          kubectl set image deployment/laravel laravel=${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }} laravel-ssr=${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }}
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          for f in k8s/overlays/production/10-keycloak.yaml \
+                   k8s/overlays/production/20-core-svc.yaml \
+                   k8s/overlays/production/21-api-gateway.yaml \
+                   k8s/overlays/production/30-laravel.yaml; do
+            sed -E \
+              -e "s#(/core-svc):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
+              -e "s#(/api-gateway):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
+              -e "s#(/laravel-ssr):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
+              -e "s#(/laravel):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
+              "$f" | kubectl apply -f -
+          done
           kubectl rollout status deployment/core-svc --timeout=600s
           kubectl rollout status deployment/api-gateway --timeout=600s
           kubectl rollout status deployment/laravel --timeout=600s
