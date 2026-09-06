@@ -1,0 +1,139 @@
+# Produkcja (support-me-prod) — Laravel, krok pośredni Fazy 8.2 (patrz
+# .claude/plans/fluffy-frolicking-galaxy.md i docker/Dockerfile.prod).
+# Kontener `laravel` = PHP (artisan serve) + rr serve (gRPC) w tle, jak dziś
+# lokalnie — docelowy podział na PHP-FPM+nginx to osobna praca przed Fazą 8.5.
+# Kontener `laravel-ssr` = ten sam obraz, komenda node bootstrap/ssr/ssr.js —
+# INERTIA_SSR_URL domyślnie 127.0.0.1:13714, działa bez dodatkowego env,
+# bo oba kontenery dzielą network namespace poda.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel
+  labels:
+    app: laravel
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: laravel
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      serviceAccountName: pay-workload
+      containers:
+        - name: laravel
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/laravel:v2
+          ports:
+            - containerPort: 8000
+            - containerPort: 9091
+          env:
+            - name: APP_ENV
+              value: production
+            - name: APP_DEBUG
+              value: "false"
+            - name: APP_URL
+              value: "http://localhost"
+            - name: APP_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: laravel-app
+                  key: app_key
+            - name: TENANT
+              value: please-support-me.com
+            - name: DB_CONNECTION
+              value: pgsql
+            - name: DB_HOST
+              value: "127.0.0.1"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_DATABASE
+              value: nfc_shop1
+            - name: DB_GATEWAY_DATABASE
+              value: nfc_pay
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: laravel-db
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: laravel-db
+                  key: password
+            - name: DB_SSLMODE
+              value: disable
+            - name: SESSION_DRIVER
+              value: database
+            - name: CACHE_STORE
+              value: database
+            - name: QUEUE_CONNECTION
+              value: database
+            - name: LOG_CHANNEL
+              value: stderr
+            - name: PAYMENT_PROVIDER
+              value: mock
+          readinessProbe:
+            # Trasy modułów są scopowane per Route::domain() (patrz
+            # app/Modules/*/ServiceProvider.php) — bez nagłówka Host
+            # dopasowującego znany tenant (config/tenants.php) to zawsze 404,
+            # niezależnie od realnego stanu aplikacji.
+            httpGet:
+              path: /
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: please-support-me.com
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 10
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 600m
+              memory: 768Mi
+        - name: laravel-ssr
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/laravel-ssr:v1
+          command: ["node", "bootstrap/ssr/ssr.js"]
+          ports:
+            - containerPort: 13714
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 300m
+              memory: 384Mi
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0
+          args:
+            - "--private-ip"
+            - "--port=5432"
+            - "support-me-prod:europe-central2:nfc-postgres-prod"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: laravel
+spec:
+  selector:
+    app: laravel
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+    - name: grpc
+      port: 9091
+      targetPort: 9091
+  type: ClusterIP

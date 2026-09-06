@@ -29,6 +29,10 @@ spec:
               value: core-svc
             - name: PAY_CORE_SVC_GRPC_PORT
               value: "9090"
+            - name: PAY_GATEWAY_SVC_GRPC_HOST
+              value: laravel
+            - name: PAY_GATEWAY_SVC_GRPC_PORT
+              value: "9091"
           readinessProbe:
             httpGet:
               path: /api/v1/health
