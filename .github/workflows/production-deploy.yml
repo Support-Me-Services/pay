@@ -178,16 +178,18 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
+          # Pliki w repo mają zaszyty placeholder `__VERSION__`, NIGDY prawdziwy
+          # tag (złapane na żywo dwa razy: prawdziwy tag w pliku + ręczne
+          # `kubectl apply` bez podstawienia = ciche cofnięcie wersji na
+          # starą, bo nikt nie pamięta zaktualizować pliku po każdym release).
+          # `__VERSION__` jest oczywiście złym tagiem obrazu, więc bezpośrednie
+          # zastosowanie pliku bez podstawienia głośno faili (ImagePullBackOff),
+          # zamiast cicho się cofać.
           for f in k8s/overlays/production/10-keycloak.yaml \
                    k8s/overlays/production/20-core-svc.yaml \
                    k8s/overlays/production/21-api-gateway.yaml \
                    k8s/overlays/production/30-laravel.yaml; do
-            sed -E \
-              -e "s#(/core-svc):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
-              -e "s#(/api-gateway):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
-              -e "s#(/laravel-ssr):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
-              -e "s#(/laravel):[A-Za-z0-9._-]+#\1:${VERSION}#g" \
-              "$f" | kubectl apply -f -
+            sed "s/__VERSION__/${VERSION}/g" "$f" | kubectl apply -f -
           done
           kubectl rollout status deployment/core-svc --timeout=600s
           kubectl rollout status deployment/api-gateway --timeout=600s

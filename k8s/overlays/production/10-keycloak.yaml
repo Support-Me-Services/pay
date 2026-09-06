@@ -42,6 +42,13 @@ spec:
               value: postgres
             - name: KC_DB_URL
               value: jdbc:postgresql://127.0.0.1:5432/keycloak
+            - name: KC_PROXY_HEADERS
+              # GKE Ingress kończy TLS i przekazuje dalej zwykłe HTTP — bez
+              # tego Keycloak nie wie, że oryginalne żądanie było HTTPS, i
+              # generuje issuer/redirect URL-e z http:// zamiast https://
+              # (złapane na żywo: openid-configuration pokazywał "issuer":
+              # "http://keycloak.please-support-me.eu/realms/pay").
+              value: xforwarded
             - name: KC_DB_USERNAME
               valueFrom:
                 secretKeyRef:

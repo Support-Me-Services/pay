@@ -10,7 +10,7 @@ metadata:
     app: core-svc
 spec:
   replicas: 1
-  progressDeadlineSeconds: 600
+  progressDeadlineSeconds: 1200
   selector:
     matchLabels:
       app: core-svc
@@ -22,7 +22,7 @@ spec:
       serviceAccountName: pay-workload
       containers:
         - name: core-svc
-          image: europe-central2-docker.pkg.dev/support-me-prod/pay/core-svc:v1
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/core-svc:__VERSION__
           ports:
             - containerPort: 8082
             - containerPort: 9090
@@ -43,14 +43,22 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8082
-            initialDelaySeconds: 15
+            initialDelaySeconds: 20
             periodSeconds: 10
+            failureThreshold: 10
           livenessProbe:
+            # Złapane na żywo: start Springa (Hibernate + gRPC autoconfig +
+            # Liquibase) potrafił zająć 76s na zimnym starcie węzła — z
+            # initialDelaySeconds=30/failureThreshold domyślnym (3) liveness
+            # zabijał kontener DOKŁADNIE w momencie, gdy aplikacja kończyła
+            # start (log "Started..." i "Commencing graceful shutdown" w tej
+            # samej sekundzie). Szeroki margines zamiast zgadywania na sztywno.
             httpGet:
               path: /actuator/health
               port: 8082
-            initialDelaySeconds: 30
+            initialDelaySeconds: 90
             periodSeconds: 15
+            failureThreshold: 5
           resources:
             requests:
               cpu: 150m

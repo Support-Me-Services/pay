@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: europe-central2-docker.pkg.dev/support-me-prod/pay/api-gateway:v1
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/api-gateway:__VERSION__
           ports:
             - containerPort: 8081
           env:

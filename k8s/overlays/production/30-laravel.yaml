@@ -25,7 +25,7 @@ spec:
       serviceAccountName: pay-workload
       containers:
         - name: laravel
-          image: europe-central2-docker.pkg.dev/support-me-prod/pay/laravel:v2
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/laravel:__VERSION__
           ports:
             - containerPort: 8000
             - containerPort: 9091
@@ -112,7 +112,7 @@ spec:
               cpu: 600m
               memory: 768Mi
         - name: laravel-ssr
-          image: europe-central2-docker.pkg.dev/support-me-prod/pay/laravel-ssr:v1
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/laravel-ssr:__VERSION__
           command: ["node", "bootstrap/ssr/ssr.js"]
           ports:
             - containerPort: 13714
