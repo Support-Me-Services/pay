@@ -3,10 +3,11 @@ name: Efemeryczne środowisko testowe (GCP)
 # Faza 7 — push na feature-branch stawia cały stos (Laravel + api-gateway +
 # core-svc + Keycloak + bazy) na współdzielonym klastrze GKE Autopilot,
 # każdy branch we własnym namespace. CronJob `housekeeper` wewnątrz klastra
-# (patrz k8s/housekeeper/) kasuje namespace po godzinie bezczynności —
-# ten workflow NIE ma własnego harmonogramu sprzątania, tylko szybką
-# ścieżkę na zamknięcie PR-a (drugi job niżej), żeby nie czekać do godziny
-# jeśli test skończył się wcześniej.
+# (patrz k8s/housekeeper/) kasuje namespace po jego TTL (domyślnie 1h,
+# parametryzowalne przez "[ttl=Nh]" w commit message, 1-24h — patrz krok
+# "Namespace + etykiety TTL" niżej) — ten workflow NIE ma własnego
+# harmonogramu sprzątania, tylko szybką ścieżkę na zamknięcie PR-a (drugi
+# job niżej), żeby nie czekać do TTL jeśli test skończył się wcześniej.
 #
 # Wymaga jednorazowego setupu GCP opisanego w k8s/README.md (klaster
 # pay-ephemeral, Artifact Registry, Workload Identity Federation) — patrz
@@ -128,7 +129,18 @@ jobs:
       # trwać, gdy ten krok próbuje utworzyć namespace od nowa ("unable to
       # create new content ... namespace is being terminated"). Czekamy,
       # zamiast od razu próbować. ---
-      - name: Namespace + etykiety TTL (housekeeper czyta pay/created-at)
+      # TTL parametryzowalny przez commit message: dopisz "[ttl=Nh]" (np.
+      # "[ttl=6h]"), żeby środowisko żyło dłużej niż domyślną 1 godzinę —
+      # nic nie trzeba klikać w GitHub, wystarczy sam tekst commita.
+      # Zaciśnięte do 1-24h (świadomie: dłużej = realny, rosnący koszt
+      # bez pilnowania, patrz rozmowa o kwotach/kosztach wyżej w sesji).
+      # Wartość ląduje w adnotacji pay/ttl-seconds, którą czyta
+      # housekeeper (k8s/housekeeper/02-cronjob.yaml) zamiast sztywnej
+      # stałej 3600 wpisanej w skrypt.
+      - name: Namespace + etykiety TTL (housekeeper czyta pay/created-at, pay/ttl-seconds)
+        id: ttl
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
         run: |
           NS="${{ steps.ns.outputs.name }}"
           for i in $(seq 1 60); do
@@ -139,6 +151,15 @@ jobs:
           kubectl create namespace "$NS" --dry-run=client -o yaml | kubectl apply -f -
           kubectl label namespace "$NS" pay/ephemeral=true --overwrite
           kubectl annotate namespace "$NS" pay/created-at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" --overwrite
+
+          TTL_HOURS=$(echo "$COMMIT_MSG" | grep -oE '\[ttl=[0-9]+h\]' | head -1 | grep -oE '[0-9]+')
+          TTL_HOURS="${TTL_HOURS:-1}"
+          [ "$TTL_HOURS" -lt 1 ] && TTL_HOURS=1
+          [ "$TTL_HOURS" -gt 24 ] && TTL_HOURS=24
+          TTL_SECONDS=$((TTL_HOURS * 3600))
+          echo "TTL tego środowiska: ${TTL_HOURS}h (${TTL_SECONDS}s)"
+          echo "ttl_hours=${TTL_HOURS}" >> "$GITHUB_OUTPUT"
+          kubectl annotate namespace "$NS" pay/ttl-seconds="$TTL_SECONDS" --overwrite
 
       - name: Sekret hasła admina Keycloaka (nowy losowy przy każdym deployu)
         run: |
@@ -397,7 +418,7 @@ jobs:
           {
             echo "## Efemeryczne środowisko testowe — \`${{ github.ref_name }}\`"
             echo ""
-            echo "Zniknie automatycznie po godzinie bezczynności (albo przy zamknięciu PR-a)."
+            echo "Zniknie automatycznie po ${{ steps.ttl.outputs.ttl_hours }}h (albo przy zamknięciu PR-a). Dłużej? Dopisz \`[ttl=Nh]\` (1-24) w commit message i wypchnij ponownie."
             echo ""
             echo "| Usługa | Adres |"
             echo "|---|---|"
@@ -423,7 +444,7 @@ jobs:
             });
             if (prs.data.length === 0) return;
             const body = [
-              `**Efemeryczne środowisko testowe gotowe** (zniknie po godzinie, cert self-signed — "Zaawansowane → Przejdź do strony"):`,
+              `**Efemeryczne środowisko testowe gotowe** (zniknie po ${{ steps.ttl.outputs.ttl_hours }}h, cert self-signed — "Zaawansowane → Przejdź do strony"; dłużej? dopisz [ttl=Nh] w commit message i wypchnij ponownie):`,
               `- Laravel: https://${{ steps.ingress.outputs.laravel_host }}`,
               `- api-gateway: https://${{ steps.ingress.outputs.api_host }}`,
               `- Keycloak: https://${{ steps.ingress.outputs.keycloak_host }}`,

@@ -203,6 +203,26 @@ billing accountów ma własny, pełny darmowy kredyt. Efektywnie: rozdzielenie
 na 2 konta nie tylko izoluje bezpieczeństwo, ale też nie kosztuje nas
 dodatkowo tej opłaty (w przeciwieństwie do 2 klastrów na JEDNYM koncie).
 
+### Dłuższy czas życia środowiska (domyślnie 1h)
+
+Dopisz `[ttl=Nh]` (N = 1-24) w commit message tego pusha, np.:
+
+```bash
+git commit -m "Testuję zmianę X [ttl=6h]"
+```
+
+Nic więcej nie trzeba klikać w GitHub — krok "Namespace + etykiety TTL"
+parsuje commit message i zapisuje wartość jako adnotację
+`pay/ttl-seconds` na namespace (którą czyta `housekeeper`). Zaciśnięte do
+1-24h celowo — dłużej to realny, rosnący koszt bez pilnowania. Kolejny
+push na ten sam branch (z nowym `[ttl=...]` albo bez, wracając do
+domyślnej 1h) resetuje TTL od nowa, tak jak `pay/created-at`.
+
+Środowisko już działa i chcesz je przedłużyć BEZ nowego pusha?
+```bash
+kubectl annotate namespace pay-eph-<slug-brancha> pay/ttl-seconds=<sekundy> --overwrite
+```
+
 ### Ręczne wyłączenie środowiska brancha (bez czekania na housekeeper)
 
 ```bash
