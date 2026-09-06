@@ -423,4 +423,27 @@ osobiście ze zwykłego Terminala (kubectl ma już skonfigurowany kontekst na
 `pay-prod`).
 
 Zostaje z Fazy 8.1: Keycloak (zarządza własnym schematem, nic do zrobienia).
-Następne: Faza 8.2 (konteneryzacja Laravela).
+
+### Stan na 2026-09-06 (Faza 8.2 — pierwsze usługi na żywo w `pay-prod`)
+
+`core-svc` i `api-gateway` działają realnie w klastrze `pay-prod`
+(`k8s/overlays/production/20-core-svc.yaml`, `21-api-gateway.yaml`), tylko
+ruch wewnętrzny (ClusterIP, zero publicznego DNS). Zweryfikowane end-to-end:
+`api-gateway` → gRPC → `core-svc` → prawdziwy Cloud SQL (`core-svc-db`) przez
+sidecar Cloud SQL Auth Proxy (Workload Identity, wspólny SA `pay-workload` z
+`roles/cloudsql.client`) — wszystko UP, `gatewaySvc` (Laravel, jeszcze
+niewdrożony) poprawnie pokazuje UNREACHABLE.
+
+**Pułapka napotkana**: wcześniejszy ręczny test Liquibase (Faza 8.1) zapisał
+changeset pod inną ścieżką pliku (`changeset.xml`) niż ta, której realnie
+używa aplikacja (`db/changelog/changesets/...` przez classpath) — Liquibase
+potraktował to jako inny changeset i przy pierwszym prawdziwym starcie
+`core-svc` próbował odtworzyć już istniejącą tabelę (`relation already
+exists`, crash loop). Naprawa: skasowanie tabeli + `databasechangelog*` i
+restart — aplikacja sama poprawnie zastosowała schemat pod właściwą ścieżką.
+Wniosek na przyszłość: manualne/rehearsal uruchomienia Liquibase (poza samą
+aplikacją) powinny celować w TĘ SAMĄ ścieżkę pliku changeloga, której użyje
+faktyczny serwis, inaczej `databasechangelog` się rozjeżdża.
+
+Następne: Keycloak (Faza 8.2 dalszy ciąg), potem Laravel (największy kawałek
+— przeprojektowanie kontenera, patrz plan).
