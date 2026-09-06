@@ -507,3 +507,36 @@ mutujące `kubectl apply` dotyczące Laravela/baz na tyle konsekwentnie, że
 użytkownik musiał ręcznie wklejać komendy wielokrotnie. Następny logiczny
 krok (Faza 8.3): prawdziwy pipeline CI/CD, żeby zmiany wchodziły przez
 `git push`/PR, nie ręczne kopiowanie komend.
+
+### Stan na 2026-09-06 (Faza 8.3 DOKOŃCZONA — pipeline CI/CD zweryfikowany)
+
+`.github/workflows/production-deploy.yml` — osobny od `ephemeral-env.yml`,
+trigger: **tag wersji** (`v*`), NIE sam push do `release` (wzorzec "release
+train" — merge do `release` = gotowe do wydania, tag = jawna decyzja
+wdrożenia; łatwy rollback do konkretnego tagu). Etapy: backup wszystkich 3
+baz Cloud SQL (czeka na `SUCCESSFUL` przed dalszym krokiem) → build/push
+`core-svc`/`api-gateway`/`laravel`+`laravel-ssr` tagowane nazwą tagu →
+Liquibase update (`nfc_pay`, `nfc_shop1`, `core-svc-db`) jako Job w klastrze
+(jedyny sposób dotarcia do prywatnego IP Cloud SQL spoza VPC) → rolling
+deploy (`kubectl set image`) → smoke test wewnętrzny przez pod `api-gateway`.
+
+**Zweryfikowane end-to-end dwoma realnymi tagami** (`v0.1.0-test` — złapał
+błąd, `v0.1.1-test` — pełny sukces): wszystkie trzy serwisy dostały nowy
+obraz, cały łańcuch zdrowia zostaje `UP`/`SERVING`.
+
+**Pułapka złapana przy pierwszym uruchomieniu**: ConfigMap z changelogami
+Liquibase dla core-svc miał tylko plik master, bez pliku `changesets/`, na
+który ten wskazuje przez `<include>` — Liquibase nie mógł go znaleźć.
+Naprawione przez `volumes[].configMap.items[].path`, remapujące klucze
+ConfigMap na DOKŁADNIE tę samą strukturę katalogów, której aplikacja używa
+przez classpath (`services/core-svc/src/main/resources/db/changelog/...`) —
+to nie tylko naprawia parsowanie, ale też zapewnia, że Liquibase zapisuje
+changeset pod tą samą tożsamością (ścieżką pliku), której używa realna
+aplikacja — inaczej ryzyko dokładnie tego samego błędu "relation already
+exists", który już raz złapaliśmy ręcznie w Fazie 8.2.
+
+Zostaje z Fazy 8: branch protection na `release` (potrzebne prawdziwe
+nazwy użytkowników GitHub do CODEOWNERS + jawne potwierdzenie), CI check
+parujący migracje Laravela z changesetami Liquibase, mechanizm blue-green
+(Faza 8.4), i sam realny cutover ruchu publicznego (Faza 8.5) — świadomie
+NIE zrobione, czeka na osobną decyzję.
