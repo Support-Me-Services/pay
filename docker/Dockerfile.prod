@@ -29,9 +29,17 @@ COPY composer.json composer.lock ./
 # stałe do obrazu (patrz niżej). Ostateczny runtime nie widzi tego kroku —
 # COPY niżej bierze tylko `vendor`, w którym te binarki i tak nie muszą
 # zostać (rr/protoc-gen-php-grpc kopiowane osobno, patrz finalny stage).
+#
+# ARG GITHUB_TOKEN: `rr get`/`download-protoc-binary` odpytują GitHub API,
+# żeby znaleźć URL najnowszego wydania — bez tokenu limit nieautoryzowanych
+# zapytań (60/h) współdzielony przez WSZYSTKIE runnery GitHub Actions na tym
+# samym IP wyczerpuje się losowo (złapane na żywo: HTTP 403 od api.github.com).
+# `secrets.GITHUB_TOKEN` jest dostępny automatycznie w każdym workflow, zero
+# nowej konfiguracji. Krótkotrwały token joba — nie długoterminowy sekret.
+ARG GITHUB_TOKEN=""
 RUN composer install --no-interaction --prefer-dist --no-scripts --no-progress \
- && php vendor/bin/rr get --no-interaction -q \
- && php vendor/bin/rr download-protoc-binary \
+ && GITHUB_TOKEN="${GITHUB_TOKEN}" php vendor/bin/rr get --no-interaction -q \
+ && GITHUB_TOKEN="${GITHUB_TOKEN}" php vendor/bin/rr download-protoc-binary \
  && composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-progress
 
 FROM node:22-slim AS frontend

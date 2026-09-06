@@ -87,8 +87,11 @@ jobs:
           docker push ${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }}
 
       - name: Build + push laravel + laravel-ssr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker build -t ${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }} \
+          docker build --build-arg GITHUB_TOKEN="$GITHUB_TOKEN" \
+            -t ${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }} \
             -f docker/Dockerfile.prod .
           docker push ${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }}
           docker build --target frontend -t ${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }} \
