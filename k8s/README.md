@@ -540,3 +540,27 @@ nazwy użytkowników GitHub do CODEOWNERS + jawne potwierdzenie), CI check
 parujący migracje Laravela z changesetami Liquibase, mechanizm blue-green
 (Faza 8.4), i sam realny cutover ruchu publicznego (Faza 8.5) — świadomie
 NIE zrobione, czeka na osobną decyzję.
+
+### Stan na 2026-09-06 (domena testowa `.eu` na żywo, Mixed Content NAPRAWIONY)
+
+Publiczna domena testowa `please-support-me.eu` (GCE Ingress + Google-managed
+cert, `k8s/overlays/production/40-ingress.yaml`) zweryfikowana end-to-end:
+logowanie przez Keycloak OIDC (realny użytkownik powiązany kontem), obrazki
+przez GCS (`FILESYSTEM_PUBLIC_DRIVER=gcs`, trasa-proxy `routes/web.php`).
+
+**Bug znaleziony przy porównaniu `.eu` vs `.com`**: `/praca` na `.eu` renderował
+się bez stylów — Mixed Content (przeglądarka blokowała `http://` JS/CSS na
+stronie serwowanej przez HTTPS). Sam `APP_URL=https://...` (v0.1.12) NIE
+wystarczył — GKE Ingress kończy TLS i przekazuje dalej zwykłe HTTP, więc
+`Request::getScheme()` (którego używa generowanie URL-i assetów Vite) nadal
+zwracał `http`, niezależnie od `APP_URL`, dopóki Laravel nie dostał jawnego
+`TRUSTED_PROXIES=*` (v0.1.13, `k8s/overlays/production/30-laravel.yaml`) —
+dokładnie scenariusz, przed którym ostrzegał komentarz w `bootstrap/app.php`
+(Faza 7). **Zweryfikowane realnie w przeglądarce** (nie tylko sukces pipeline'u):
+po twardym odświeżeniu (bez cache) zero błędów Mixed Content, JS/CSS ładują się
+po HTTPS, `/praca` na `.eu` renderuje się identycznie jak na `.com`.
+
+Otwarte, nie blokujące: konsolidacja 3 instancji Cloud SQL (`nfc-postgres-prod`,
+`core-svc-db`, `keycloak-db`) w jedną z osobnymi schematami rozważona i
+świadomie odrzucona (izolacja awarii/zasobów ważniejsza niż niewielka
+oszczędność przy tej skali) — zostaje 3 osobne instancje.
