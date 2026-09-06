@@ -12,7 +12,7 @@
         "laravel/socialite": "^5.31",
         "laravel/tinker": "^2.10.1",
         "socialiteproviders/keycloak": "^5.3",
-        "spatie/laravel-google-cloud-storage": "^2.4",
+        "spatie/laravel-google-cloud-storage": "^2.3",
         "spiral/roadrunner-grpc": "^3.6",
         "spiral/roadrunner-http": "^4.1"
     },
