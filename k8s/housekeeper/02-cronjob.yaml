@@ -20,7 +20,16 @@ spec:
           restartPolicy: Never
           containers:
             - name: housekeeper
-              image: bitnami/kubectl:1.30
+              # UWAGA (2026-09-05): tag `bitnami/kubectl:1.30` zniknął z Docker
+              # Hub (Bitnami wycofało pinowane wersje) — housekeeper failował
+              # cichcem przez ImagePullBackOff od nieznanego czasu, co
+              # pozwoliło środowiskom efemerycznym żyć bez limitu (realny
+              # koszt). `:latest` zweryfikowane jako działające (v1.37.0
+              # klienta) — jeśli to też kiedyś zniknie/zmieni się w
+              # nieoczekiwany sposób, sprawdź dostępne tagi przez
+              # `curl -s https://hub.docker.com/v2/repositories/bitnami/kubectl/tags`
+              # zanim przywrócisz pinowaną wersję.
+              image: bitnami/kubectl:latest
               command: ["bash", "-c"]
               args:
                 - |
