@@ -39,12 +39,27 @@ return [
         ],
 
         'public' => [
-            'driver' => 'local',
+            // Faza 8 — produkcja na Kubernetes ma wiele podów bez trwałego
+            // dysku (i docelowo wiele generacji naraz przy blue-green) —
+            // pliki wgrywane przez panel (zdjęcia produktów, "O nas") MUSZĄ
+            // żyć poza podem. `FILESYSTEM_PUBLIC_DRIVER=gcs` w produkcji,
+            // `local` (bez zmian) wszędzie indziej — sam kod (Storage::disk(
+            // 'public')) nigdzie się nie zmienia, tylko backend tego dysku.
+            'driver' => env('FILESYSTEM_PUBLIC_DRIVER', 'local'),
             'root' => storage_path('app/public'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+            // Klucze specyficzne dla drivera 'gcs' (spatie/laravel-google-
+            // cloud-storage) — ignorowane przez driver 'local'. Autoryzacja
+            // przez Workload Identity (Application Default Credentials w
+            // podzie), NIE plik key.json — zero statycznego sekretu do
+            // wycieku/rotacji.
+            'project_id' => env('GCS_PROJECT_ID'),
+            'bucket' => env('GCS_BUCKET'),
+            'path_prefix' => env('GCS_PATH_PREFIX', 'public'),
+            'storage_api_uri' => env('GCS_STORAGE_API_URI'),
         ],
 
         's3' => [

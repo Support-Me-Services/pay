@@ -90,6 +90,12 @@ spec:
                 secretKeyRef:
                   name: keycloak-client-storefront
                   key: secret
+            - name: FILESYSTEM_PUBLIC_DRIVER
+              value: gcs
+            - name: GCS_PROJECT_ID
+              value: support-me-prod
+            - name: GCS_BUCKET
+              value: support-me-prod-storage
           readinessProbe:
             # Trasy modułów są scopowane per Route::domain() (patrz
             # app/Modules/*/ServiceProvider.php) — bez nagłówka Host
