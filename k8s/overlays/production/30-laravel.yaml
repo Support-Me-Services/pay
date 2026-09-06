@@ -35,7 +35,13 @@ spec:
             - name: APP_DEBUG
               value: "false"
             - name: APP_URL
-              value: "http://localhost"
+              # Placeholder "http://localhost" powodował Mixed Content —
+              # przeglądarka blokowała JS/CSS budowane przez Vite (asset()
+              # generował http:// URL-e na stronie serwowanej przez https://),
+              # więc React nigdy się nie hydratował i strona wyglądała na
+              # niekompletną/nieostylowaną (złapane na żywo: brak sekcji
+              # opisu, inny styl obrazka na /praca).
+              value: "https://please-support-me.eu"
             - name: APP_KEY
               valueFrom:
                 secretKeyRef:
