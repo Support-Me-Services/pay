@@ -46,7 +46,17 @@ return [
             // `local` (bez zmian) wszędzie indziej — sam kod (Storage::disk(
             // 'public')) nigdzie się nie zmienia, tylko backend tego dysku.
             'driver' => env('FILESYSTEM_PUBLIC_DRIVER', 'local'),
-            'root' => storage_path('app/public'),
+            // 'root' TYLKO dla drivera 'local' — pakiet spatie/laravel-google-
+            // cloud-storage używa TEGO SAMEGO klucza 'root' jako prefiksu
+            // ścieżki w buckecie, jeśli jest ustawiony (patrz jego
+            // GoogleCloudStorageServiceProvider::prepareConfig() — 'root' ma
+            // pierwszeństwo nad 'path_prefix', ustawianym tylko gdy 'root'
+            // BRAK). Zostawienie tu lokalnej ścieżki dyskowej cicho
+            // przekierowywało prefiks GCS na bezsensowne "/app/storage/app/
+            // public" zamiast "public" — złapane na żywo: exists()/allFiles()
+            // zawsze zwracały pusto, bez żadnego wyjątku (throw:false to
+            // maskowało). Klucz istnieje TYLKO gdy driver to 'local'.
+            ...(env('FILESYSTEM_PUBLIC_DRIVER', 'local') === 'local' ? ['root' => storage_path('app/public')] : []),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
@@ -59,7 +69,6 @@ return [
             'project_id' => env('GCS_PROJECT_ID'),
             'bucket' => env('GCS_BUCKET'),
             'path_prefix' => env('GCS_PATH_PREFIX', 'public'),
-            'storage_api_uri' => env('GCS_STORAGE_API_URI'),
         ],
 
         's3' => [
