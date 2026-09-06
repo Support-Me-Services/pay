@@ -106,6 +106,16 @@ spec:
                   key: secret
             - name: FILESYSTEM_PUBLIC_DRIVER
               value: gcs
+            - name: FILESYSTEM_PRIVATE_DRIVER
+              # Dysk 'local' (CV rekrutacyjne) — ten sam problem co dysk
+              # 'public' (pod bez trwałego wolumenu), ale dla plików
+              # PRYWATNYCH: ten sam bucket GCS, inny prefiks
+              # (GCS_PRIVATE_PATH_PREFIX), bucket nie jest publicznie
+              # udostępniony — pobieranie nadal idzie przez autoryzowaną
+              # trasę panelu (ApplicationController::cv()), nie goły URL.
+              value: gcs
+            - name: GCS_PRIVATE_PATH_PREFIX
+              value: private
             - name: GCS_PROJECT_ID
               value: support-me-prod
             - name: GCS_BUCKET

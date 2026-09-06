@@ -31,20 +31,34 @@ return [
     'disks' => [
 
         'local' => [
-            'driver' => 'local',
-            'root' => storage_path('app/private'),
+            // Faza 8 — jak dysk 'public' niżej: pody GKE nie mają trwałego
+            // dysku, więc CV wgrane przez formularz rekrutacyjny (ten dysk)
+            // znikały przy KAŻDYM restarcie/wdrożeniu poda — 404 przy próbie
+            // pobrania z panelu (złapane na żywo: zgłoszenia zaimportowane z
+            // produkcji miały `cv_path` w bazie, ale plik fizycznie nigdy nie
+            // istniał na nowym podzie). `FILESYSTEM_PRIVATE_DRIVER=gcs` w
+            // produkcji (ten sam bucket co 'public', inny prefiks —
+            // `path_prefix` niżej — bucket i tak nie jest publiczny, patrz
+            // komentarz przy dysku 'public'), `local` (bez zmian) wszędzie
+            // indziej.
+            'driver' => env('FILESYSTEM_PRIVATE_DRIVER', 'local'),
+            ...(env('FILESYSTEM_PRIVATE_DRIVER', 'local') === 'local' ? ['root' => storage_path('app/private')] : []),
             // 'serve' WYŁĄCZONE: framework auto-rejestruje trasę
             // `GET storage/{path}` do serwowania TEGO dysku, kolidującą
             // 1:1 z naszą własną `routes/web.php` (proxy dysku 'public' do
             // GCS pod tym samym URL-em, patrz komentarz tam) — złapane na
             // żywo: nasza trasa nigdy nie była osiągalna, framework
-            // przechwytywał żądanie pierwszy. Dysk 'local' (prywatne CV) i
-            // tak nigdy nie był serwowany tą generyczną trasą — pobieranie
+            // przechwytywał żądanie pierwsze. Dysk 'local' (prywatne CV) i
+            // tak nigdy nie jest serwowany tą generyczną trasą — pobieranie
             // idzie przez dedykowaną, kontrolowaną logikę w
             // ApplicationController (autoryzacja, nie goły URL).
             'serve' => false,
             'throw' => false,
             'report' => false,
+            // Klucze specyficzne dla drivera 'gcs' — ignorowane przez 'local'.
+            'project_id' => env('GCS_PROJECT_ID'),
+            'bucket' => env('GCS_BUCKET'),
+            'path_prefix' => env('GCS_PRIVATE_PATH_PREFIX', 'private'),
         ],
 
         'public' => [
