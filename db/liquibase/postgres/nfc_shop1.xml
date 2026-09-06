@@ -466,4 +466,19 @@
     <changeSet author="liquibase (generated)" id="1788637271997-45">
         <addForeignKeyConstraint baseColumnNames="organization_id" baseTableName="shop_items" constraintName="shop_items_organization_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="SET NULL" onUpdate="NO ACTION" referencedColumnNames="id" referencedTableName="organizations" validate="true"/>
     </changeSet>
+    <!-- Sparowane z database/migrations/2026_09_04_000001_add_keycloak_sub.php
+         (Faza 6 — logowanie wyłącznie przez Keycloak), patrz identyczny
+         komentarz w postgres/nfc_pay.xml — ta sama migracja dotyczy OBU baz. -->
+    <changeSet id="2026-09-04-add-keycloak-sub" author="core-team">
+        <sql>
+            alter table users add column keycloak_sub varchar(255) null unique;
+            alter table users alter column password drop not null;
+        </sql>
+        <rollback>
+            <sql>
+                alter table users drop column keycloak_sub;
+                alter table users alter column password set not null;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

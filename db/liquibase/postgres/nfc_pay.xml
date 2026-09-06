@@ -421,4 +421,23 @@
     <changeSet author="liquibase (generated)" id="1788637266051-38">
         <addForeignKeyConstraint baseColumnNames="shop_id" baseTableName="transactions" constraintName="transactions_shop_id_foreign" deferrable="false" initiallyDeferred="false" onDelete="RESTRICT" onUpdate="RESTRICT" referencedColumnNames="id" referencedTableName="shops" validate="true"/>
     </changeSet>
+    <!-- Sparowane z database/migrations/2026_09_04_000001_add_keycloak_sub.php
+         (Faza 6 — logowanie wyłącznie przez Keycloak). Raw SQL zgodnie z
+         regułą projektu dla wszystkiego dotyczącego unikalności na Postgresie.
+         Odkryte 2026-09-06: ta migracja NIGDY nie została zastosowana na
+         prawdziwej produkcji (Faza 6 była tylko lokalna/testowa) — mimo że
+         kod aplikacji już jej wymaga. Expand-only: nowa nullable kolumna,
+         poluzowanie NOT NULL na password — bezpieczne dla obu wersji kodu. -->
+    <changeSet id="2026-09-04-add-keycloak-sub" author="core-team">
+        <sql>
+            alter table users add column keycloak_sub varchar(255) null unique;
+            alter table users alter column password drop not null;
+        </sql>
+        <rollback>
+            <sql>
+                alter table users drop column keycloak_sub;
+                alter table users alter column password set not null;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>
