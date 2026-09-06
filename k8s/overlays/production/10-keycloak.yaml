@@ -49,6 +49,17 @@ spec:
               # (złapane na żywo: openid-configuration pokazywał "issuer":
               # "http://keycloak.please-support-me.eu/realms/pay").
               value: xforwarded
+            - name: KC_HOSTNAME
+              # BEZ tego Keycloak liczy issuer DYNAMICZNIE per-żądanie (request-
+              # based hostname resolution) — token wydany podczas autoryzacji
+              # w przeglądarce (publiczny host) dostaje inny `iss` niż token
+              # walidowany przy wywołaniu serwer-serwer (wewnętrzny host
+              # klastra `keycloak:8080`), więc userinfo/introspekcja odrzuca
+              # WŁASNY token Keycloaka jako "Invalid token issuer" (złapane na
+              # żywo — dokładnie ten błąd w logach Keycloaka). Stały, jawny
+              # KC_HOSTNAME wymusza JEDEN kanoniczny issuer niezależnie od
+              # tego, którą ścieżką sieciową dociera dane żądanie.
+              value: "https://keycloak.please-support-me.eu"
             - name: KC_DB_USERNAME
               valueFrom:
                 secretKeyRef:
