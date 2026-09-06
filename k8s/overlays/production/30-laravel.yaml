@@ -75,6 +75,21 @@ spec:
               value: stderr
             - name: PAYMENT_PROVIDER
               value: mock
+            - name: KEYCLOAK_BASE_URL
+              # Adres widziany przez PRZEGLĄDARKĘ (pierwszy hop OIDC —
+              # przekierowanie do ekranu logowania). Musi być publicznie
+              # osiągalny, stąd subdomena na tym samym Ingressie co Laravel.
+              value: "https://keycloak.please-support-me.eu"
+            - name: KEYCLOAK_INTERNAL_BASE_URL
+              # Adres, pod którym TEN POD faktycznie dobija się do Keycloaka
+              # (wymiana kodu na token, server-to-server) — DNS klastra, nie
+              # to samo co powyżej (patrz komentarz w config/services.php).
+              value: "http://keycloak:8080"
+            - name: KEYCLOAK_CLIENT_SECRET_STOREFRONT
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-client-storefront
+                  key: secret
           readinessProbe:
             # Trasy modułów są scopowane per Route::domain() (patrz
             # app/Modules/*/ServiceProvider.php) — bez nagłówka Host
