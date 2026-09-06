@@ -1,0 +1,75 @@
+# Wariant produkcyjny — Faza 8 (patrz .claude/plans/fluffy-frolicking-galaxy.md).
+# Różnica względem docker/Dockerfile.ci (efemeryczne środowiska testowe):
+# - buduje TEŻ paczkę SSR (`npm run build`, nie tylko `build:client`) — w tej
+#   fazie SSR biegnie jako drugi kontener w tym samym podzie (ten sam obraz,
+#   inna komenda: `node bootstrap/ssr/ssr.js`), nie jako osobny build.
+# - entrypoint.prod.sh zamiast entrypoint.sh: BEZ auto-migracji (Liquibase)
+#   i BEZ seedowania demo danych (patrz komentarz w tym pliku).
+#
+# UWAGA: to nadal jest interim krok (Faza 8.2 — ruch tylko wewnętrzny/
+# syntetyczny). Docelowy podział na PHP-FPM+nginx (zamiast `artisan serve`)
+# to osobna praca przed Fazą 8.5 (realny ruch publiczny) — patrz plan.
+#
+# Kontekst budowania MUSI być korzeniem repo.
+
+FROM php:8.2-cli AS php-base
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libonig-dev libzip-dev libpq-dev unzip git ca-certificates protobuf-compiler \
+ && docker-php-ext-install pdo_mysql pdo_pgsql pgsql mbstring zip pcntl sockets \
+ && docker-php-ext-enable opcache \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+FROM php-base AS composer-deps
+WORKDIR /app
+COPY composer.json composer.lock ./
+# BEZ --no-dev tutaj: spiral/roadrunner-cli (daje vendor/bin/rr, jedyny
+# sposób pobrania binarki `rr`/`protoc-gen-php-grpc`) jest zależnością --dev
+# — potrzebna WYŁĄCZNIE na tym etapie builda, żeby pobrać binarki raz, na
+# stałe do obrazu (patrz niżej). Ostateczny runtime nie widzi tego kroku —
+# COPY niżej bierze tylko `vendor`, w którym te binarki i tak nie muszą
+# zostać (rr/protoc-gen-php-grpc kopiowane osobno, patrz finalny stage).
+RUN composer install --no-interaction --prefer-dist --no-scripts --no-progress \
+ && php vendor/bin/rr get --no-interaction -q \
+ && php vendor/bin/rr download-protoc-binary \
+ && composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-progress
+
+FROM node:22-slim AS frontend
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM php-base
+RUN { \
+        echo 'opcache.enable=1'; \
+        echo 'opcache.enable_cli=1'; \
+        echo 'opcache.memory_consumption=256'; \
+        echo 'opcache.max_accelerated_files=30000'; \
+        echo 'opcache.validate_timestamps=0'; \
+    } > /usr/local/etc/php/conf.d/zz-opcache.ini
+
+WORKDIR /app
+COPY . .
+COPY --from=composer-deps /app/vendor vendor
+COPY --from=composer-deps /app/rr rr
+COPY --from=composer-deps /app/protoc-gen-php-grpc protoc-gen-php-grpc
+COPY --from=frontend /app/public/build public/build
+COPY --from=frontend /app/bootstrap/ssr bootstrap/ssr
+COPY docker/entrypoint.prod.sh /entrypoint.sh
+
+RUN composer dump-autoload -o --no-interaction && php artisan package:discover --ansi
+
+# Klasy PHP z proto/ generowane RAZ, na stałe do obrazu — entrypoint.prod.sh
+# nie musi tego już robić (i nie musi pobierać rr/protoc-gen-php-grpc) przy
+# każdym restarcie poda, bez trwałego wolumenu w produkcji.
+RUN mkdir -p app/Modules/Gateway/Grpc/Generated \
+ && protoc --proto_path=proto --php_out=app/Modules/Gateway/Grpc/Generated \
+        --php-grpc_out=app/Modules/Gateway/Grpc/Generated \
+        --plugin=protoc-gen-php-grpc=./protoc-gen-php-grpc \
+        proto/health/v1/health.proto proto/storefront/v1/storefront.proto \
+ && composer dump-autoload -o --no-interaction
+
+EXPOSE 8000 9091
+ENTRYPOINT ["sh", "/entrypoint.sh"]

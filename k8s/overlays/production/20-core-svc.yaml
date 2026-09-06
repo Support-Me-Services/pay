@@ -1,0 +1,89 @@
+# Produkcja (support-me-prod) — core-svc z sidecarem Cloud SQL Auth Proxy,
+# łączącym się do core-svc-db WYŁĄCZNIE w obrębie tego samego projektu (bez
+# cross-project peeringu, patrz .claude/plans/fluffy-frolicking-galaxy.md).
+# Faza 8.2 — tylko ruch syntetyczny/wewnętrzny, zero publicznego DNS na razie.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-svc
+  labels:
+    app: core-svc
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      app: core-svc
+  template:
+    metadata:
+      labels:
+        app: core-svc
+    spec:
+      serviceAccountName: pay-workload
+      containers:
+        - name: core-svc
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/core-svc:v1
+          ports:
+            - containerPort: 8082
+            - containerPort: 9090
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://127.0.0.1:5432/core_svc
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: core-svc-db
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: core-svc-db
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 150m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0
+          args:
+            - "--private-ip"
+            - "--port=5432"
+            - "support-me-prod:europe-central2:core-svc-db"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-svc
+spec:
+  selector:
+    app: core-svc
+  ports:
+    - name: rest
+      port: 8082
+      targetPort: 8082
+    - name: grpc
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP
