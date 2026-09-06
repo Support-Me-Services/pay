@@ -169,9 +169,9 @@ jobs:
           kubectl set image deployment/core-svc core-svc=${{ env.REGISTRY }}/core-svc:${{ steps.version.outputs.version }}
           kubectl set image deployment/api-gateway api-gateway=${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }}
           kubectl set image deployment/laravel laravel=${{ env.REGISTRY }}/laravel:${{ steps.version.outputs.version }} laravel-ssr=${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }}
-          kubectl rollout status deployment/core-svc --timeout=300s
-          kubectl rollout status deployment/api-gateway --timeout=300s
-          kubectl rollout status deployment/laravel --timeout=300s
+          kubectl rollout status deployment/core-svc --timeout=600s
+          kubectl rollout status deployment/api-gateway --timeout=600s
+          kubectl rollout status deployment/laravel --timeout=600s
 
       - name: Smoke test (wewnętrzny, przez pod api-gateway)
         run: |
