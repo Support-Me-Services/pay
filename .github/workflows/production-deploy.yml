@@ -7,11 +7,12 @@
 # ruchu (Faza 8.4) — dziś jeden Deployment per usługa, rolling update.
 # Realny ruch publiczny nadal idzie przez stary VM (Faza 8.5, osobna decyzja).
 #
-# Trigger: push do brancha `release` (docelowo tylko przez merge z
-# release-<wersja>, patrz plan — restrykcja branch protection to osobny krok).
+# Trigger: TAG wersji (v1.2.3) na branchu `release` — merge do `release` sam
+# w sobie NIE wdraża, to tylko "gotowe do wydania"; tag to jawna, oddzielna
+# decyzja "wdrażamy TO". Praktyka "release train" — patrz dyskusja w planie.
 on:
   push:
-    branches: [release]
+    tags: ["v*"]
 
 permissions:
   id-token: write
@@ -29,9 +30,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Ustal wersję (SHA skróconego commita)
+      - name: Ustal wersję (z nazwy tagu, np. refs/tags/v1.2.3 -> v1.2.3)
         id: version
-        run: echo "version=$(echo ${{ github.sha }} | cut -c1-12)" >> "$GITHUB_OUTPUT"
+        run: echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Uwierzytelnienie GCP (Workload Identity Federation)
         uses: google-github-actions/auth@v2
