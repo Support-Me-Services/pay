@@ -42,6 +42,14 @@ spec:
               # niekompletną/nieostylowaną (złapane na żywo: brak sekcji
               # opisu, inny styl obrazka na /praca).
               value: "https://please-support-me.eu"
+            - name: TRUSTED_PROXIES
+              # BEZ tego Mixed Content NIE znika po samym APP_URL — GKE
+              # Ingress kończy TLS i przekazuje dalej zwykłe HTTP; bez
+              # zaufania do X-Forwarded-Proto, Request::getScheme() (którego
+              # używa generowanie URL-i assetów Vite) i tak zwraca 'http',
+              # niezależnie od APP_URL. Dokładnie ten scenariusz, przed
+              # którym ostrzega komentarz w bootstrap/app.php (Faza 7).
+              value: "*"
             - name: APP_KEY
               valueFrom:
                 secretKeyRef:
