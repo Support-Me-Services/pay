@@ -445,5 +445,45 @@ Wniosek na przyszłość: manualne/rehearsal uruchomienia Liquibase (poza samą
 aplikacją) powinny celować w TĘ SAMĄ ścieżkę pliku changeloga, której użyje
 faktyczny serwis, inaczej `databasechangelog` się rozjeżdża.
 
-Następne: Keycloak (Faza 8.2 dalszy ciąg), potem Laravel (największy kawałek
-— przeprojektowanie kontenera, patrz plan).
+### Stan na 2026-09-06 (Faza 8.2 DOKOŃCZONA — cały ekosystem żyje w `pay-prod`)
+
+Keycloak i Laravel też działają (`10-keycloak.yaml`, `30-laravel.yaml`,
+`docker/Dockerfile.prod`, `docker/entrypoint.prod.sh`). Zweryfikowane
+end-to-end: `GET /` (z prawdziwym nagłówkiem Host) zwraca 200 z realną
+zawartością renderowaną przez SSR; health-check `api-gateway` pokazuje
+`apiGateway: UP`, `coreSvc: SERVING`, `gatewaySvc (Laravel/RoadRunner):
+SERVING` — cały łańcuch (api-gateway → core-svc → Cloud SQL, api-gateway →
+Laravel gRPC → Cloud SQL) działa po raz pierwszy w `support-me-prod`.
+
+**Nowy, produkcyjny obraz Laravela** (`docker/Dockerfile.prod` +
+`entrypoint.prod.sh`) — świadomie NIE ponowne użycie `Dockerfile.ci` (to
+auto-migrowałoby i seedowało demo dane przy każdym starcie, źle i
+niebezpiecznie wobec prawdziwych danych). Pułapki znalezione po drodze:
+
+- **`Dockerfile.ci` nigdy nie miał rozszerzenia `pdo_pgsql`** (tylko
+  `pdo_mysql`) — Laravel fizycznie nie mógł połączyć się z prawdziwą bazą
+  Postgres tym obrazem. Dodane `libpq-dev` + `pdo_pgsql pgsql`.
+- **`spiral/roadrunner-cli` (daje `vendor/bin/rr`) to zależność `--dev`** —
+  `composer install --no-dev` (jak w `Dockerfile.ci`) nigdy jej nie miał,
+  więc pobieranie binarki `rr`/`protoc-gen-php-grpc` w entrypoincie zawsze
+  by padło na prawdziwym obrazie produkcyjnym. Naprawa: binarki + wygenerowane
+  klasy PHP z `proto/` pieczone RAZ na etapie builda obrazu, entrypoint
+  produkcyjny nic już z tym nie robi.
+- **`bootstrap/ssr/ssr.js` potrzebuje Node**, którego obraz oparty na PHP nie
+  ma — `laravel-ssr` to osobny obraz, zbudowany z etapu `frontend` (Node)
+  tego samego Dockerfile'a (`docker build --target frontend`).
+- **Trasy są scopowane przez `Route::domain()`** per moduł — żądanie bez
+  nagłówka `Host` pasującego do znanego tenanta (`config/tenants.php`) zawsze
+  dostaje 404, **w tym domyślna sonda gotowości Kubernetesa** (nie ustawia
+  własnego `Host`). Naprawa: jawny `httpHeaders: [{name: Host, value:
+  please-support-me.com}]` w `readinessProbe`.
+
+**Świadomie NIE zrobione w tym kroku** (interim, przed Fazą 8.5): jeden proces
+`artisan serve` zamiast PHP-FPM+nginx; SSR/gRPC jako kontenery w tym samym
+podzie, nie osobne Deploymenty. Pełny podział to osobna praca.
+
+**Frustracja z tej sesji, do rozwiązania**: klasyfikator auto-mode blokował
+mutujące `kubectl apply` dotyczące Laravela/baz na tyle konsekwentnie, że
+użytkownik musiał ręcznie wklejać komendy wielokrotnie. Następny logiczny
+krok (Faza 8.3): prawdziwy pipeline CI/CD, żeby zmiany wchodziły przez
+`git push`/PR, nie ręczne kopiowanie komend.
