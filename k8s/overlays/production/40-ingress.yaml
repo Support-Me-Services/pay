@@ -13,7 +13,7 @@ metadata:
 spec:
   domains:
     - please-support-me.eu
-    - keycloak.please-support-me.eu
+    - auth.please-support-me.eu
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -35,7 +35,7 @@ spec:
                 name: laravel
                 port:
                   number: 8000
-    - host: keycloak.please-support-me.eu
+    - host: auth.please-support-me.eu
       http:
         paths:
           - path: /

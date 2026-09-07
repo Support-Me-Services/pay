@@ -104,7 +104,7 @@ spec:
               # Adres widziany przez PRZEGLĄDARKĘ (pierwszy hop OIDC —
               # przekierowanie do ekranu logowania). Musi być publicznie
               # osiągalny, stąd subdomena na tym samym Ingressie co Laravel.
-              value: "https://keycloak.please-support-me.eu"
+              value: "https://auth.please-support-me.eu"
             - name: KEYCLOAK_INTERNAL_BASE_URL
               # Adres, pod którym TEN POD faktycznie dobija się do Keycloaka
               # (wymiana kodu na token, server-to-server) — DNS klastra, nie

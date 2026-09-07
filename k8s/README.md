@@ -594,7 +594,7 @@ dodatkowej pracy — `roles/cloudsql.client` na `pay-workload` jest nadany na
 poziomie PROJEKTU, obejmuje każdą instancję w `support-me-prod`.
 
 **2. Realny Keycloak w `pay-prod` zaktualizowany — ZROBIONE 2026-09-07.**
-Realm `pay` na `https://keycloak.please-support-me.eu` ma teraz rolę `admin`
+Realm `pay` na `https://auth.please-support-me.eu` ma teraz rolę `admin`
 i oba mappery ("realm roles"/"client roles") emitują `realm_access.roles`
 zarówno do ID tokenu, jak i do userinfo (`id.token.claim`/
 `userinfo.token.claim` = `true`) — te same wywołania Admin API co lokalnie,
