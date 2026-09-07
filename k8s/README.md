@@ -564,3 +564,93 @@ Otwarte, nie blokujące: konsolidacja 3 instancji Cloud SQL (`nfc-postgres-prod`
 `core-svc-db`, `keycloak-db`) w jedną z osobnymi schematami rozważona i
 świadomie odrzucona (izolacja awarii/zasobów ważniejsza niż niewielka
 oszczędność przy tej skali) — zostaje 3 osobne instancje.
+
+### Stan na 2026-09-07 (org-svc + tożsamość z Keycloaka — wpięte w kod, NIE w `pay-prod`)
+
+Migracja Organization/BeneficiaryNode/ShopItem/JobPosition/JobApplication/
+InitCode do `org-svc`/`core-svc` + zastąpienie lokalnej tabeli `users`
+tożsamością z Keycloaka (`sub` jako `user_id`/`owner_user_id`, string/UUID)
+została zweryfikowana **lokalnie od A do Z** (MySQL Laravela zatrzymany przez
+cały test) i wypchnięta na `main`. `.github/workflows/production-deploy.yml`
+i `services/api-gateway/.../HealthController.java` zostały dopisane o org-svc
+(build+push, backup, Liquibase, deploy, smoke test, `orgSvc` w
+`/api/v1/health`) — **ale to samo w sobie NIE wystarcza do wydania na
+`pay-prod`**. Zanim ktokolwiek otagował `vX.Y.Z` na branchu `release` z tą
+zmianą, brakuje trzech rzeczy, świadomie odłożonych (mutujące
+`gcloud`/`kubectl` — do wykonania przez użytkownika osobiście, ta sama
+zasada co w reszcie tego pliku):
+
+**1. Instancja Cloud SQL `org-svc-db` + Secret w klastrze** (mirror
+`core-svc-db`, patrz `k8s/overlays/production/22-org-svc.yaml`):
+
+```bash
+# [użytkownik, z uwierzytelnionym gcloud na support-me-prod]
+gcloud sql instances create org-svc-db \
+  --database-version=POSTGRES_16 \
+  --tier=db-g1-small \
+  --region=europe-central2 \
+  --project=support-me-prod \
+  --network=pay-prod-vpc \
+  --no-assign-ip \
+  --backup \
+  --enable-point-in-time-recovery \
+  --retained-backups-count=30 \
+  --retained-transaction-log-days=7
+
+gcloud sql databases create org_svc --instance=org-svc-db --project=support-me-prod
+
+# Wygeneruj silne hasło i utwórz usera org_svc (NIE re-używaj hasła core-svc/nfc_pay):
+gcloud sql users create org_svc --instance=org-svc-db --password="<WYGENERUJ>" --project=support-me-prod
+
+# Sprawdź faktycznie przydzielony prywatny IP (patrz komentarz w
+# production-deploy.yml — 10.208.0.8 to zgadywanka wg wzorca .5/.6/.7):
+gcloud sql instances describe org-svc-db --project=support-me-prod \
+  --format='value(ipAddresses[0].ipAddress)'
+# Jeśli inny niż 10.208.0.8 — podmień w
+# .github/workflows/production-deploy.yml (linia z `jdbc:postgresql://10.208.0.8:5432/org_svc`)
+# PRZED tagowaniem release'u.
+
+# Secret w klastrze (roles/cloudsql.client jest już nadany `pay-workload` na
+# poziomie PROJEKTU — obejmuje każdą instancję w support-me-prod, nic więcej
+# nie trzeba dograć po stronie IAM):
+kubectl create secret generic org-svc-db \
+  --from-literal=username=org_svc \
+  --from-literal=password="<TO SAMO HASŁO CO WYŻEJ>"
+```
+
+**2. Realny Keycloak w `pay-prod` potrzebuje tej samej zmiany realmu co
+lokalny dev** (rola `admin` + `id.token.claim`/`userinfo.token.claim` na
+mapperach "realm roles"/"client roles", patrz `ecosystem/keycloak/pay-realm.json`
+i historia tej sesji) — bez tego `is_admin` po prostu zawsze wychodzi `false`
+na `pay-prod` (miękka awaria, nie crash, ale realny admin traci panel admina).
+Realm jest publicznie osiągalny pod `https://keycloak.please-support-me.eu`
+(patrz `40-ingress.yaml`) — te same wywołania Admin API co lokalnie
+(`/admin/realms/pay/roles`, `/admin/realms/pay/client-scopes/.../protocol-mappers/models/...`),
+tylko z tokenem admina TEGO Keycloaka (poświadczenia w Secret `keycloak-admin`
+czy podobnym w klastrze — sprawdź `10-keycloak.yaml`), nie lokalnego
+`admin`/`admin` z `ecosystem/docker-compose.yml`.
+
+**3. Migracja REALNYCH danych produkcyjnych** — `organizations`,
+`beneficiary_nodes`, `shop_items`, `job_positions`, `job_applications` (dziś w
+`nfc_pay`/`nfc_shop1`) i `init_codes` (jeśli realne dane istnieją poza
+core-svc) nigdy nie zostały przeniesione do `org-svc-db`/`core-svc-db` —
+migracja `2026_09_07_000002_drop_organizations.php` i siostrzane migracje w
+tym repo (patrz commit "Migrate Organization/.../InitCode...") **kasują te
+tabele w Laravelu**, więc muszą wejść na `nfc_pay`/`nfc_shop1` DOPIERO PO
+potwierdzonym, zweryfikowanym eksporcie danych do nowych serwisów — nigdy
+odwrotnie. Podejście 1:1 z tym, co zrobiono lokalnie (eksport SQL →
+transformacja Python → `INSERT ... OVERRIDING SYSTEM VALUE` + `setval` w
+`org-svc-db`/`core-svc-db`), ale `organizations.user_id`/
+`init_codes.owner_user_id` (dziś liczbowy PK `users.id`) trzeba remapować na
+realny `sub` Keycloaka przez JOIN z `users.keycloak_sub` (ta kolumna już
+istnieje i jest wypełniona dla każdego konta, które kiedykolwiek zalogowało
+się przez Keycloak — patrz `KeycloakController` przed tą migracją) — **nie
+przez arbitralny placeholder string jak lokalnie** (tam był to jedyny dev
+seed, tu to prawdziwe konta). To dotyka prawdziwych danych klientów — osobna,
+ostrożna sesja z użytkownikiem, nie coś do zrobienia w tle.
+
+**Dopiero po tych trzech krokach** ma sens tagowanie `vX.Y.Z` na `release` z
+tą zmianą — sam tag bez nich odpali pipeline, który albo padnie na
+`ImagePullBackOff`/`CrashLoopBackOff` org-svc (brak `org-svc-db`/Secret), albo
+— gorzej — wystartuje z pustymi tabelami `org-svc-db`/`core-svc-db` podczas
+gdy migracje Laravela już skasowały oryginalne dane w `nfc_pay`/`nfc_shop1`.

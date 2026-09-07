@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import pay.beneficiary.v1.BeneficiaryNodeServiceGrpc;
 import pay.careers.v1.JobApplicationServiceGrpc;
 import pay.careers.v1.JobPositionServiceGrpc;
+import pay.health.v1.HealthCheckServiceGrpc;
 import pay.organization.v1.OrganizationServiceGrpc;
 import pay.shopitem.v1.ShopItemServiceGrpc;
 
@@ -61,5 +62,11 @@ public class OrgSvcGrpcConfig {
     public JobApplicationServiceGrpc.JobApplicationServiceBlockingStub orgSvcJobApplicationStub(
             @Qualifier("orgSvcChannel") ManagedChannel channel) {
         return JobApplicationServiceGrpc.newBlockingStub(channel);
+    }
+
+    @Bean
+    public HealthCheckServiceGrpc.HealthCheckServiceBlockingStub orgSvcHealthStub(
+            @Qualifier("orgSvcChannel") ManagedChannel channel) {
+        return HealthCheckServiceGrpc.newBlockingStub(channel);
     }
 }

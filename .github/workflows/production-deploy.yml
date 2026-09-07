@@ -52,14 +52,14 @@ jobs:
       - name: Backup wszystkich baz PRZED czymkolwiek innym
         run: |
           set -euo pipefail
-          for instance in nfc-postgres-prod core-svc-db keycloak-db; do
+          for instance in nfc-postgres-prod core-svc-db keycloak-db org-svc-db; do
             echo "Backup $instance..."
             gcloud sql backups create --instance="$instance" --project="$PROJECT_ID" --async
           done
-          # --async: trzy backupy naraz, bez czekania sekwencyjnie — ale
+          # --async: cztery backupy naraz, bez czekania sekwencyjnie — ale
           # musimy poczekać, aż WSZYSTKIE się faktycznie skończą, zanim ruszymy
           # dalej (deploy nie powinien wyprzedzić potwierdzonego backupu).
-          for instance in nfc-postgres-prod core-svc-db keycloak-db; do
+          for instance in nfc-postgres-prod core-svc-db keycloak-db org-svc-db; do
             echo "Czekam na backup $instance..."
             for i in $(seq 1 30); do
               status=$(gcloud sql backups list --instance="$instance" --project="$PROJECT_ID" \
@@ -80,6 +80,12 @@ jobs:
             -f services/core-svc/Dockerfile .
           docker push ${{ env.REGISTRY }}/core-svc:${{ steps.version.outputs.version }}
 
+      - name: Build + push org-svc
+        run: |
+          docker build -t ${{ env.REGISTRY }}/org-svc:${{ steps.version.outputs.version }} \
+            -f services/org-svc/Dockerfile .
+          docker push ${{ env.REGISTRY }}/org-svc:${{ steps.version.outputs.version }}
+
       - name: Build + push api-gateway
         run: |
           docker build -t ${{ env.REGISTRY }}/api-gateway:${{ steps.version.outputs.version }} \
@@ -98,16 +104,43 @@ jobs:
             -f docker/Dockerfile.prod .
           docker push ${{ env.REGISTRY }}/laravel-ssr:${{ steps.version.outputs.version }}
 
-      - name: Liquibase update (expand-only) — nfc_pay, nfc_shop1, core-svc-db
+      - name: Liquibase update (expand-only) — nfc_pay, nfc_shop1, core-svc-db, org-svc-db
         run: |
           set -euo pipefail
           kubectl create configmap release-changelogs-$GITHUB_RUN_ID \
             --from-file=nfc_pay.xml=db/liquibase/postgres/nfc_pay.xml \
             --from-file=nfc_shop1.xml=db/liquibase/postgres/nfc_shop1.xml \
             --from-file=core-svc-master.xml=services/core-svc/src/main/resources/db/changelog/db.changelog-master.xml \
-            --from-file=core-svc-001.xml=services/core-svc/src/main/resources/db/changelog/changesets/001-create-init-codes.xml
+            --from-file=core-svc-001.xml=services/core-svc/src/main/resources/db/changelog/changesets/001-create-init-codes.xml \
+            --from-file=core-svc-002.xml=services/core-svc/src/main/resources/db/changelog/changesets/002-init-codes-label-nullable.xml \
+            --from-file=core-svc-003.xml=services/core-svc/src/main/resources/db/changelog/changesets/003-owner-user-id-to-string.xml \
+            --from-file=org-svc-master.xml=services/org-svc/src/main/resources/db/changelog/db.changelog-master.xml \
+            --from-file=org-svc-001.xml=services/org-svc/src/main/resources/db/changelog/changesets/001-create-organizations.xml \
+            --from-file=org-svc-002.xml=services/org-svc/src/main/resources/db/changelog/changesets/002-create-beneficiary-nodes.xml \
+            --from-file=org-svc-003.xml=services/org-svc/src/main/resources/db/changelog/changesets/003-create-shop-items.xml \
+            --from-file=org-svc-004.xml=services/org-svc/src/main/resources/db/changelog/changesets/004-create-careers.xml \
+            --from-file=org-svc-005.xml=services/org-svc/src/main/resources/db/changelog/changesets/005-user-id-to-string.xml
           # Job w klastrze — jedyny sposób dotarcia do Cloud SQL po prywatnym IP
           # z poziomu tego runnera (GitHub Actions nie jest w VPC).
+          #
+          # core-svc i org-svc mają STRUKTURALNIE IDENTYCZNE ścieżki classpath
+          # (oba: db/changelog/db.changelog-master.xml + db/changelog/changesets/00N-*.xml)
+          # — gdyby wymieszać ich pliki w jednym volumie, kolidowałyby (dwa
+          # różne "001-*.xml" pod tą samą ścieżką). Stąd DWA osobne wolumeny/
+          # mountPath (/changelogs-core, /changelogs-org), każdy zachowujący
+          # DOKŁADNIE tę samą strukturę katalogów, której dany serwis używa
+          # przez classpath — Liquibase zapisuje changeset pod ścieżką pliku
+          # jako jego tożsamość w databasechangelog; niezgodność ze ścieżką,
+          # której realnie użyje aplikacja przy własnym starcie, spowodowałaby
+          # próbę odtworzenia już istniejącej tabeli (dokładnie ten błąd, który
+          # już raz złapaliśmy ręcznie w core-svc — patrz k8s/README.md, Faza 8.2).
+          #
+          # UWAGA org-svc-db: instancja jeszcze NIE istnieje (patrz
+          # k8s/README.md, sekcja provisioning org-svc-db) — adres
+          # 10.208.0.8 to zgadywanka wg wzorca przydziału (.5/.6/.7 już
+          # zajęte), NIE gwarancja. Po utworzeniu instancji zweryfikuj:
+          #   gcloud sql instances describe org-svc-db --project=support-me-prod --format='value(ipAddresses[0].ipAddress)'
+          # i podmień poniższy adres, jeśli się różni, ZANIM otagujesz release.
           cat <<EOF | kubectl apply -f -
           apiVersion: batch/v1
           kind: Job
@@ -127,35 +160,59 @@ jobs:
                         set -e
                         liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_pay --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_pay.xml update
                         liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_shop1 --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_shop1.xml update
-                        liquibase --url=jdbc:postgresql://10.208.0.7:5432/core_svc --username=core_svc --password="\$CORE_SVC_PW" --search-path=/changelogs --changelog-file=db/changelog/db.changelog-master.xml update
+                        liquibase --url=jdbc:postgresql://10.208.0.7:5432/core_svc --username=core_svc --password="\$CORE_SVC_PW" --search-path=/changelogs-core --changelog-file=db/changelog/db.changelog-master.xml update
+                        liquibase --url=jdbc:postgresql://10.208.0.8:5432/org_svc --username=org_svc --password="\$ORG_SVC_PW" --search-path=/changelogs-org --changelog-file=db/changelog/db.changelog-master.xml update
                     env:
                       - name: NFC_PAY_PW
                         valueFrom: { secretKeyRef: { name: laravel-db, key: password } }
                       - name: CORE_SVC_PW
                         valueFrom: { secretKeyRef: { name: core-svc-db, key: password } }
+                      - name: ORG_SVC_PW
+                        valueFrom: { secretKeyRef: { name: org-svc-db, key: password } }
                     volumeMounts:
                       - name: changelogs
                         mountPath: /changelogs
+                      - name: changelogs-core
+                        mountPath: /changelogs-core
+                      - name: changelogs-org
+                        mountPath: /changelogs-org
                 volumes:
                   - name: changelogs
                     configMap:
                       name: release-changelogs-$GITHUB_RUN_ID
-                      # Remapowanie \`path\` na strukturę katalogów DOKŁADNIE
-                      # zgodną z tym, czego używa aplikacja przez classpath
-                      # (services/core-svc/src/main/resources/db/changelog/...)
-                      # — Liquibase zapisuje changeset pod ścieżką pliku jako
-                      # jego tożsamość w databasechangelog; niezgodność tu
-                      # spowodowałaby próbę odtworzenia już istniejącej tabeli
-                      # (dokładnie ten błąd, który już raz złapaliśmy ręcznie).
                       items:
                         - key: nfc_pay.xml
                           path: nfc_pay.xml
                         - key: nfc_shop1.xml
                           path: nfc_shop1.xml
+                  - name: changelogs-core
+                    configMap:
+                      name: release-changelogs-$GITHUB_RUN_ID
+                      items:
                         - key: core-svc-master.xml
                           path: db/changelog/db.changelog-master.xml
                         - key: core-svc-001.xml
                           path: db/changelog/changesets/001-create-init-codes.xml
+                        - key: core-svc-002.xml
+                          path: db/changelog/changesets/002-init-codes-label-nullable.xml
+                        - key: core-svc-003.xml
+                          path: db/changelog/changesets/003-owner-user-id-to-string.xml
+                  - name: changelogs-org
+                    configMap:
+                      name: release-changelogs-$GITHUB_RUN_ID
+                      items:
+                        - key: org-svc-master.xml
+                          path: db/changelog/db.changelog-master.xml
+                        - key: org-svc-001.xml
+                          path: db/changelog/changesets/001-create-organizations.xml
+                        - key: org-svc-002.xml
+                          path: db/changelog/changesets/002-create-beneficiary-nodes.xml
+                        - key: org-svc-003.xml
+                          path: db/changelog/changesets/003-create-shop-items.xml
+                        - key: org-svc-004.xml
+                          path: db/changelog/changesets/004-create-careers.xml
+                        - key: org-svc-005.xml
+                          path: db/changelog/changesets/005-user-id-to-string.xml
           EOF
           kubectl wait --for=condition=complete --timeout=600s job/liquibase-update-$GITHUB_RUN_ID || \
             (kubectl logs job/liquibase-update-$GITHUB_RUN_ID; exit 1)
@@ -187,11 +244,13 @@ jobs:
           # zamiast cicho się cofać.
           for f in k8s/overlays/production/10-keycloak.yaml \
                    k8s/overlays/production/20-core-svc.yaml \
+                   k8s/overlays/production/22-org-svc.yaml \
                    k8s/overlays/production/21-api-gateway.yaml \
                    k8s/overlays/production/30-laravel.yaml; do
             sed "s/__VERSION__/${VERSION}/g" "$f" | kubectl apply -f -
           done
           kubectl rollout status deployment/core-svc --timeout=600s
+          kubectl rollout status deployment/org-svc --timeout=600s
           kubectl rollout status deployment/api-gateway --timeout=600s
           kubectl rollout status deployment/laravel --timeout=600s
 
@@ -200,4 +259,5 @@ jobs:
           POD=$(kubectl get pods -l app=api-gateway -o jsonpath='{.items[0].metadata.name}')
           kubectl exec "$POD" -- curl -sf localhost:8081/api/v1/health | tee /dev/stderr | \
             grep -q '"coreSvc":{"status":"SERVING"' && \
+            grep -q '"orgSvc":{"status":"SERVING"' <<< "$(kubectl exec "$POD" -- curl -s localhost:8081/api/v1/health)" && \
             grep -q '"gatewaySvc":{"status":"SERVING"' <<< "$(kubectl exec "$POD" -- curl -s localhost:8081/api/v1/health)"

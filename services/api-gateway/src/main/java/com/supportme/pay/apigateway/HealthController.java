@@ -22,12 +22,15 @@ public class HealthController {
 
     private final HealthCheckServiceGrpc.HealthCheckServiceBlockingStub coreSvcHealthStub;
     private final HealthCheckServiceGrpc.HealthCheckServiceBlockingStub gatewaySvcHealthStub;
+    private final HealthCheckServiceGrpc.HealthCheckServiceBlockingStub orgSvcHealthStub;
 
     public HealthController(
             @Qualifier("coreSvcHealthStub") HealthCheckServiceGrpc.HealthCheckServiceBlockingStub coreSvcHealthStub,
-            @Qualifier("gatewaySvcHealthStub") HealthCheckServiceGrpc.HealthCheckServiceBlockingStub gatewaySvcHealthStub) {
+            @Qualifier("gatewaySvcHealthStub") HealthCheckServiceGrpc.HealthCheckServiceBlockingStub gatewaySvcHealthStub,
+            @Qualifier("orgSvcHealthStub") HealthCheckServiceGrpc.HealthCheckServiceBlockingStub orgSvcHealthStub) {
         this.coreSvcHealthStub = coreSvcHealthStub;
         this.gatewaySvcHealthStub = gatewaySvcHealthStub;
+        this.orgSvcHealthStub = orgSvcHealthStub;
     }
 
     @GetMapping("/api/v1/health")
@@ -35,6 +38,7 @@ public class HealthController {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("apiGateway", "UP");
         result.put("coreSvc", checkGrpc(coreSvcHealthStub));
+        result.put("orgSvc", checkGrpc(orgSvcHealthStub));
         result.put("gatewaySvc", checkGrpc(gatewaySvcHealthStub));
         return result;
     }

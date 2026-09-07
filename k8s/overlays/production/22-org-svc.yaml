@@ -1,11 +1,12 @@
 # Produkcja (support-me-prod) — org-svc z sidecarem Cloud SQL Auth Proxy,
-# analogicznie do 20-core-svc.yaml. NIEUŻYWANE DOPÓKI nie istnieje instancja
-# Cloud SQL `org-svc-db` i Secret `org-svc-db` (username/password) — patrz
-# przypomnienie w PR/rozmowie, która to dodała. Ten plik NIE jest jeszcze
-# wpięty w .github/workflows/production-deploy.yml (build/push + backup +
-# liquibase + deploy + smoke test) — dopisać te kroki dopiero PO
-# wyprowizjonowaniu instancji, żeby nie wysadzić istniejącego pipeline'u
-# odwołaniem do nieistniejącego zasobu GCP.
+# analogicznie do 20-core-svc.yaml. Ten plik JEST już wpięty w
+# .github/workflows/production-deploy.yml (build/push + backup + liquibase +
+# deploy + smoke test), ale pipeline i tak wysadzi się na tym Deploymencie,
+# DOPÓKI nie istnieje instancja Cloud SQL `org-svc-db` i Secret `org-svc-db`
+# (username/password) w klastrze — patrz k8s/README.md, sekcja
+# "org-svc-db — do zrobienia przed pierwszym tagiem z org-svc" po
+# uruchomieniu tych kroków ręcznie (gcloud/kubectl mutujące — user-run,
+# nie automatyzacja).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
