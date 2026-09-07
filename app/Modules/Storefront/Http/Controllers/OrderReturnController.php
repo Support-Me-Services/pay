@@ -3,7 +3,9 @@
 namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Models\Order;
+use App\Modules\Storefront\Models\Organization;
 use App\Modules\Storefront\Services\GatewayClient;
+use App\Services\OrgSvcClient;
 use Inertia\Inertia;
 
 class OrderReturnController extends Controller
@@ -27,14 +29,16 @@ class OrderReturnController extends Controller
 
         $this->syncStatusFromGateway($order);
 
+        $shopItem = $order->shop_item_id ? $this->tryGetShopItem($order->shop_item_id) : null;
+
         if ($order->status === 'paid') {
             // Podziekowanie pokazujemy jako modal na stronie glownej (/main),
             // ze wlasna trescia danego produktu, jesli znany jego slug.
-            return redirect()->route('main', ['thank-you-page' => $order->shopItem?->slug ?? 1]);
+            return redirect()->route('main', ['thank-you-page' => $shopItem['slug'] ?? 1]);
         }
 
         if ($order->status === 'failed') {
-            $org = $order->shopItem?->organization;
+            $org = $shopItem ? Organization::find($shopItem['organizationId']) : null;
 
             return Inertia::render('Storefront/ReturnFailure', [
                 'orderId' => $order->id,
@@ -82,6 +86,16 @@ class OrderReturnController extends Controller
             $order->update(['status' => 'paid', 'paid_at' => $transaction['paid_at'] ?? now()]);
         } elseif (in_array($transaction['status'], ['failed', 'abandoned'])) {
             $order->update(['status' => 'failed']);
+        }
+    }
+
+    /** org-svc zwraca 404 dla nieistniejącego/usuniętego produktu. */
+    private function tryGetShopItem(int $id): ?array
+    {
+        try {
+            return app(OrgSvcClient::class)->getShopItem($id);
+        } catch (\Throwable $e) {
+            return null;
         }
     }
 }

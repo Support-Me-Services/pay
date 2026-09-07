@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package pay.organization.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.organization.v1";
+option java_outer_classname = "OrganizationProto";
+
+// Organizacja — byt nad kontem (User) w Laravelu, patrz
+// app/Modules/Storefront/Models/Organization.php. Jedno konto może
+// zarządzać wieloma organizacjami. Pierwsza domena przenoszona z Laravela
+// do org-svc: CRUD podstawowy (nazwa, unikalny handle, widoczność 5 sekcji
+// self-service). Relacje do beneficiary nodes/shop items/positions/
+// applications zostają na razie w Laravelu — dostaną własne serwisy/kontrakty
+// dopiero gdy faktycznie migrują.
+service OrganizationService {
+  rpc Create(CreateOrganizationRequest) returns (OrganizationResponse);
+  rpc UpdateName(UpdateOrganizationNameRequest) returns (OrganizationResponse);
+  rpc UpdateSections(UpdateOrganizationSectionsRequest) returns (OrganizationResponse);
+  rpc Get(GetOrganizationRequest) returns (OrganizationResponse);
+  rpc ListByOwner(ListOrganizationsByOwnerRequest) returns (ListOrganizationsResponse);
+  rpc ListAll(ListAllOrganizationsRequest) returns (ListOrganizationsResponse);
+
+  // Wyłącznie admin (bramkowane w Laravelu przed dotarciem tutaj) — przepina
+  // organizację na innego użytkownika. Bez owner-check jak reszta mutacji:
+  // to świadomy override, nie self-service (patrz Panel\UsersController::updateOwner).
+  rpc UpdateOwner(UpdateOrganizationOwnerRequest) returns (OrganizationResponse);
+}
+
+// Widoczność 5 sekcji self-service (beneficiaries/shop-items/positions/
+// applications/init-codes — patrz Organization::SECTIONS w Laravelu).
+// Pole NIEUSTAWIONE (brak presence, has_sections() == false) == wszystko
+// widoczne — mirror `enabled_sections === null` w Laravelu. Ustawione z
+// pustą listą `keys` == nic niewidoczne (stan startowy nowej organizacji).
+message EnabledSections {
+  repeated string keys = 1;
+}
+
+message CreateOrganizationRequest {
+  string user_id = 1;
+  string name = 2;
+}
+
+message UpdateOrganizationNameRequest {
+  int64 id = 1;
+  string user_id = 2; // do weryfikacji własności, nie zmienia właściciela rekordu
+  string name = 3;
+}
+
+message UpdateOrganizationSectionsRequest {
+  int64 id = 1;
+  string user_id = 2;
+  EnabledSections sections = 3; // brak (has_sections() == false) == wszystko widoczne
+}
+
+message UpdateOrganizationOwnerRequest {
+  int64 id = 1;
+  string new_user_id = 2;
+}
+
+message GetOrganizationRequest {
+  int64 id = 1;
+}
+
+message ListOrganizationsByOwnerRequest {
+  string user_id = 1;
+}
+
+message ListAllOrganizationsRequest {
+}
+
+message ListOrganizationsResponse {
+  repeated OrganizationResponse organizations = 1;
+}
+
+message OrganizationResponse {
+  int64 id = 1;
+  string user_id = 2;
+  string name = 3;
+  string handle = 4;
+  optional string logo = 5;
+  EnabledSections enabled_sections = 6; // presence: patrz EnabledSections
+}

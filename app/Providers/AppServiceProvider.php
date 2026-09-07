@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Auth\KeycloakSessionProvider;
 use App\Routing\TenantUrlGenerator;
 use App\Socialite\KeycloakProvider;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -71,5 +73,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(SocialiteWasCalled::class, function (SocialiteWasCalled $event) {
             $event->extendSocialite('keycloak', KeycloakProvider::class);
         });
+
+        // Tożsamość z Keycloaka zamiast lokalnej tabeli `users` — patrz
+        // App\Auth\KeycloakSessionProvider (config/auth.php: provider
+        // "keycloak_session"). Zero zapytań do jakiejkolwiek bazy.
+        Auth::provider('keycloak_session', fn () => new KeycloakSessionProvider());
     }
 }

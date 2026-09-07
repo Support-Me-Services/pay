@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package pay.shopitem.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.shopitem.v1";
+option java_outer_classname = "ShopItemProto";
+
+// Produkty sklepu donacyjnego/stałocenowego (dawniej Laravel
+// app/Modules/Storefront/Models/ShopItem.php). Walidacja biznesowa (unikalny
+// slug per organizacja, zakres cen, "tylko jeden domyślny") zostaje w Laravelu
+// przy tworzeniu żądania — org-svc egzekwuje jedynie unikalność slugu i
+// niezmiennik "jeden domyślny" na poziomie zapisu (obrona w głąb).
+service ShopItemService {
+  rpc Create(CreateShopItemRequest) returns (ShopItemResponse);
+  rpc Update(UpdateShopItemRequest) returns (ShopItemResponse);
+  rpc Delete(DeleteShopItemRequest) returns (DeleteShopItemResponse);
+  rpc Toggle(ToggleShopItemRequest) returns (ShopItemResponse);
+  rpc Get(GetShopItemRequest) returns (ShopItemResponse);
+  rpc ListByOrganization(ListShopItemsRequest) returns (ListShopItemsResponse);
+  rpc ListActiveByOrganization(ListShopItemsRequest) returns (ListShopItemsResponse);
+  rpc ListAll(ListAllShopItemsRequest) returns (ListShopItemsResponse); // dropdown "mecenas" (wszystkie organizacje)
+}
+
+message CreateShopItemRequest {
+  int64 organization_id = 1;
+  string name = 2;
+  optional string slug = 3; // brak -> slugify(name) w org-svc
+  optional string image = 4;
+  int64 price_grosze = 5;
+  optional string description = 6;
+  int32 sort = 7;
+  optional string thank_you_heading = 8;
+  optional string thank_you_body = 9;
+  optional string thank_you_image = 10;
+  optional int64 mecenas_organization_id = 11;
+  bool is_default = 12;
+}
+
+message UpdateShopItemRequest {
+  int64 id = 1;
+  int64 organization_id = 2; // do weryfikacji własności
+  string name = 3;
+  optional string slug = 4;
+  optional string image = 5;
+  bool clear_image = 6; // jawne usunięcie obrazu (odróżnia "bez zmian" od "usuń")
+  int64 price_grosze = 7;
+  optional string description = 8;
+  int32 sort = 9;
+  bool active = 10;
+  optional string thank_you_heading = 11;
+  optional string thank_you_body = 12;
+  optional string thank_you_image = 13;
+  bool clear_thank_you_image = 14;
+  optional int64 mecenas_organization_id = 15;
+  bool clear_mecenas_organization_id = 16;
+  bool is_default = 17;
+}
+
+message DeleteShopItemRequest {
+  int64 id = 1;
+  int64 organization_id = 2;
+}
+
+message DeleteShopItemResponse {
+  bool deleted = 1;
+}
+
+message ToggleShopItemRequest {
+  int64 id = 1;
+  int64 organization_id = 2;
+}
+
+message GetShopItemRequest {
+  int64 id = 1;
+}
+
+message ListShopItemsRequest {
+  int64 organization_id = 1;
+}
+
+message ListAllShopItemsRequest {
+}
+
+message ListShopItemsResponse {
+  repeated ShopItemResponse items = 1;
+}
+
+message ShopItemResponse {
+  int64 id = 1;
+  int64 organization_id = 2;
+  string name = 3;
+  string slug = 4;
+  optional string image = 5;
+  // min_amount == price (tryb sklepu wymusza min=cena, patrz komentarz w
+  // Laravelu) — trzymane jako jedno pole; oddzielne min_amount porzucone
+  // (nigdy realnie nie rozjeżdżało się od price poza panelem, patrz badanie).
+  int64 price_grosze = 6;
+  optional string description = 7;
+  bool is_default = 8;
+  bool active = 9;
+  int32 sort = 10;
+  optional string thank_you_heading = 11;
+  optional string thank_you_body = 12;
+  optional string thank_you_image = 13;
+  optional int64 mecenas_organization_id = 14;
+}

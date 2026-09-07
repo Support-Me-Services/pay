@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="003-create-shop-items" author="org-svc">
+        <sql>
+            create table shop_items (
+                id                      bigint generated always as identity primary key,
+                organization_id         bigint not null,
+                name                    varchar(255) not null,
+                slug                    varchar(255) not null,
+                image                   varchar(255),
+                price_grosze            bigint not null,
+                description             text,
+                is_default              boolean not null default false,
+                active                  boolean not null default true,
+                sort                    integer not null default 0,
+                thank_you_heading       varchar(255),
+                thank_you_body          text,
+                thank_you_image         varchar(255),
+                mecenas_organization_id bigint,
+                created_at              timestamptz not null default now(),
+                updated_at              timestamptz not null default now(),
+
+                constraint shop_items_org_slug_unique unique (organization_id, slug)
+            );
+
+            create index shop_items_organization_id_idx on shop_items (organization_id);
+            create index shop_items_mecenas_organization_id_idx on shop_items (mecenas_organization_id);
+        </sql>
+        <rollback>
+            <sql>drop table if exists shop_items;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

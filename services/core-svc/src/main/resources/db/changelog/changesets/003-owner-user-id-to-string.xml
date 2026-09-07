@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Tożsamość z Keycloaka zamiast lokalnej tabeli `users` w Laravelu —
+         owner_user_id odwołuje się teraz wprost do `sub` Keycloaka
+         (string/UUID), nie do numerycznego PK tabeli users. -->
+    <changeSet id="003-owner-user-id-to-string" author="core-svc">
+        <sql>
+            alter table init_codes alter column owner_user_id type varchar(255) using owner_user_id::varchar(255);
+        </sql>
+        <rollback>
+            <sql>alter table init_codes alter column owner_user_id type bigint using owner_user_id::bigint;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

@@ -18,6 +18,7 @@ import pay.initcode.v1.CreateInitCodeRequest;
 import pay.initcode.v1.DeleteInitCodeRequest;
 import pay.initcode.v1.InitCodeServiceGrpc;
 import pay.initcode.v1.ListInitCodesRequest;
+import pay.initcode.v1.ResolveRequest;
 import pay.initcode.v1.ToggleInitCodeRequest;
 import pay.initcode.v1.UpdateInitCodeRequest;
 
@@ -60,7 +61,7 @@ public class InternalInitCodeController {
                 request.setTargetOrganizationId(body.targetOrganizationId());
             }
 
-            var response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).create(request.build());
+            var response = stub.withDeadlineAfter(5, TimeUnit.SECONDS).create(request.build());
             return ResponseEntity.status(HttpStatus.CREATED).body(InitCodeDto.from(response));
         });
     }
@@ -68,10 +69,10 @@ public class InternalInitCodeController {
     @GetMapping
     public ResponseEntity<?> list(
             @RequestParam(required = false) Long organizationId,
-            @RequestParam(required = false) Long ownerUserId) {
+            @RequestParam(required = false) String ownerUserId) {
         return handle(() -> {
             var owner = new OwnerScopeDto(organizationId, ownerUserId).toProto();
-            var response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).list(
+            var response = stub.withDeadlineAfter(5, TimeUnit.SECONDS).list(
                     ListInitCodesRequest.newBuilder().setOwner(owner).build());
             List<InitCodeDto> codes = response.getCodesList().stream()
                     .map(InitCodeDto::from)
@@ -94,7 +95,7 @@ public class InternalInitCodeController {
                 request.setTargetOrganizationId(body.targetOrganizationId());
             }
 
-            var response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).update(request.build());
+            var response = stub.withDeadlineAfter(5, TimeUnit.SECONDS).update(request.build());
             return ResponseEntity.ok(InitCodeDto.from(response));
         });
     }
@@ -102,7 +103,7 @@ public class InternalInitCodeController {
     @PostMapping("/{id}/toggle")
     public ResponseEntity<?> toggle(@PathVariable long id, @RequestBody ScopedRequestDto body) {
         return handle(() -> {
-            var response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).toggle(
+            var response = stub.withDeadlineAfter(5, TimeUnit.SECONDS).toggle(
                     ToggleInitCodeRequest.newBuilder().setId(id).setOwner(body.owner().toProto()).build());
             return ResponseEntity.ok(InitCodeDto.from(response));
         });
@@ -111,9 +112,28 @@ public class InternalInitCodeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable long id, @RequestBody ScopedRequestDto body) {
         return handle(() -> {
-            stub.withDeadlineAfter(2, TimeUnit.SECONDS).delete(
+            stub.withDeadlineAfter(5, TimeUnit.SECONDS).delete(
                     DeleteInitCodeRequest.newBuilder().setId(id).setOwner(body.owner().toProto()).build());
             return ResponseEntity.noContent().build();
+        });
+    }
+
+    /**
+     * Rozwiązanie kodu (Faza 5) — surowa odpowiedź core-svc.InitCodeService.Resolve.
+     * WYŁĄCZNIE do wywołania przez Laravel (InitController::show), które samo
+     * buduje przekierowanie (zna slugi/handle'e przez org-svc) — w odróżnieniu
+     * od PublicInitController (publiczny, sam buduje pełen redirect).
+     */
+    @GetMapping("/resolve/{uuid}")
+    public ResponseEntity<?> resolve(@PathVariable String uuid) {
+        return handle(() -> {
+            var response = stub.withDeadlineAfter(5, TimeUnit.SECONDS).resolve(
+                    ResolveRequest.newBuilder().setUuid(uuid).build());
+            return ResponseEntity.ok(Map.of(
+                    "found", response.getFound(),
+                    "targetType", response.getTargetType().name(),
+                    "targetId", response.getTargetId(),
+                    "uuid", response.getUuid()));
         });
     }
 

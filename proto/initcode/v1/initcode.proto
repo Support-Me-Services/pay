@@ -29,7 +29,7 @@ service InitCodeService {
 message OwnerScope {
   oneof scope {
     int64 organization_id = 1;
-    int64 owner_user_id = 2;
+    string owner_user_id = 2;
   }
 }
 
@@ -76,7 +76,7 @@ message InitCodeResponse {
   string uuid = 2;
   string label = 3;
   optional int64 organization_id = 4;
-  optional int64 owner_user_id = 5;
+  optional string owner_user_id = 5;
   optional int64 shop_item_id = 6;
   optional int64 target_organization_id = 7;
   bool active = 8;

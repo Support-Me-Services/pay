@@ -34,6 +34,9 @@ images:
   - name: ecosystem_core-svc:latest
     newName: europe-central2-docker.pkg.dev/please-support-me-test1/pay/core-svc
     newTag: ci-placeholder
+  - name: ecosystem_org-svc:latest
+    newName: europe-central2-docker.pkg.dev/please-support-me-test1/pay/org-svc
+    newTag: ci-placeholder
   - name: ecosystem_api-gateway:latest
     newName: europe-central2-docker.pkg.dev/please-support-me-test1/pay/api-gateway
     newTag: ci-placeholder
@@ -59,16 +62,30 @@ patches:
   - target: { kind: Deployment, name: postgres-core }
     patch: |-
       - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "256Mi" } } }
+  - target: { kind: Service, name: postgres-org }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Deployment, name: postgres-org }
+    patch: |-
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "256Mi" } } }
   - target: { kind: Deployment, name: postgres-keycloak }
     patch: |-
       - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "256Mi" } } }
       # (postgres-keycloak Service jest już ClusterIP domyślnie — bez zmian)
 
-  # --- core-svc / api-gateway: obraz z rejestru zamiast lokalnego ---
+  # --- core-svc / org-svc / api-gateway: obraz z rejestru zamiast lokalnego ---
   - target: { kind: Service, name: core-svc }
     patch: |-
       - { op: replace, path: /spec/type, value: ClusterIP }
   - target: { kind: Deployment, name: core-svc }
+    patch: |-
+      - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
+      - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }
+      - { op: add, path: /spec/progressDeadlineSeconds, value: 1800 }
+  - target: { kind: Service, name: org-svc }
+    patch: |-
+      - { op: replace, path: /spec/type, value: ClusterIP }
+  - target: { kind: Deployment, name: org-svc }
     patch: |-
       - { op: replace, path: /spec/template/spec/containers/0/imagePullPolicy, value: IfNotPresent }
       - { op: add, path: /spec/template/spec/containers/0/resources, value: { requests: { cpu: "80m", memory: "384Mi" } } }

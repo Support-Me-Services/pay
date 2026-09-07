@@ -53,4 +53,14 @@ return [
     // socialiteproviders/keycloak (Provider::getBaseUrl()), nie "realm".
     'keycloak_realm' => env('KEYCLOAK_REALM', 'pay'),
 
+    // Faza migracji Organization -> org-svc: api-gateway jest jedynym punktem
+    // wejścia do ekosystemu mikroserwisów (REST na brzegu, gRPC w środku —
+    // patrz proto/README.md). base_url wskazuje TEN kontener/pod (nie to,
+    // co widzi przeglądarka) — w Dockerze/Kubernetesie to inny host niż
+    // localhost, dokładnie ten sam problem co keycloak_internal_base_url
+    // wyżej. internal_api_key musi zgadzać się z `pay.internal.api-key`
+    // skonfigurowanym w services/api-gateway (InternalApiKeyFilter).
+    'api_gateway_base_url' => env('API_GATEWAY_BASE_URL', 'http://localhost:8081'),
+    'api_gateway_internal_key' => env('API_GATEWAY_INTERNAL_KEY', 'local-dev-only-change-me'),
+
 ];

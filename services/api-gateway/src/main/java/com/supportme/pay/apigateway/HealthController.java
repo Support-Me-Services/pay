@@ -48,7 +48,7 @@ public class HealthController {
         try {
             // Faza 5: deadline jawny — bez niego zawieszony peer wisiałby
             // w nieskończoność (dotyczy każdego blocking-stuba w tym serwisie).
-            HealthCheckResponse response = stub.withDeadlineAfter(2, TimeUnit.SECONDS).check(request);
+            HealthCheckResponse response = stub.withDeadlineAfter(5, TimeUnit.SECONDS).check(request);
             result.put("status", response.getStatus().name());
             result.put("serviceName", response.getServiceName());
             result.put("message", response.getMessage());

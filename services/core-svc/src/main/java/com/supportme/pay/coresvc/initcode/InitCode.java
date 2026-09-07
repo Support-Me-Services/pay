@@ -29,14 +29,16 @@ public class InitCode {
     @Column(nullable = false, unique = true, length = 36)
     private String uuid;
 
-    @Column(nullable = false)
+    // Nullable — Laravel od zawsze pozwalał na pusty label (Faza 5 migracji
+    // ujawniła ten rozjazd, patrz changeset 002-init-codes-label-nullable).
+    @Column
     private String label;
 
     @Column(name = "organization_id")
     private Long organizationId;
 
     @Column(name = "owner_user_id")
-    private Long ownerUserId;
+    private String ownerUserId;
 
     @Column(name = "shop_item_id")
     private Long shopItemId;
@@ -59,7 +61,7 @@ public class InitCode {
     protected InitCode() {
     }
 
-    public InitCode(String uuid, String label, Long organizationId, Long ownerUserId,
+    public InitCode(String uuid, String label, Long organizationId, String ownerUserId,
                      Long shopItemId, Long targetOrganizationId) {
         this.uuid = uuid;
         this.label = label;
@@ -90,7 +92,7 @@ public class InitCode {
         return organizationId;
     }
 
-    public Long getOwnerUserId() {
+    public String getOwnerUserId() {
         return ownerUserId;
     }
 

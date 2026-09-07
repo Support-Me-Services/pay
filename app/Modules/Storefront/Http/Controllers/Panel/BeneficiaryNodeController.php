@@ -3,8 +3,8 @@
 namespace App\Modules\Storefront\Http\Controllers\Panel;
 
 use App\Modules\Storefront\Http\Controllers\Controller;
-use App\Modules\Storefront\Models\BeneficiaryNode;
 use App\Modules\Storefront\Models\Organization;
+use App\Services\OrgSvcClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -13,6 +13,12 @@ use Inertia\Inertia;
  * Panel: edytor podstrony „O nas" — węzły (nagłówek + grafika + tekst).
  * Kolejność ustawiana przeciąganiem (reorder). Grafika i treść (Quill) jak
  * w edytorze produktów. Sekcja per‑organizacja (aktywna organizacja usera).
+ *
+ * Faza 2 migracji: dane (i CRUD/reorder) w org-svc (przez api-gateway) —
+ * BeneficiaryNode już nie ma lokalnej tabeli w Laravelu (w odróżnieniu od
+ * Organization, nic lokalnie nie ma FK do beneficiary_nodes, więc pełny
+ * cutover bez lustra). Sam upload/serwowanie obrazu (GCS) zostaje w Laravelu
+ * — org-svc trzyma wyłącznie ścieżkę jako string.
  */
 class BeneficiaryNodeController extends Controller
 {
@@ -27,10 +33,11 @@ class BeneficiaryNodeController extends Controller
 
     public function index()
     {
-        $nodes = BeneficiaryNode::forOrganization($this->org->id)->ordered()->get();
+        $nodes = app(OrgSvcClient::class)->listBeneficiaryNodes($this->org->id);
+        usort($nodes, fn ($a, $b) => $a['position'] <=> $b['position']);
 
         return Inertia::render('Panel/Beneficiaries/Index', [
-            'nodes' => $nodes->map(fn (BeneficiaryNode $n) => $this->present($n))->values(),
+            'nodes' => array_values(array_map(fn (array $n) => $this->present($n), $nodes)),
             'urls' => [
                 'store' => route('panel.beneficiaries.store'),
                 'reorder' => route('panel.beneficiaries.reorder'),
@@ -43,64 +50,58 @@ class BeneficiaryNodeController extends Controller
         ]);
     }
 
-    /** Serializacja węzła „O nas" dla React. */
-    private function present(BeneficiaryNode $n): array
+    /** Serializacja węzła „O nas" (odpowiedź org-svc) dla React. */
+    private function present(array $n): array
     {
         return [
-            'id' => $n->id,
-            'heading' => $n->heading,
-            'image_side' => $n->image_side,
-            'text_align' => $n->text_align,
-            'image' => $n->image ? asset('storage/' . $n->image) : null,
-            'image_scale' => $n->image_scale,
-            'image_x' => $n->image_x,
-            'image_y' => $n->image_y,
-            'image_right' => $n->imageRight(),
-            'body_html' => $n->body_html ?? '',
+            'id' => $n['id'],
+            'heading' => $n['heading'],
+            'image_side' => $n['imageSide'],
+            'text_align' => $n['textAlign'],
+            'image' => $n['image'] ? asset('storage/' . $n['image']) : null,
+            'image_scale' => $n['imageScale'],
+            'image_x' => $n['imageX'],
+            'image_y' => $n['imageY'],
+            'image_right' => $n['imageSide'] === 'right',
+            'body_html' => $n['bodyHtml'] ?? '',
         ];
     }
 
     public function store(Request $request)
     {
         $data = $this->validated($request);
-        $data['organization_id'] = $this->org->id;
+        $data['organizationId'] = $this->org->id;
         $data['image'] = $this->storeImage($request);
-        $data['position'] = (int) BeneficiaryNode::forOrganization($this->org->id)->max('position') + 1;
 
-        BeneficiaryNode::create($data);
+        app(OrgSvcClient::class)->createBeneficiaryNode($data);
 
         return redirect()->route('panel.beneficiaries.index')->with('success', 'Węzeł dodany.');
     }
 
-    public function update(Request $request, BeneficiaryNode $node)
+    public function update(Request $request, int $node)
     {
-        $this->guard($node);
         $data = $this->validated($request);
+        $data['organizationId'] = $this->org->id;
 
         if ($img = $this->storeImage($request)) {
-            if ($node->image) {
-                Storage::disk('public')->delete($node->image);
-            }
+            $this->deleteOldImage($node);
             $data['image'] = $img;
         } elseif ($request->boolean('remove_image')) {
-            if ($node->image) {
-                Storage::disk('public')->delete($node->image);
-            }
+            $this->deleteOldImage($node);
             $data['image'] = null;
         }
 
-        $node->update($data);
+        app(OrgSvcClient::class)->updateBeneficiaryNode($node, $data);
 
         return redirect()->route('panel.beneficiaries.index')->with('success', 'Węzeł zapisany.');
     }
 
-    public function destroy(BeneficiaryNode $node)
+    public function destroy(int $node)
     {
-        $this->guard($node);
-        if ($node->image) {
-            Storage::disk('public')->delete($node->image);
+        $result = app(OrgSvcClient::class)->deleteBeneficiaryNode($node, $this->org->id);
+        if (! empty($result['deletedImage'])) {
+            Storage::disk('public')->delete($result['deletedImage']);
         }
-        $node->delete();
 
         return redirect()->route('panel.beneficiaries.index')->with('success', 'Węzeł usunięty.');
     }
@@ -108,18 +109,20 @@ class BeneficiaryNodeController extends Controller
     /** Zapis nowej kolejności (drag & drop) — AJAX. */
     public function reorder(Request $request)
     {
-        $ids = (array) $request->input('order', []);
-        foreach (array_values($ids) as $i => $id) {
-            BeneficiaryNode::forOrganization($this->org->id)->whereKey((int) $id)->update(['position' => $i]);
-        }
+        $ids = array_map('intval', (array) $request->input('order', []));
+        app(OrgSvcClient::class)->reorderBeneficiaryNodes($this->org->id, $ids);
 
         return response()->json(['ok' => true]);
     }
 
-    /** Tylko aktywna organizacja może edytować/usuwać swój węzeł. */
-    private function guard(BeneficiaryNode $node): void
+    /** Usuwa poprzedni obrazek pliku (przed nadpisaniem/usunięciem) — trzeba znać go PRZED wywołaniem org-svc. */
+    private function deleteOldImage(int $nodeId): void
     {
-        abort_unless((int) $node->organization_id === $this->org->id, 403);
+        $nodes = app(OrgSvcClient::class)->listBeneficiaryNodes($this->org->id);
+        $existing = collect($nodes)->firstWhere('id', $nodeId);
+        if ($existing && ! empty($existing['image'])) {
+            Storage::disk('public')->delete($existing['image']);
+        }
     }
 
     /** Walidacja pól węzła (bez grafiki/pozycji — te obsłużone osobno). */
@@ -142,12 +145,12 @@ class BeneficiaryNodeController extends Controller
 
         return [
             'heading' => $data['heading'],
-            'image_side' => $data['image_side'],
-            'image_scale' => (int) ($data['image_scale'] ?? 100),
-            'image_x' => (int) ($data['image_x'] ?? 0),
-            'image_y' => (int) ($data['image_y'] ?? 0),
-            'text_align' => $data['text_align'],
-            'body_html' => $data['body_html'] ?? null,
+            'imageSide' => $data['image_side'],
+            'imageScale' => (int) ($data['image_scale'] ?? 100),
+            'imageX' => (int) ($data['image_x'] ?? 0),
+            'imageY' => (int) ($data['image_y'] ?? 0),
+            'textAlign' => $data['text_align'],
+            'bodyHtml' => $data['body_html'] ?? null,
         ];
     }
 

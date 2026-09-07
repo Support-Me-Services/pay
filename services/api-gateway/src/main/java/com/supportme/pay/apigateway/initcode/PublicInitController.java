@@ -76,7 +76,7 @@ public class PublicInitController {
 
         ResolveResponse resolved;
         try {
-            resolved = initCodeStub.withDeadlineAfter(2, TimeUnit.SECONDS).resolve(
+            resolved = initCodeStub.withDeadlineAfter(5, TimeUnit.SECONDS).resolve(
                     ResolveRequest.newBuilder().setUuid(uuid).build());
         } catch (StatusRuntimeException e) {
             log.warn("scan: core-svc.Resolve failed", e);

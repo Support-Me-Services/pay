@@ -10,7 +10,9 @@ resources:
   - ../10-postgres-core.yaml
   - ../11-postgres-keycloak.yaml
   - ../12-keycloak.yaml
+  - ../13-postgres-org.yaml
   - ../20-core-svc.yaml
   - ../21-api-gateway.yaml
+  - ../22-org-svc.yaml
   - ../30-mysql.yaml
   - ../31-laravel-app.yaml

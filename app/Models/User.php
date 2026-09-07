@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Modules\Storefront\Models\Organization;
+use App\Services\OrgSvcClient;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -90,12 +90,13 @@ class User extends Authenticatable
 
         // Organizacja musi zawsze mieć jakiegoś użytkownika — usuwane konto
         // przepina swoje organizacje na rootOwnera zamiast dopuścić, by
-        // zniknęły osierocone (FK na organizations.user_id nie ma już
-        // cascadeOnDelete — patrz migracja drop_cascade_from_organizations_user_id).
+        // zniknęły osierocone. Faza 6 migracji: org-svc, nie FK w MySQL.
         static::deleting(function (User $user) {
             $root = static::rootOwner();
             if ($root && $root->isNot($user)) {
-                $user->organizations()->update(['user_id' => $root->id]);
+                foreach ($user->organizations() as $org) {
+                    app(OrgSvcClient::class)->updateOwner($org->id, $root->id);
+                }
             }
         });
     }
@@ -113,23 +114,40 @@ class User extends Authenticatable
         return $handle;
     }
 
-    /** Organizacje zarządzane przez to konto (jedno konto = wiele organizacji). */
-    public function organizations(): HasMany
+    /**
+     * Organizacje zarządzane przez to konto (jedno konto = wiele organizacji).
+     * Faza 6 migracji: org-svc, nie lokalna relacja Eloquent — zwraca zwykłą
+     * tablicę Organization (posortowaną po nazwie przez org-svc).
+     *
+     * @return Organization[]
+     */
+    public function organizations(): array
     {
-        return $this->hasMany(Organization::class);
+        return Organization::byOwnerOrderedByName($this->id);
     }
 
     /**
      * Aktywna organizacja w bieżącej sesji panelu — z niej czytają/piszą
      * wszystkie kontrolery sekcji (O nas/Zbiórki/Praca/Aplikacje). Weryfikuje,
      * że wskazana w sesji organizacja faktycznie należy do TEGO konta (nie da
-     * się podmienić session() na cudzą); fallback: pierwsza organizacja konta.
+     * się podmienić session() na cudzą); fallback: najstarsza organizacja konta.
      */
     public function activeOrganization(\Illuminate\Http\Request $request): ?Organization
     {
-        $id = $request->session()->get('active_organization_id');
-        $org = $id ? $this->organizations()->find($id) : null;
+        $mine = $this->organizations();
+        if (! $mine) {
+            return null;
+        }
 
-        return $org ?? $this->organizations()->orderBy('id')->first();
+        $id = $request->session()->get('active_organization_id');
+        $active = $id ? current(array_filter($mine, fn (Organization $o) => $o->id === (int) $id)) : null;
+
+        if ($active) {
+            return $active;
+        }
+
+        usort($mine, fn (Organization $a, Organization $b) => $a->id <=> $b->id);
+
+        return $mine[0];
     }
 }

@@ -3,8 +3,8 @@
 namespace App\Modules\Storefront\Grpc;
 
 use App\Modules\Storefront\Models\Organization;
-use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
+use App\Services\OrgSvcClient;
 use Pay\Storefront\V1\ResolveRedirectTargetRequest;
 use Pay\Storefront\V1\ResolveRedirectTargetRequest\TargetType;
 use Pay\Storefront\V1\ResolveRedirectTargetResponse;
@@ -29,10 +29,13 @@ class StorefrontGrpcHandler implements StorefrontServiceInterface
         $active = false;
 
         if ($in->getTargetType() === TargetType::SHOP_ITEM) {
-            $shopItem = ShopItem::find($in->getTargetId());
-            if ($shopItem !== null) {
-                $urlPath = '/?produkt=' . urlencode($shopItem->slug);
-                $active = (bool) $shopItem->active;
+            // ShopItem żyje teraz w org-svc (Faza 3) — brak lokalnej tabeli.
+            try {
+                $shopItem = app(OrgSvcClient::class)->getShopItem($in->getTargetId());
+                $urlPath = '/?produkt=' . urlencode($shopItem['slug']);
+                $active = (bool) $shopItem['active'];
+            } catch (\Throwable $e) {
+                // 404 z org-svc (produkt usunięty) — brak trafienia, jak dawniej ShopItem::find() === null.
             }
         } elseif ($in->getTargetType() === TargetType::ORGANIZATION) {
             $organization = Organization::find($in->getTargetId());

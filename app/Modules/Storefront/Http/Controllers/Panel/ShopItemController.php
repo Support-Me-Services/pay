@@ -4,7 +4,7 @@ namespace App\Modules\Storefront\Http\Controllers\Panel;
 
 use App\Modules\Storefront\Models\Organization;
 use App\Modules\Storefront\Http\Controllers\Controller;
-use App\Modules\Storefront\Models\ShopItem;
+use App\Services\OrgSvcClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,6 +15,11 @@ use Inertia\Inertia;
  * Panel: produkty sklepu (NFC). Zarządzanie listą, ceną, opisem,
  * tagiem NFC oraz produktem domyślnym („Serduszko"). Sekcja per‑organizacja
  * (aktywna organizacja usera).
+ *
+ * Faza 3 migracji: dane i CRUD w org-svc (przez api-gateway) — ShopItem
+ * już nie ma lokalnej tabeli w Laravelu. Unikalność slugu per organizacja
+ * i niezmiennik "jeden domyślny" egzekwuje teraz org-svc. Sam upload/
+ * serwowanie obrazu (GCS) zostaje w Laravelu.
  */
 class ShopItemController extends Controller
 {
@@ -29,10 +34,11 @@ class ShopItemController extends Controller
 
     public function index()
     {
-        $items = ShopItem::forOrganization($this->org->id)->ordered()->get();
+        $items = app(OrgSvcClient::class)->listShopItems($this->org->id);
+        usort($items, fn ($a, $b) => $a['sort'] <=> $b['sort']);
 
         return Inertia::render('Panel/ShopItems/Index', [
-            'items' => $items->map(fn (ShopItem $i) => $this->present($i))->values(),
+            'items' => array_values(array_map(fn (array $i) => $this->present($i), $items)),
             'createUrl' => route('panel.shop-items.create'),
         ]);
     }
@@ -49,104 +55,114 @@ class ShopItemController extends Controller
 
     public function store(Request $request)
     {
-        $item = ShopItem::create($this->validated($request) + ['organization_id' => $this->org->id]);
-        $this->applyDefault($request, $item);
+        $data = $this->validated($request);
+        $data['organizationId'] = $this->org->id;
+
+        app(OrgSvcClient::class)->createShopItem($data);
 
         return redirect()->route('panel.shop-items.index')->with('success', 'Produkt dodany.');
     }
 
-    public function edit(ShopItem $shopItem)
+    public function edit(int $shopItem)
     {
-        $this->guard($shopItem);
+        $item = $this->ownedItemOrAbort($shopItem);
 
         return Inertia::render('Panel/ShopItems/Form', [
-            'item' => $this->present($shopItem),
+            'item' => $this->present($item),
             'organizations' => $this->organizationOptions(),
             'storeUrl' => route('panel.shop-items.store'),
             'indexUrl' => route('panel.shop-items.index'),
         ]);
     }
 
-    public function update(Request $request, ShopItem $shopItem)
+    public function update(Request $request, int $shopItem)
     {
-        $this->guard($shopItem);
-        $shopItem->update($this->validated($request, $shopItem));
-        $this->applyDefault($request, $shopItem);
+        $current = $this->ownedItemOrAbort($shopItem);
+        $data = $this->validated($request, $current);
+        $data['organizationId'] = $this->org->id;
+
+        app(OrgSvcClient::class)->updateShopItem($shopItem, $data);
 
         return redirect()->route('panel.shop-items.index')->with('success', 'Produkt zapisany.');
     }
 
-    public function toggle(ShopItem $shopItem)
+    public function toggle(int $shopItem)
     {
-        $this->guard($shopItem);
-        $shopItem->update(['active' => ! $shopItem->active]);
+        $this->ownedItemOrAbort($shopItem);
+        $result = app(OrgSvcClient::class)->toggleShopItem($shopItem, $this->org->id);
 
-        return back()->with('success', $shopItem->active ? 'Produkt aktywowany.' : 'Produkt dezaktywowany.');
+        return back()->with('success', $result['active'] ? 'Produkt aktywowany.' : 'Produkt dezaktywowany.');
     }
 
-    public function destroy(ShopItem $shopItem)
+    public function destroy(int $shopItem)
     {
-        $this->guard($shopItem);
-        $shopItem->delete();
+        $this->ownedItemOrAbort($shopItem);
+        app(OrgSvcClient::class)->deleteShopItem($shopItem, $this->org->id);
 
         return redirect()->route('panel.shop-items.index')->with('success', 'Produkt usunięty.');
     }
 
-    /** Tylko aktywna organizacja może edytować/usuwać swój produkt. */
-    private function guard(ShopItem $item): void
+    /** Ładuje produkt i weryfikuje, że należy do aktywnej organizacji. */
+    private function ownedItemOrAbort(int $id): array
     {
-        abort_unless((int) $item->organization_id === $this->org->id, 403);
+        $item = app(OrgSvcClient::class)->getShopItem($id);
+        abort_unless((int) $item['organizationId'] === $this->org->id, 403);
+
+        return $item;
     }
 
     /** Lista organizacji do wyboru mecenasa (dropdown w formularzu). */
     private function organizationOptions(): array
     {
-        return Organization::orderBy('name')->get()
+        return collect(Organization::allOrderedByName())
             ->map(fn (Organization $o) => ['id' => $o->id, 'name' => $o->name])
             ->values()->all();
     }
 
-    /** Serializacja produktu dla warstwy React (Inertia). */
-    private function present(ShopItem $item): array
+    /** Serializacja produktu (odpowiedź org-svc) dla warstwy React (Inertia). */
+    private function present(array $item): array
     {
+        $pricePln = (int) round($item['priceGrosze'] / 100);
+
         return [
-            'id' => $item->id,
-            'name' => $item->name,
-            'slug' => $item->slug,
-            'description' => $item->description,
-            'price_pln' => $item->pricePln(),
-            'min_amount_pln' => $item->minAmountPln(),
-            'sort' => (int) $item->sort,
-            'is_default' => (bool) $item->is_default,
-            'active' => (bool) $item->active,
-            'image' => $item->image ? asset($item->image) : null,
-            'thank_you_heading' => $item->thank_you_heading,
-            'thank_you_body' => $item->thank_you_body,
-            'thank_you_image' => $item->thank_you_image ? asset($item->thank_you_image) : null,
-            'mecenas_organization_id' => $item->mecenas_organization_id,
-            'update_url' => route('panel.shop-items.update', $item),
-            'edit_url' => route('panel.shop-items.edit', $item),
-            'toggle_url' => route('panel.shop-items.toggle', $item),
-            'destroy_url' => route('panel.shop-items.destroy', $item),
+            'id' => $item['id'],
+            'name' => $item['name'],
+            'slug' => $item['slug'],
+            'description' => $item['description'],
+            'price_pln' => $pricePln,
+            'min_amount_pln' => $pricePln,
+            'sort' => (int) $item['sort'],
+            'is_default' => (bool) $item['isDefault'],
+            'active' => (bool) $item['active'],
+            'image' => $item['image'] ? asset($item['image']) : null,
+            'thank_you_heading' => $item['thankYouHeading'],
+            'thank_you_body' => $item['thankYouBody'],
+            'thank_you_image' => $item['thankYouImage'] ? asset($item['thankYouImage']) : null,
+            'mecenas_organization_id' => $item['mecenasOrganizationId'],
+            'update_url' => route('panel.shop-items.update', $item['id']),
+            'edit_url' => route('panel.shop-items.edit', $item['id']),
+            'toggle_url' => route('panel.shop-items.toggle', $item['id']),
+            'destroy_url' => route('panel.shop-items.destroy', $item['id']),
         ];
     }
 
-    /** Walidacja + normalizacja (zł→grosze, slug, upload grafiki). */
-    private function validated(Request $request, ?ShopItem $current = null): array
+    /** Walidacja + normalizacja (zł→grosze, slug, upload grafiki). Unikalność slugu egzekwuje org-svc. */
+    private function validated(Request $request, ?array $current = null): array
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('shop_items', 'slug')->where('organization_id', $this->org->id)->ignore($current?->id)],
+            'slug' => ['nullable', 'string', 'max:255'],
             'price_pln' => ['required', 'integer', 'min:1', 'max:5000'],
             'description' => ['nullable', 'string', 'max:2000'],
             'sort' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'image_file' => ['nullable', 'image', 'max:5120'],
             'active' => ['nullable', 'boolean'],
+            'is_default' => ['nullable', 'boolean'],
             'thank_you_heading' => ['nullable', 'string', 'max:255'],
             'thank_you_body' => ['nullable', 'string', 'max:5000'],
             'thank_you_image_file' => ['nullable', 'image', 'max:5120'],
             'remove_thank_you_image' => ['nullable', 'boolean'],
-            'mecenas_organization_id' => ['nullable', 'integer', Rule::exists('organizations', 'id')],
+            'mecenas_organization_id' => ['nullable', 'integer', Rule::in(array_column(Organization::allOrderedByName(), 'id'))],
         ], [], [
             'name' => 'nazwa',
             'price_pln' => 'cena',
@@ -161,15 +177,18 @@ class ShopItemController extends Controller
 
         $out = [
             'name' => $data['name'],
-            'slug' => Str::slug($data['slug'] ?? '') ?: Str::slug($data['name']),
-            'price' => $priceGr,
-            'min_amount' => $priceGr,   // w trybie sklepu min = cena (spójność z modelem darowiznowym)
+            'slug' => $data['slug'] ? Str::slug($data['slug']) : null,
+            'priceGrosze' => $priceGr,
             'description' => $data['description'] ?? null,
             'sort' => (int) ($data['sort'] ?? 0),
             'active' => $request->boolean('active'),
-            'thank_you_heading' => $data['thank_you_heading'] ?? null,
-            'thank_you_body' => $data['thank_you_body'] ?? null,
-            'mecenas_organization_id' => $data['mecenas_organization_id'] ?? null,
+            'isDefault' => $request->boolean('is_default'),
+            'thankYouHeading' => $data['thank_you_heading'] ?? null,
+            'thankYouBody' => $data['thank_you_body'] ?? null,
+            'mecenasOrganizationId' => $data['mecenas_organization_id'] ?? null,
+            'clearImage' => false,
+            'clearThankYouImage' => false,
+            'clearMecenasOrganizationId' => empty($data['mecenas_organization_id']),
         ];
 
         if ($request->hasFile('image_file')) {
@@ -178,34 +197,22 @@ class ShopItemController extends Controller
         }
 
         if ($request->hasFile('thank_you_image_file')) {
-            $this->deleteStoredFile($current?->thank_you_image);
+            $this->deleteStoredFile($current['thankYouImage'] ?? null);
             $path = $request->file('thank_you_image_file')->store('shop-items', 'public');
-            $out['thank_you_image'] = 'storage/' . $path;
+            $out['thankYouImage'] = 'storage/' . $path;
         } elseif ($request->boolean('remove_thank_you_image')) {
-            $this->deleteStoredFile($current?->thank_you_image);
-            $out['thank_you_image'] = null;
+            $this->deleteStoredFile($current['thankYouImage'] ?? null);
+            $out['clearThankYouImage'] = true;
         }
 
         return $out;
     }
 
-    /** Usuwa plik zapisany z prefiksem "storage/" (patrz $out['image'] itd.) z dysku 'public'. */
+    /** Usuwa plik zapisany z prefiksem "storage/" z dysku 'public'. */
     private function deleteStoredFile(?string $path): void
     {
         if ($path) {
             Storage::disk('public')->delete(Str::after($path, 'storage/'));
-        }
-    }
-
-    /** Tylko jeden produkt może być domyślny — ustaw/wyłącz pozostałe. */
-    private function applyDefault(Request $request, ShopItem $item): void
-    {
-        if ($request->boolean('is_default')) {
-            ShopItem::where('organization_id', $item->organization_id)->where('id', '!=', $item->id)->update(['is_default' => false]);
-            $item->update(['is_default' => true]);
-        } elseif ($item->is_default) {
-            // odznaczono domyślny — pozostaw bez domyślnego (lub wymuś inny w UI)
-            $item->update(['is_default' => false]);
         }
     }
 }

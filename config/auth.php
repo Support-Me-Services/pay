@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\User;
-
 return [
 
     /*
@@ -62,15 +60,11 @@ return [
     */
 
     'providers' => [
+        // Tożsamość WYŁĄCZNIE z Keycloaka — zero lokalnej bazy, patrz
+        // App\Auth\KeycloakSessionProvider (zarejestrowany w AppServiceProvider).
         'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'driver' => 'keycloak_session',
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*

@@ -5,4 +5,6 @@
                     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <include file="changesets/001-create-init-codes.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/002-init-codes-label-nullable.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/003-owner-user-id-to-string.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

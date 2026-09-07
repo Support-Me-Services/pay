@@ -4,8 +4,8 @@ namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Organization;
-use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
+use App\Services\OrgSvcClient;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,7 +13,7 @@ use Inertia\Inertia;
  * Strona główna „/" — model DAROWIZNOWY (paywin „Wesprzyj — X zł").
  * Pokazuje produkty konta głównego (admin, handle „lula-marcin"); zamiast
  * stałej ceny obowiązuje kwota wybrana przez użytkownika, nie niższa niż
- * `min_amount` produktu. Sklep ze stałą ceną + koszyk jest pod /user/{handle}.
+ * cena produktu. Sklep ze stałą ceną + koszyk jest pod /user/{handle}.
  */
 class CompanyStoreController extends Controller
 {
@@ -21,15 +21,15 @@ class CompanyStoreController extends Controller
     public function index(Request $request)
     {
         $owner = $this->owner();
-        $items = $owner
-            ? ShopItem::forOrganization($owner->id)->where('active', true)->ordered()->get()->values()
-            : collect();
-        $default = $items->firstWhere('is_default', true) ?? $items->first();
+        $items = $owner ? app(OrgSvcClient::class)->listShopItems($owner->id, activeOnly: true) : [];
+        usort($items, fn ($a, $b) => $a['sort'] <=> $b['sort']);
+
+        $default = collect($items)->firstWhere('isDefault', true) ?? ($items[0] ?? null);
 
         // Indeks startowy: produkt z ?produkt= (link z tagu NFC/podstron), inaczej domyślny.
         $startSlug = $request->query('produkt');
-        $start = $items->firstWhere('slug', $startSlug) ?? $default ?? $items->first();
-        $startIdx = $items->search(fn ($i) => $i->slug === optional($start)->slug);
+        $start = collect($items)->firstWhere('slug', $startSlug) ?? $default;
+        $startIdx = collect($items)->search(fn ($i) => $i['slug'] === ($start['slug'] ?? null));
         $startIdx = $startIdx === false ? 0 : $startIdx;
 
         // Fundacje wspierane (karuzela) — logo z public/img/fundacje/<slug>.(svg|png|webp|jpg).
@@ -49,14 +49,14 @@ class CompanyStoreController extends Controller
         })->values();
 
         return Inertia::render('Storefront/Storefront', [
-            'items' => $items->map(fn (ShopItem $i) => [
-                'slug' => $i->slug,
-                'name' => $i->name,
-                'min' => round($i->min_amount / 100, 2),
-                'image' => $i->image ? asset($i->image) : null,
-                'is_svg' => $i->isSvg(),
-                'action' => route('shop.buy', $i->slug),
-            ])->values(),
+            'items' => array_values(array_map(fn (array $i) => [
+                'slug' => $i['slug'],
+                'name' => $i['name'],
+                'min' => round($i['priceGrosze'] / 100, 2),
+                'image' => $i['image'] ? asset($i['image']) : null,
+                'is_svg' => $i['image'] && str_ends_with(strtolower($i['image']), '.svg'),
+                'action' => route('shop.buy', $i['slug']),
+            ], $items)),
             'startIdx' => $startIdx,
             'foundations' => $foundations,
             'mainUrl' => route('main'),
@@ -67,27 +67,27 @@ class CompanyStoreController extends Controller
         ]);
     }
 
-    /** POST /sklep/kup/{slug} — darowizna na wybraną kwotę (≥ min produktu). */
+    /** POST /sklep/kup/{slug} — darowizna na wybraną kwotę (≥ cena produktu). */
     public function purchase(Request $request, string $slug, GatewayClient $gateway)
     {
         $owner = $this->owner();
-        $item = ShopItem::query()
-            ->when($owner, fn ($q) => $q->forOrganization($owner->id))
-            ->where('slug', $slug)->where('active', true)->firstOrFail();
+        $items = $owner ? app(OrgSvcClient::class)->listShopItems($owner->id, activeOnly: true) : [];
+        $item = collect($items)->firstWhere('slug', $slug);
+        abort_unless($item, 404);
 
         // Poki PayU nie zatwierdzil sklepu: pomijamy platnosc i kierujemy na
         // podziekowanie — ale nadal ze znanym produktem (wlasna tresc podziekowania).
         if (config('payment.bypass')) {
-            return redirect()->route('main', ['thank-you-page' => $item->slug]);
+            return redirect()->route('main', ['thank-you-page' => $item['slug']]);
         }
 
-        $minPln = round(max(1, $item->min_amount) / 100, 2);
+        $minPln = round(max(1, $item['priceGrosze']) / 100, 2);
         $minPlnLabel = rtrim(rtrim(number_format($minPln, 2, ',', ' '), '0'), ',');
 
         $validated = $request->validate([
             'amount_pln' => ['required', 'numeric', 'decimal:0,2', 'min:'.$minPln, 'max:5000'],
         ], [
-            'amount_pln.min' => "Minimalna kwota dla „{$item->name}” to {$minPlnLabel} zł.",
+            'amount_pln.min' => "Minimalna kwota dla „{$item['name']}” to {$minPlnLabel} zł.",
             'amount_pln.required' => 'Podaj kwotę.',
             'amount_pln.numeric' => 'Kwota musi być liczbą.',
             'amount_pln.decimal' => 'Kwota może mieć maksymalnie 2 miejsca po przecinku.',
@@ -95,12 +95,12 @@ class CompanyStoreController extends Controller
 
         $amount = (int) round($validated['amount_pln'] * 100); // grosze
 
-        $order = Order::create(['product_id' => null, 'shop_item_id' => $item->id, 'amount' => $amount, 'status' => 'pending']);
+        $order = Order::create(['product_id' => null, 'shop_item_id' => $item['id'], 'amount' => $amount, 'status' => 'pending']);
 
         try {
             $result = $gateway->createTransaction([
-                'product_external_id' => 'shop-'.$item->slug.'-'.$order->id,
-                'product_name' => 'Wsparcie: '.$item->name,
+                'product_external_id' => 'shop-'.$item['slug'].'-'.$order->id,
+                'product_name' => 'Wsparcie: '.$item['name'],
                 'amount' => $amount,
                 'currency' => 'PLN',
                 'return_url' => route('order.return', $order->id),

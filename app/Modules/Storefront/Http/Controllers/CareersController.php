@@ -3,9 +3,8 @@
 namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Mail\JobApplicationReceived;
-use App\Modules\Storefront\Models\JobApplication;
-use App\Modules\Storefront\Models\JobPosition;
 use App\Modules\Storefront\Models\Organization;
+use App\Services\OrgSvcClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +15,10 @@ use Inertia\Inertia;
 /**
  * „Praca" globalna (/praca) — oferty właściciela głównego (root owner).
  * Odpowiednik per-konto: UserCareersController pod /people/{handle}/praca.
+ *
+ * Faza 4 migracji: JobPosition/JobApplication żyją w org-svc — brak route
+ * model bindingu (parametry to teraz zwykłe int ID), CV zostaje na dysku
+ * Laravela (GCS), rate-limiting/honeypot formularza zostają tu (warstwa brzegowa).
  */
 class CareersController extends Controller
 {
@@ -26,9 +29,9 @@ class CareersController extends Controller
     }
 
     /** Czy oferta jest zdalna/hybrydowa (model nie ma pola — wykrywamy z tekstu). */
-    private function isRemote(JobPosition $p): bool
+    private function isRemote(array $p): bool
     {
-        $haystack = mb_strtolower(trim(($p->location ?? '') . ' ' . ($p->employment_type ?? '')));
+        $haystack = mb_strtolower(trim(($p['location'] ?? '') . ' ' . ($p['employmentType'] ?? '')));
 
         return $haystack !== '' && Str::contains($haystack, ['zdaln', 'remote', 'hybryd']);
     }
@@ -39,26 +42,25 @@ class CareersController extends Controller
     public function index()
     {
         $owner = Organization::rootOrganization();
-        $positions = $owner
-            ? JobPosition::forOrganization($owner->id)->where('active', true)->orderBy('sort')->orderBy('id')->get()
-            : collect();
+        $positions = $owner ? app(OrgSvcClient::class)->listJobPositions($owner->id, activeOnly: true) : [];
+        usort($positions, fn ($a, $b) => $a['sort'] <=> $b['sort']);
 
         $fallback = 'Dołącz do zespołu, który tworzy płatności NFC dla dobra wspólnego — technologię wspierającą parafie, fundacje i lokalne inicjatywy. Szukamy osób, które chcą łączyć nowoczesne rozwiązania z realnym wpływem na ludzi.';
 
         return Inertia::render('Storefront/Praca', [
-            'positions' => $positions->map(function (JobPosition $p) use ($fallback) {
-                $short = trim((string) $p->short_description);
+            'positions' => array_values(array_map(function (array $p) use ($fallback) {
+                $short = trim((string) $p['shortDescription']);
 
                 return [
-                    'id' => $p->id,
-                    'title' => $p->title,
-                    'employment_type' => $p->employment_type,
-                    'location' => $p->location,
+                    'id' => $p['id'],
+                    'title' => $p['title'],
+                    'employment_type' => $p['employmentType'],
+                    'location' => $p['location'],
                     'is_remote' => $this->isRemote($p),
                     'excerpt' => $short !== '' ? $short : $fallback,
-                    'show_url' => route('careers.show', $p),
+                    'show_url' => route('careers.show', $p['id']),
                 ];
-            })->values(),
+            }, $positions)),
             'css' => $this->subpagesCss(),
             'pageTitle' => 'Praca — ' . config('shop.name'),
             'pageDescription' => 'Dołącz do zespołu — aktualne oferty pracy i wolontariatu.',
@@ -68,34 +70,35 @@ class CareersController extends Controller
     /**
      * GET /praca/oferta/{position} — pojedyncza oferta pracy na osobnej podstronie.
      */
-    public function show(JobPosition $position)
+    public function show(int $position)
     {
         $owner = Organization::rootOrganization();
-        abort_unless($position->active && $owner && (int) $position->organization_id === $owner->id, 404);
+        $item = $this->tryGetPosition($position);
+        abort_unless($item && $item['active'] && $owner && $item['organizationId'] === $owner->id, 404);
 
-        $others = JobPosition::forOrganization($owner->id)->where('active', true)
-            ->where('id', '!=', $position->id)
-            ->orderBy('sort')->orderBy('id')->limit(3)->get();
+        $others = collect(app(OrgSvcClient::class)->listJobPositions($owner->id, activeOnly: true))
+            ->reject(fn ($o) => $o['id'] === $item['id'])
+            ->sortBy('sort')->take(3);
 
-        $plain = trim(strip_tags($position->description_html ?? ''));
+        $plain = trim(strip_tags($item['descriptionHtml'] ?? ''));
 
         return Inertia::render('Storefront/Oferta', [
             'position' => [
-                'title' => $position->title,
-                'employment_type' => trim((string) $position->employment_type),
-                'location' => trim((string) $position->location),
-                'is_remote' => $this->isRemote($position),
-                'description_html' => $plain !== '' ? $position->description_html : null,
-                'apply_url' => route('careers.apply', $position),
+                'title' => $item['title'],
+                'employment_type' => trim((string) $item['employmentType']),
+                'location' => trim((string) $item['location']),
+                'is_remote' => $this->isRemote($item),
+                'description_html' => $plain !== '' ? $item['descriptionHtml'] : null,
+                'apply_url' => route('careers.apply', $item['id']),
             ],
-            'others' => $others->map(fn (JobPosition $o) => [
-                'title' => $o->title,
-                'meta' => collect([$o->employment_type, $o->location])->filter()->implode(' · ') ?: 'Zobacz szczegóły',
-                'show_url' => route('careers.show', $o),
+            'others' => $others->map(fn (array $o) => [
+                'title' => $o['title'],
+                'meta' => collect([$o['employmentType'], $o['location']])->filter()->implode(' · ') ?: 'Zobacz szczegóły',
+                'show_url' => route('careers.show', $o['id']),
             ])->values(),
             'careersUrl' => route('careers'),
             'css' => $this->subpagesCss(),
-            'pageTitle' => $position->title . ' — Praca — SupportME',
+            'pageTitle' => $item['title'] . ' — Praca — SupportME',
             'pageDescription' => Str::limit($plain, 150) ?: 'Dołącz do zespołu SupportME — technologia, która pomaga czynić dobro.',
         ]);
     }
@@ -104,20 +107,20 @@ class CareersController extends Controller
      * GET /praca/aplikuj — formularz aplikacji spontanicznej (bez oferty).
      * GET /praca/{position}/aplikuj — formularz aplikacji na konkretną ofertę.
      */
-    public function applyForm(?JobPosition $position = null)
+    public function applyForm(?int $position = null)
     {
-        $hasPosition = $position && $position->exists;
-        if ($hasPosition) {
+        $item = $position ? $this->tryGetPosition($position) : null;
+        if ($position) {
             $owner = Organization::rootOrganization();
-            abort_unless($owner && (int) $position->organization_id === $owner->id, 404);
+            abort_unless($item && $owner && $item['organizationId'] === $owner->id, 404);
         }
 
         return Inertia::render('Storefront/Aplikuj', [
-            'position' => $hasPosition ? ['title' => $position->title] : null,
-            'storeUrl' => $hasPosition ? route('careers.apply.store', $position) : route('careers.apply.general.store'),
+            'position' => $item ? ['title' => $item['title']] : null,
+            'storeUrl' => $item ? route('careers.apply.store', $position) : route('careers.apply.general.store'),
             'careersUrl' => route('careers'),
             'css' => $this->subpagesCss(),
-            'pageTitle' => ($hasPosition ? 'Aplikuj: ' . $position->title : 'Aplikacja spontaniczna') . ' — ' . config('shop.name'),
+            'pageTitle' => ($item ? 'Aplikuj: ' . $item['title'] : 'Aplikacja spontaniczna') . ' — ' . config('shop.name'),
             'pageDescription' => 'Wyślij swoje zgłoszenie rekrutacyjne wraz z CV.',
         ]);
     }
@@ -126,14 +129,14 @@ class CareersController extends Controller
      * POST /praca/aplikuj oraz POST /praca/{position}/aplikuj — zapis zgłoszenia.
      * CV przechowywane jest na PRYWATNYM dysku (storage/app/private/cv).
      */
-    public function applyStore(Request $request, ?JobPosition $position = null)
+    public function applyStore(Request $request, ?int $position = null)
     {
+        $item = $position ? $this->tryGetPosition($position) : null;
+
         // Honeypot antyspamowy — boty wypełniają ukryte pole "website".
         // Udajemy sukces (bez zapisu pliku/wpisu/maila), by nie zdradzać mechanizmu.
         if ($request->filled('website')) {
-            return ($position && $position->exists
-                ? redirect()->route('careers.apply', $position)
-                : redirect()->route('careers.apply.general'))
+            return ($item ? redirect()->route('careers.apply', $position) : redirect()->route('careers.apply.general'))
                 ->with('success', 'Dziękujemy za zgłoszenie — odezwiemy się.')
                 ->with('apply_done', true);
         }
@@ -175,22 +178,21 @@ class CareersController extends Controller
         $cvOriginalName = $file->getClientOriginalName();
 
         // Nieobowiązkowa zgoda na przyszłe rekrutacje — zapisujemy fakt zgody
-        // wraz z datą jej udzielenia (potrzebna do liczenia okresu 24 mies.).
+        // wraz z datą jej udzielenia (org-svc stempluje "teraz" po swojej stronie).
         $futureConsent = $request->boolean('future_consent');
 
-        $owner = $position && $position->exists ? $position->organization : Organization::rootOrganization();
+        $owner = $item ? Organization::find($item['organizationId']) : Organization::rootOrganization();
 
-        JobApplication::create([
-            'organization_id' => $owner?->id,
-            'job_position_id' => $position && $position->exists ? $position->id : null,
+        app(OrgSvcClient::class)->createJobApplication([
+            'organizationId' => $owner?->id,
+            'jobPositionId' => $item ? $item['id'] : null,
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
             'message' => $data['message'] ?? null,
-            'cv_path' => $cvPath,
-            'cv_original_name' => $cvOriginalName,
-            'future_recruitment_consent' => $futureConsent,
-            'future_recruitment_consent_at' => $futureConsent ? now() : null,
+            'cvPath' => $cvPath,
+            'cvOriginalName' => $cvOriginalName,
+            'futureRecruitmentConsent' => $futureConsent,
         ]);
 
         // Wyślij zgłoszenie z CV w załączniku na skonfigurowany adres rekrutacji.
@@ -206,7 +208,7 @@ class CareersController extends Controller
                     'email' => $data['email'],
                     'phone' => $data['phone'] ?? null,
                     'message' => $data['message'] ?? null,
-                    'position' => $position && $position->exists ? $position->title : null,
+                    'position' => $item['title'] ?? null,
                 ],
                 cvAbsolutePath: Storage::disk('local')->path($cvPath),
                 cvOriginalName: $cvOriginalName,
@@ -222,12 +224,20 @@ class CareersController extends Controller
         // Powrót na stronę formularza aplikacji z potwierdzeniem (aplikuj.blade
         // renderuje session('success')). Aplikacja jest składana na osobnej
         // podstronie /praca/{position}/aplikuj — tam pokazujemy „Dziękujemy".
-        $redirect = $position && $position->exists
-            ? redirect()->route('careers.apply', $position)
-            : redirect()->route('careers.apply.general');
+        $redirect = $item ? redirect()->route('careers.apply', $position) : redirect()->route('careers.apply.general');
 
         return $redirect
             ->with('success', 'Dziękujemy za zgłoszenie — odezwiemy się.')
             ->with('apply_done', true);
+    }
+
+    /** org-svc zwraca 404 dla nieistniejącego stanowiska. */
+    private function tryGetPosition(int $id): ?array
+    {
+        try {
+            return app(OrgSvcClient::class)->getJobPosition($id);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

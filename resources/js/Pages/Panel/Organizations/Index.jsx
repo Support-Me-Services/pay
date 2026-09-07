@@ -141,7 +141,7 @@ function ActiveOrgSettings({ activeOrg }) {
     )
 }
 
-function AllOrgRow({ org, sections, users }) {
+function AllOrgRow({ org, sections }) {
     const [checked, setChecked] = useState(new Set(org.enabled_sections))
     const [saving, setSaving] = useState(false)
     const [ownerId, setOwnerId] = useState(org.ownerId)
@@ -173,9 +173,8 @@ function AllOrgRow({ org, sections, users }) {
         <tr>
             <td className="fw-bold">{org.name}</td>
             <td>
-                <select value={ownerId} onChange={(e) => setOwnerId(Number(e.target.value))}>
-                    {users.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
-                </select>
+                {/* TODO: Keycloak Admin API — na razie surowy sub Keycloaka, bez wyszukiwarki po e-mailu. */}
+                <input type="text" value={ownerId} onChange={(e) => setOwnerId(e.target.value)} placeholder="sub Keycloaka" style={{ width: '100%' }} />
             </td>
             <td>{org.handle || '—'}</td>
             {sections.map((s) => (
@@ -193,7 +192,7 @@ function AllOrgRow({ org, sections, users }) {
 }
 
 function AllOrganizations({ allOrganizations }) {
-    const { items, sections, users } = allOrganizations
+    const { items, sections } = allOrganizations
 
     return (
         <div className="card card-static">
@@ -213,7 +212,7 @@ function AllOrganizations({ allOrganizations }) {
                                 <tr><td colSpan={4 + sections.length} className="text-muted">Brak organizacji.</td></tr>
                             )}
                             {items.map((org) => (
-                                <AllOrgRow key={org.id} org={org} sections={sections} users={users} />
+                                <AllOrgRow key={org.id} org={org} sections={sections} />
                             ))}
                         </tbody>
                     </table>

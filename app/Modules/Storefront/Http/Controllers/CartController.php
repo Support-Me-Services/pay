@@ -4,9 +4,10 @@ namespace App\Modules\Storefront\Http\Controllers;
 
 use App\Modules\Storefront\Models\Order;
 use App\Modules\Storefront\Models\Organization;
-use App\Modules\Storefront\Models\ShopItem;
 use App\Modules\Storefront\Services\GatewayClient;
+use App\Services\OrgSvcClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 
 /**
@@ -31,14 +32,14 @@ class CartController extends Controller
             'ownerName' => $owner->name,
             'cartCount' => array_sum((array) session("cart.$handle", [])),
             'lines' => $lines->map(fn ($l) => [
-                'id' => $l['item']->id,
-                'name' => $l['item']->name,
-                'image' => $l['item']->image ? asset($l['item']->image) : null,
-                'unit_price' => $l['item']->pricePln(),
+                'id' => $l['item']['id'],
+                'name' => $l['item']['name'],
+                'image' => $l['item']['image'] ? asset($l['item']['image']) : null,
+                'unit_price' => (int) round($l['item']['priceGrosze'] / 100),
                 'qty' => $l['qty'],
                 'line_total' => number_format($l['lineGrosze'] / 100, 2, ',', ' '),
-                'update_url' => route('user.cart.update', [$handle, $l['item']->id]),
-                'remove_url' => route('user.cart.remove', [$handle, $l['item']->id]),
+                'update_url' => route('user.cart.update', [$handle, $l['item']['id']]),
+                'remove_url' => route('user.cart.remove', [$handle, $l['item']['id']]),
             ])->values(),
             'methods' => collect($methods)->map(fn ($m, $code) => [
                 'code' => $code,
@@ -70,13 +71,15 @@ class CartController extends Controller
     public function add(Request $request, string $handle, string $item)
     {
         $owner = $this->owner($handle);
-        $shopItem = ShopItem::forOrganization($owner->id)->where('id', (int) $item)->where('active', true)->firstOrFail();
+        $items = collect(app(OrgSvcClient::class)->listShopItems($owner->id, activeOnly: true));
+        $shopItem = $items->firstWhere('id', (int) $item);
+        abort_unless($shopItem, 404);
 
         $cart = $this->cart($handle);
-        $cart[$shopItem->id] = min(99, ($cart[$shopItem->id] ?? 0) + max(1, (int) $request->input('qty', 1)));
+        $cart[$shopItem['id']] = min(99, ($cart[$shopItem['id']] ?? 0) + max(1, (int) $request->input('qty', 1)));
         session([$this->key($handle) => $cart]);
 
-        return redirect()->back()->with('success', "Dodano do koszyka: {$shopItem->name}.");
+        return redirect()->back()->with('success', "Dodano do koszyka: {$shopItem['name']}.");
     }
 
     /** POST /user/{handle}/koszyk/aktualizuj/{item} */
@@ -151,11 +154,11 @@ class CartController extends Controller
         if (config('payment.bypass')) {
             $this->clear($handle);
 
-            return redirect()->route('main', ['thank-you-page' => $singleItem?->slug ?? 1]);
+            return redirect()->route('main', ['thank-you-page' => $singleItem['slug'] ?? 1]);
         }
 
-        $order = Order::create(['product_id' => null, 'shop_item_id' => $singleItem?->id, 'amount' => $total, 'status' => 'pending']);
-        $names = $lines->map(fn ($l) => $l['item']->name.' ×'.$l['qty'])->implode(', ');
+        $order = Order::create(['product_id' => null, 'shop_item_id' => $singleItem['id'] ?? null, 'amount' => $total, 'status' => 'pending']);
+        $names = $lines->map(fn ($l) => $l['item']['name'].' ×'.$l['qty'])->implode(', ');
         $ship = $shipMethod['label'].($shipPoint ? ' ('.$shipPoint.')' : '');
 
         try {
@@ -182,7 +185,7 @@ class CartController extends Controller
     /** Organizacja-właściciel sklepu po handle. */
     private function owner(string $handle): Organization
     {
-        return Organization::where('handle', $handle)->firstOrFail();
+        return Organization::findByHandleOrFail($handle);
     }
 
     /** Klucz sesji koszyka danego sklepu. */
@@ -198,9 +201,9 @@ class CartController extends Controller
     }
 
     /**
-     * Pozycje koszyka z aktualnych danych produktów danego sklepu.
+     * Pozycje koszyka z aktualnych danych produktów danego sklepu (org-svc).
      *
-     * @return array{0: \Illuminate\Support\Collection, 1: int} [$lines, $totalGrosze]
+     * @return array{0: Collection, 1: int} [$lines, $totalGrosze]
      */
     private function resolve(Organization $owner, string $handle): array
     {
@@ -209,17 +212,19 @@ class CartController extends Controller
             return [collect(), 0];
         }
 
-        $items = ShopItem::forOrganization($owner->id)->whereIn('id', array_keys($cart))->where('active', true)->get()->keyBy('id');
+        $items = collect(app(OrgSvcClient::class)->listShopItems($owner->id, activeOnly: true))
+            ->whereIn('id', array_map('intval', array_keys($cart)))
+            ->keyBy('id');
 
         $lines = collect();
         foreach ($cart as $id => $qty) {
-            if (! $item = $items->get($id)) {
+            if (! $item = $items->get((int) $id)) {
                 continue;
             }
             $lines->push([
                 'item' => $item,
                 'qty' => (int) $qty,
-                'lineGrosze' => $item->priceGrosze() * (int) $qty,
+                'lineGrosze' => $item['priceGrosze'] * (int) $qty,
             ]);
         }
 

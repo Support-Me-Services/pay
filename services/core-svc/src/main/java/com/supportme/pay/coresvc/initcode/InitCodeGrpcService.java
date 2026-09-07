@@ -150,7 +150,7 @@ public class InitCodeGrpcService extends InitCodeServiceGrpc.InitCodeServiceImpl
     }
 
     /** Dokładnie jedno pole niepuste, drugie null. */
-    private record OwnerIdentity(Long organizationId, Long ownerUserId) {
+    private record OwnerIdentity(Long organizationId, String ownerUserId) {
     }
 
     private OwnerIdentity scopeOf(OwnerScope owner) {

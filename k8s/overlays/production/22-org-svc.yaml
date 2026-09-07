@@ -1,0 +1,97 @@
+# Produkcja (support-me-prod) — org-svc z sidecarem Cloud SQL Auth Proxy,
+# analogicznie do 20-core-svc.yaml. NIEUŻYWANE DOPÓKI nie istnieje instancja
+# Cloud SQL `org-svc-db` i Secret `org-svc-db` (username/password) — patrz
+# przypomnienie w PR/rozmowie, która to dodała. Ten plik NIE jest jeszcze
+# wpięty w .github/workflows/production-deploy.yml (build/push + backup +
+# liquibase + deploy + smoke test) — dopisać te kroki dopiero PO
+# wyprowizjonowaniu instancji, żeby nie wysadzić istniejącego pipeline'u
+# odwołaniem do nieistniejącego zasobu GCP.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: org-svc
+  labels:
+    app: org-svc
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 1200
+  selector:
+    matchLabels:
+      app: org-svc
+  template:
+    metadata:
+      labels:
+        app: org-svc
+    spec:
+      serviceAccountName: pay-workload
+      containers:
+        - name: org-svc
+          image: europe-central2-docker.pkg.dev/support-me-prod/pay/org-svc:__VERSION__
+          ports:
+            - containerPort: 8083
+            - containerPort: 9092
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://127.0.0.1:5432/org_svc
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: org-svc-db
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: org-svc-db
+                  key: password
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 10
+          livenessProbe:
+            # Patrz uzasadnienie w 20-core-svc.yaml — zimny start Springa
+            # (Hibernate + gRPC autoconfig + Liquibase) potrafi zająć >70s.
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 150m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0
+          args:
+            - "--private-ip"
+            - "--port=5432"
+            - "support-me-prod:europe-central2:org-svc-db"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: org-svc
+spec:
+  selector:
+    app: org-svc
+  ports:
+    - name: rest
+      port: 8083
+      targetPort: 8083
+    - name: grpc
+      port: 9092
+      targetPort: 9092
+  type: ClusterIP

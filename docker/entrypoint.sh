@@ -66,8 +66,8 @@ php artisan tinker --execute="
 # interwencji za każdym razem. protoc jest już w obrazie (Dockerfile);
 # rr/protoc-gen-php-grpc i wygenerowane klasy PHP lądują na wolumenie vendor/
 # repo (bind-mount) — jednorazowo, potem pomijane jak reszta setupu wyżej.
-[ -f rr ] || { echo "[entrypoint] pobieram binarkę rr..."; php vendor/bin/rr get; }
-[ -f protoc-gen-php-grpc ] || { echo "[entrypoint] pobieram protoc-gen-php-grpc..."; php vendor/bin/rr download-protoc-binary; }
+[ -x rr ] || { echo "[entrypoint] pobieram binarkę rr..."; php vendor/bin/rr get; chmod +x rr; }
+[ -x protoc-gen-php-grpc ] || { echo "[entrypoint] pobieram protoc-gen-php-grpc..."; php vendor/bin/rr download-protoc-binary; chmod +x protoc-gen-php-grpc; }
 
 if [ ! -f app/Modules/Gateway/Grpc/Generated/Pay/Health/V1/HealthCheckServiceInterface.php ] \
     || [ ! -f app/Modules/Gateway/Grpc/Generated/Pay/Storefront/V1/StorefrontServiceInterface.php ]; then

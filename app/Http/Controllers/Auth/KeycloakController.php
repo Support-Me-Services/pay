@@ -2,26 +2,30 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Models\User;
+use App\Auth\KeycloakIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 
 /**
- * Faza 6 — logowanie panelu (Gateway I Storefront) idzie WYŁĄCZNIE przez
- * Keycloak, Laravel nie sprawdza już żadnego hasła samodzielnie. Wspólny
- * kontroler dla obu modułów (wcześniej dwie niezależnie skopiowane
- * implementacje `Auth::attempt()`) — który klient Keycloaka jest użyty
- * ustala `ResolveTenant::applyKeycloakClient()` per bieżący host (patrz
- * `config/tenants.php`), ten kontroler nie wie nic o tenantach.
+ * Logowanie panelu (Gateway I Storefront) idzie WYŁĄCZNIE przez Keycloak.
+ * Który klient Keycloaka jest użyty ustala `ResolveTenant::applyKeycloakClient()`
+ * per bieżący host (patrz `config/tenants.php`), ten kontroler nie wie nic
+ * o tenantach.
  *
- * Dopasowanie konta WYŁĄCZNIE po `keycloak_sub`, NIGDY po e-mailu — realm
- * ma `verifyEmail: true`, ale to higiena, nie jedyna linia obrony:
- * auto-logowanie w istniejące konto po samym dopasowaniu e-maila byłoby
- * furtką na przejęcie konta (ktoś rejestruje w Keycloaku e-mail należący
- * do kogoś innego). Brak dopasowania = zawsze NOWE konto (Storefront) albo
- * odmowa (Gateway, bez samoobsługowej rejestracji, jak dziś).
+ * Tożsamość z Keycloaka: zero lokalnej tabeli `users` — patrz plan migracji
+ * "Tożsamość z Keycloaka zamiast lokalnej tabeli users". Nic tu nie jest
+ * "tworzone" ani "dopasowywane" — każde logowanie buduje `KeycloakIdentity`
+ * na świeżo z tokenu, bo to jedyne źródło prawdy (org-svc/core-svc i tak
+ * referencują `sub` Keycloaka wprost, nie żaden lokalny numeryczny ID).
+ *
+ * Świadomie uproszczone (poza zakresem tej fazy): dawna reguła "Gateway
+ * wymaga wcześniej założonego lokalnego konta" (brak samoobsługowej
+ * rejestracji do bramki) zniknęła razem z tabelą `users` — każde konto z
+ * realmu Keycloaka ma dziś dostęp do obu paneli. Gateway to i tak PoC płatności
+ * poza zakresem tej migracji; właściwe różnicowanie dostępu (np. osobna rola
+ * Keycloaka per panel) to osobna, świadomie odłożona decyzja.
  */
 class KeycloakController extends Controller
 {
@@ -33,40 +37,16 @@ class KeycloakController extends Controller
     public function callback(Request $request)
     {
         $keycloakUser = Socialite::driver('keycloak')->user();
+        $identity = KeycloakIdentity::fromClaims($keycloakUser->getRaw());
 
-        $user = User::where('keycloak_sub', $keycloakUser->getId())->first();
-
-        if (! $user) {
-            if (config('platform.role') === 'gateway') {
-                abort(403, 'To konto nie ma dostępu do panelu bramki. Poproś administratora o dodanie dostępu.');
-            }
-
-            // `email` w tabeli users jest unique — jeśli e-mail tożsamości
-            // Keycloaka pokrywa się z KONTEM INNYM niż to dopasowane wyżej po
-            // keycloak_sub (a więc innym/bez keycloak_sub), User::create()
-            // rzuciłby nieobsłużony UniqueConstraintViolationException (500).
-            // Świadomie NIE auto-linkujemy takiego konta po e-mailu (patrz
-            // komentarz klasy) — więc zamiast tego czysta odmowa, ten sam
-            // wzorzec co odmowa Gateway wyżej.
-            if (User::where('email', $keycloakUser->getEmail())->exists()) {
-                abort(409, 'Istnieje już konto z tym adresem e-mail, niepowiązane z tą tożsamością Keycloaka. Poproś administratora o pomoc.');
-            }
-
-            $user = User::create([
-                'name' => $keycloakUser->getName() ?: $keycloakUser->getNickname() ?: $keycloakUser->getEmail(),
-                'email' => $keycloakUser->getEmail(),
-                'keycloak_sub' => $keycloakUser->getId(),
-                'password' => null,
-            ]);
-        }
-
+        $request->session()->put('keycloak_identity', $identity->toSessionArray());
         // id_token trzymany w sesji do prawdziwego single-logout — end-session
         // Keycloaka przyjmuje id_token_hint; bez niego SSO-sesja w Keycloaku
         // zostaje żywa mimo wylogowania z Laravela (drugie logowanie ominęłoby
         // ekran logowania Keycloaka).
         $request->session()->put('keycloak_id_token', $keycloakUser->accessTokenResponseBody['id_token'] ?? null);
 
-        Auth::login($user, true);
+        Auth::login($identity, true);
         $request->session()->regenerate();
 
         return redirect()->intended(route('panel.dashboard'));

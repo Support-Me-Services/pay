@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="002-create-beneficiary-nodes" author="org-svc">
+        <sql>
+            create table beneficiary_nodes (
+                id              bigint generated always as identity primary key,
+                organization_id bigint not null,
+                heading         varchar(255) not null,
+                image           varchar(255),
+                image_side      varchar(10) not null default 'left',
+                image_scale     integer not null default 100,
+                image_x         integer not null default 0,
+                image_y         integer not null default 0,
+                text_align      varchar(10) not null default 'left',
+                body_html       text,
+                position        integer not null default 0,
+                active          boolean not null default true,
+                created_at      timestamptz not null default now(),
+                updated_at      timestamptz not null default now()
+            );
+
+            create index beneficiary_nodes_organization_id_idx on beneficiary_nodes (organization_id);
+        </sql>
+        <rollback>
+            <sql>drop table if exists beneficiary_nodes;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

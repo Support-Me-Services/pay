@@ -1,0 +1,61 @@
+# Baza org-svc — odpowiednik postgres-org w ecosystem/docker-compose.yml.
+# Patrz 10-postgres-core.yaml dla uzasadnienia PVC + PGDATA-w-podkatalogu.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-org-data
+  namespace: pay
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-org
+  namespace: pay
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres-org }
+  template:
+    metadata:
+      labels: { app: postgres-org }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          env:
+            - { name: POSTGRES_DB, value: org_svc }
+            - { name: POSTGRES_USER, value: org_svc }
+            - { name: POSTGRES_PASSWORD, value: org_svc }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "org_svc"]
+            periodSeconds: 5
+            failureThreshold: 20
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: postgres-org-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-org
+  namespace: pay
+spec:
+  type: LoadBalancer
+  selector: { app: postgres-org }
+  ports:
+    # 5432: port natywny Postgresa — TAK org-svc łączy się wewnątrz klastra
+    # (jdbc:postgresql://postgres-org:5432/org_svc, bez zmian w kodzie).
+    - { name: internal, port: 5432, targetPort: 5432 }
+    # 5434: parytet z docker-compose (5434:5432) — dostęp z hosta (psql itp.).
+    - { name: host, port: 5434, targetPort: 5432 }

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <include file="changesets/001-create-organizations.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/002-create-beneficiary-nodes.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/003-create-shop-items.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/004-create-careers.xml" relativeToChangelogFile="true"/>
+    <include file="changesets/005-user-id-to-string.xml" relativeToChangelogFile="true"/>
+</databaseChangeLog>

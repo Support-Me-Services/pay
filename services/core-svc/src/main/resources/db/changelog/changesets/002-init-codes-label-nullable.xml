@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Faza 5 migracji: wpięcie Laravela do core-svc.InitCodeService ujawniło
+         rozjazd schematu — Laravel od zawsze pozwalał na `label` puste
+         (kolumna nullable, patrz app/Modules/Init/database/migrations),
+         core-svc wymuszał NOT NULL. Skoro Laravel jest źródłem realnych
+         danych (nie odwrotnie), naprawiamy core-svc, nie Laravela. -->
+    <changeSet id="002-init-codes-label-nullable" author="core-svc">
+        <sql>
+            alter table init_codes alter column label drop not null;
+        </sql>
+        <rollback>
+            <sql>
+                update init_codes set label = '' where label is null;
+                alter table init_codes alter column label set not null;
+            </sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

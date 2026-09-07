@@ -68,6 +68,9 @@ zachowania wolumenu `postgres-keycloak`) trzeba dodać użytkownika ręcznie:
 | `core-svc` | `8082` | REST wewnętrzny (Actuator) |
 | `core-svc` | `9090` | gRPC (konsument: api-gateway) |
 | `postgres-core` | `5433` | baza `core-svc` (dziś: żadnych tabel domenowych) |
+| `org-svc` | `8083` | REST wewnętrzny (Actuator) |
+| `org-svc` | `9092` | gRPC (konsument: api-gateway) |
+| `postgres-org` | `5434` | baza `org-svc` (organizacje) |
 | `keycloak` | `8180` | konsola/OIDC, realm `pay` (login admina: `admin`/`admin`, tylko dev) |
 
 `gateway-svc` (Laravel/RoadRunner, PoC Fazy 1) żyje w **osobnym** stacku

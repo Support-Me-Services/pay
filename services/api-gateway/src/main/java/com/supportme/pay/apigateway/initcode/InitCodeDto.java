@@ -7,7 +7,7 @@ public record InitCodeDto(
         String uuid,
         String label,
         Long organizationId,
-        Long ownerUserId,
+        String ownerUserId,
         Long shopItemId,
         Long targetOrganizationId,
         boolean active

@@ -1,0 +1,30 @@
+server:
+  port: 8083
+
+grpc:
+  server:
+    port: 9092
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/org_svc
+    username: org_svc
+    password: org_svc
+  jpa:
+    # Liquibase jest jedynym właścicielem schematu — Hibernate tylko waliduje,
+    # że encje się z nim zgadzają (nigdy nie generuje/zmienia DDL sam).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

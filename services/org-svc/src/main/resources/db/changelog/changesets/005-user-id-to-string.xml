@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Tożsamość z Keycloaka zamiast lokalnej tabeli `users` w Laravelu —
+         user_id odwołuje się teraz wprost do `sub` Keycloaka (string/UUID),
+         nie do numerycznego PK tabeli users. Istniejące wartości bigint
+         rzutują się na ich tekstową reprezentację (remapping na realny sub
+         robimy osobnym ręcznym UPDATE, patrz plan migracji). -->
+    <changeSet id="005-user-id-to-string" author="org-svc">
+        <sql>
+            alter table organizations alter column user_id type varchar(255) using user_id::varchar(255);
+        </sql>
+        <rollback>
+            <sql>alter table organizations alter column user_id type bigint using user_id::bigint;</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

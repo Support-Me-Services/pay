@@ -10,5 +10,5 @@ public interface InitCodeRepository extends JpaRepository<InitCode, Long> {
 
     List<InitCode> findByOrganizationId(Long organizationId);
 
-    List<InitCode> findByOwnerUserId(Long ownerUserId);
+    List<InitCode> findByOwnerUserId(String ownerUserId);
 }

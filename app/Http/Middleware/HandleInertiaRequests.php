@@ -48,11 +48,12 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
             ],
 
-            // Zalogowane konto (dla panelu).
+            // Zalogowane konto (dla panelu). `handle` usunięty — martwy prop,
+            // żaden komponent React go nie konsumował (patrz plan migracji
+            // "Tożsamość z Keycloaka"; User.handle nie istnieje już jako pojęcie).
             'auth' => [
                 'user' => fn () => $request->user() ? [
                     'name' => $request->user()->name,
-                    'handle' => $request->user()->handle,
                 ] : null,
             ],
 
@@ -118,7 +119,12 @@ class HandleInertiaRequests extends Middleware
             $nav[] = ['label' => 'Praca', 'href' => route('panel.positions.index'), 'active' => $request->routeIs('panel.positions.*')];
         }
         if ($org?->canSee('applications')) {
-            $nav[] = ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*') && ! $request->routeIs('panel.applications.consents'), 'badge' => $org ? \App\Modules\Storefront\Models\JobApplication::forOrganization($org->id)->where('is_read', false)->count() ?: null : null];
+            // Faza 4 migracji: JobApplication żyje w org-svc, bez lokalnej tabeli.
+            $unread = count(array_filter(
+                app(\App\Services\OrgSvcClient::class)->listJobApplications($org->id),
+                fn (array $a) => ! $a['isRead']
+            ));
+            $nav[] = ['label' => 'Aplikacje', 'href' => route('panel.applications.index'), 'active' => $request->routeIs('panel.applications.*') && ! $request->routeIs('panel.applications.consents'), 'badge' => $unread ?: null];
             $nav[] = ['label' => 'Baza kandydatów', 'href' => route('panel.applications.consents'), 'active' => $request->routeIs('panel.applications.consents')];
         }
         if ($org?->canSee('init-codes')) {

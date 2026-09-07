@@ -3,16 +3,22 @@
 namespace App\Modules\Storefront\Http\Controllers\Panel;
 
 use App\Modules\Storefront\Http\Controllers\Controller;
-use App\Modules\Storefront\Models\JobApplication;
-use App\Modules\Storefront\Models\JobPosition;
 use App\Modules\Storefront\Models\Organization;
+use App\Services\OrgSvcClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
-/** Panel: zgłoszenia rekrutacyjne (sekcje „Aplikacje” / „Baza kandydatów") — per‑organizacja. */
+/**
+ * Panel: zgłoszenia rekrutacyjne (sekcje „Aplikacje” / „Baza kandydatów") — per‑organizacja.
+ * Faza 4 migracji: dane w org-svc — JobApplication już nie ma lokalnej tabeli.
+ * CV zostaje na dysku Laravela (GCS) — org-svc trzyma tylko ścieżkę.
+ */
 class ApplicationController extends Controller
 {
+    public const STATUSES = ['pending' => 'Do sprawdzenia', 'accepted' => 'Zaakceptowany', 'rejected' => 'Odrzucony'];
+    public const FUTURE_CONSENT_MONTHS = 24;
+
     private Organization $org;
 
     public function __construct(Request $request)
@@ -29,69 +35,87 @@ class ApplicationController extends Controller
     public function index(Request $request)
     {
         $positionId = $request->integer('position') ?: null;
-        $status = in_array($request->query('status'), array_keys(JobApplication::STATUSES), true)
+        $status = in_array($request->query('status'), array_keys(self::STATUSES), true)
             ? $request->query('status') : null;
 
-        $query = JobApplication::forOrganization($this->org->id)->with('position')->orderByDesc('id');
-        if ($positionId) {
-            $query->where('job_position_id', $positionId);
-        }
-        if ($status) {
-            $query->where('status', $status);
-        }
+        $client = app(OrgSvcClient::class);
+        $applications = $client->listJobApplications($this->org->id, $positionId, $status);
+        $allForOrg = $client->listJobApplications($this->org->id);
+        $positionsById = collect($client->listJobPositions($this->org->id))->keyBy('id');
 
-        $applications = $query->get();
-        $unread = JobApplication::forOrganization($this->org->id)->where('is_read', false)->count();
-        // Liczniki per status (z uwzględnieniem filtra oferty).
-        $statusCounts = JobApplication::forOrganization($this->org->id)
-            ->when($positionId, fn ($q) => $q->where('job_position_id', $positionId))
-            ->selectRaw('status, COUNT(*) as c')->groupBy('status')->pluck('c', 'status');
-        $filterPosition = $positionId ? JobPosition::forOrganization($this->org->id)->find($positionId) : null;
+        $unread = count(array_filter($allForOrg, fn ($a) => ! $a['isRead']));
+        $statusCounts = [];
+        foreach ($allForOrg as $a) {
+            if ($positionId && $a['jobPositionId'] !== $positionId) {
+                continue;
+            }
+            $statusCounts[$a['status']] = ($statusCounts[$a['status']] ?? 0) + 1;
+        }
+        $filterPosition = $positionId ? $positionsById->get($positionId) : null;
 
         $base = $positionId ? ['position' => $positionId] : [];
-        $total = (int) $statusCounts->sum();
+        $total = array_sum($statusCounts);
         $tabs = [['label' => 'Wszystkie', 'count' => $total, 'url' => route('panel.applications.index', $base), 'active' => ! $status]];
-        foreach (JobApplication::STATUSES as $key => $label) {
+        foreach (self::STATUSES as $key => $label) {
             $tabs[] = ['label' => $label, 'count' => (int) ($statusCounts[$key] ?? 0), 'url' => route('panel.applications.index', $base + ['status' => $key]), 'active' => $status === $key];
         }
 
         return Inertia::render('Panel/Applications/Index', [
-            'items' => $applications->map(fn (JobApplication $a) => $this->present($a))->values(),
+            'items' => array_values(array_map(fn (array $a) => $this->present($a, $positionsById), $applications)),
             'unread' => $unread,
             'tabs' => $tabs,
-            'filterPosition' => $filterPosition ? ['id' => $filterPosition->id, 'title' => $filterPosition->title] : null,
+            'filterPosition' => $filterPosition ? ['id' => $filterPosition['id'], 'title' => $filterPosition['title']] : null,
             'clearFilterUrl' => route('panel.applications.index'),
         ]);
     }
 
-    /** Serializacja zgłoszenia dla React (Inertia). */
-    private function present(JobApplication $a): array
+    /**
+     * Serializacja zgłoszenia (odpowiedź org-svc) dla React (Inertia).
+     * $positionsById — mapa id->stanowisko (org-svc), do tytułu oferty bez N+1.
+     */
+    private function present(array $a, ?\Illuminate\Support\Collection $positionsById = null): array
     {
-        [$bg, $fg] = $a->statusColors();
+        [$bg, $fg] = $this->statusColors($a['status']);
+        $positionTitle = null;
+        if ($a['jobPositionId']) {
+            $positionTitle = $positionsById?->get($a['jobPositionId'])['title']
+                ?? $this->tryGetPosition($a['jobPositionId'])['title'] ?? null;
+        }
+
+        $consentAt = $a['futureRecruitmentConsentAt'] ? \Carbon\Carbon::parse($a['futureRecruitmentConsentAt']) : null;
 
         return [
-            'id' => $a->id,
-            'name' => $a->name,
-            'email' => $a->email,
-            'phone' => $a->phone,
-            'created_at' => $a->created_at?->format('Y-m-d H:i'),
-            'is_read' => (bool) $a->is_read,
-            'status' => $a->status,
-            'status_label' => $a->statusLabel(),
+            'id' => $a['id'],
+            'name' => $a['name'],
+            'email' => $a['email'],
+            'phone' => $a['phone'],
+            'created_at' => \Carbon\Carbon::parse($a['createdAt'])->format('Y-m-d H:i'),
+            'is_read' => (bool) $a['isRead'],
+            'status' => $a['status'],
+            'status_label' => self::STATUSES[$a['status']] ?? 'Do sprawdzenia',
             'status_bg' => $bg,
             'status_fg' => $fg,
-            'position_title' => $a->position?->title,
-            'cv_url' => $a->cv_path ? route('panel.applications.cv', $a) : null,
-            'cv_name' => $a->cv_original_name,
-            'show_url' => route('panel.applications.show', $a),
-            'status_url' => route('panel.applications.status', $a),
-            'destroy_url' => route('panel.applications.destroy', $a),
-            // Zgoda na przyszłe rekrutacje (24 mies. od dnia udzielenia).
-            'future_consent' => (bool) $a->future_recruitment_consent,
-            'future_consent_at' => $a->future_recruitment_consent_at?->format('Y-m-d'),
-            'future_consent_until' => $a->futureConsentExpiresAt()?->format('Y-m-d'),
-            'future_consent_active' => $a->futureConsentActive(),
+            'position_title' => $positionTitle,
+            'cv_url' => $a['cvPath'] ? route('panel.applications.cv', $a['id']) : null,
+            'cv_name' => $a['cvOriginalName'],
+            'show_url' => route('panel.applications.show', $a['id']),
+            'status_url' => route('panel.applications.status', $a['id']),
+            'destroy_url' => route('panel.applications.destroy', $a['id']),
+            // Zgoda na przyszłe rekrutacje (24 mies. od dnia udzielenia) — "active" liczone w org-svc.
+            'future_consent' => (bool) $a['futureRecruitmentConsent'],
+            'future_consent_at' => $consentAt?->format('Y-m-d'),
+            'future_consent_until' => $consentAt?->copy()->addMonths(self::FUTURE_CONSENT_MONTHS)->format('Y-m-d'),
+            'future_consent_active' => (bool) $a['futureConsentActive'],
         ];
+    }
+
+    private function statusColors(string $status): array
+    {
+        return match ($status) {
+            'accepted' => ['#dcfce7', '#166534'],
+            'rejected' => ['#fee2e2', '#991b1b'],
+            default => ['#fef3c7', '#92400e'],
+        };
     }
 
     /**
@@ -101,14 +125,12 @@ class ApplicationController extends Controller
      */
     public function consents()
     {
-        $items = JobApplication::forOrganization($this->org->id)->with('position')
-            ->activeFutureConsent()
-            ->orderByDesc('future_recruitment_consent_at')
-            ->get();
+        $items = app(OrgSvcClient::class)->listJobApplications($this->org->id, null, null, activeFutureConsent: true);
+        usort($items, fn ($a, $b) => strcmp($b['futureRecruitmentConsentAt'] ?? '', $a['futureRecruitmentConsentAt'] ?? ''));
 
         return Inertia::render('Panel/Applications/Consents', [
-            'items' => $items->map(fn (JobApplication $a) => $this->present($a))->values(),
-            'consentMonths' => JobApplication::FUTURE_CONSENT_MONTHS,
+            'items' => array_values(array_map(fn (array $a) => $this->present($a), $items)),
+            'consentMonths' => self::FUTURE_CONSENT_MONTHS,
             'indexUrl' => route('panel.applications.index'),
         ]);
     }
@@ -116,33 +138,30 @@ class ApplicationController extends Controller
     /**
      * Zmiana statusu rekrutacyjnego (do sprawdzenia / zaakceptowany / odrzucony).
      */
-    public function updateStatus(Request $request, JobApplication $application)
+    public function updateStatus(Request $request, int $application)
     {
-        $this->guard($application);
         $data = $request->validate([
-            'status' => ['required', 'string', 'in:' . implode(',', array_keys(JobApplication::STATUSES))],
+            'status' => ['required', 'string', 'in:' . implode(',', array_keys(self::STATUSES))],
         ]);
 
-        $application->update(['status' => $data['status']]);
+        $result = app(OrgSvcClient::class)->updateJobApplicationStatus($application, $this->org->id, $data['status']);
 
-        return back()->with('success', 'Status zmieniony na: ' . $application->statusLabel() . '.');
+        return back()->with('success', 'Status zmieniony na: ' . (self::STATUSES[$result['status']] ?? $result['status']) . '.');
     }
 
     /**
      * Szczegóły zgłoszenia — otwarcie oznacza je jako przeczytane.
      */
-    public function show(JobApplication $application)
+    public function show(int $application)
     {
-        $this->guard($application);
-        if (! $application->is_read) {
-            $application->update(['is_read' => true]);
+        $item = $this->ownedApplicationOrAbort($application);
+        if (! $item['isRead']) {
+            $item = app(OrgSvcClient::class)->markJobApplicationRead($application, $this->org->id);
         }
 
-        $application->load('position');
-
         return Inertia::render('Panel/Applications/Show', [
-            'application' => $this->present($application) + ['message' => $application->message],
-            'statusOptions' => collect(JobApplication::STATUSES)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
+            'application' => $this->present($item) + ['message' => $item['message']],
+            'statusOptions' => collect(self::STATUSES)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
             'indexUrl' => route('panel.applications.index'),
         ]);
     }
@@ -151,35 +170,46 @@ class ApplicationController extends Controller
      * Pobranie pliku CV — wyłącznie dla zalogowanego administratora.
      * Plik leży na prywatnym dysku, więc nie jest dostępny publicznie.
      */
-    public function cv(JobApplication $application)
+    public function cv(int $application)
     {
-        $this->guard($application);
-        abort_unless($application->cv_path && Storage::disk('local')->exists($application->cv_path), 404);
+        $item = $this->ownedApplicationOrAbort($application);
+        abort_unless($item['cvPath'] && Storage::disk('local')->exists($item['cvPath']), 404);
 
         return Storage::disk('local')->download(
-            $application->cv_path,
-            $application->cv_original_name ?: basename($application->cv_path)
+            $item['cvPath'],
+            $item['cvOriginalName'] ?: basename($item['cvPath'])
         );
     }
 
     /**
      * Usunięcie zgłoszenia wraz z plikiem CV.
      */
-    public function destroy(JobApplication $application)
+    public function destroy(int $application)
     {
-        $this->guard($application);
-        if ($application->cv_path) {
-            Storage::disk('local')->delete($application->cv_path);
+        $this->ownedApplicationOrAbort($application);
+        $result = app(OrgSvcClient::class)->deleteJobApplication($application, $this->org->id);
+        if (! empty($result['deletedCvPath'])) {
+            Storage::disk('local')->delete($result['deletedCvPath']);
         }
-
-        $application->delete();
 
         return redirect()->route('panel.applications.index')->with('success', 'Zgłoszenie usunięte.');
     }
 
-    /** Tylko aktywna organizacja może otwierać/zarządzać swoim zgłoszeniem. */
-    private function guard(JobApplication $application): void
+    /** Ładuje zgłoszenie i weryfikuje, że należy do aktywnej organizacji. */
+    private function ownedApplicationOrAbort(int $id): array
     {
-        abort_unless((int) $application->organization_id === $this->org->id, 403);
+        $item = app(OrgSvcClient::class)->getJobApplication($id);
+        abort_unless((int) $item['organizationId'] === $this->org->id, 403);
+
+        return $item;
+    }
+
+    private function tryGetPosition(int $id): ?array
+    {
+        try {
+            return app(OrgSvcClient::class)->getJobPosition($id);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

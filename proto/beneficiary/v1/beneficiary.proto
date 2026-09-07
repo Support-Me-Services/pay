@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package pay.beneficiary.v1;
+
+option java_multiple_files = true;
+option java_package = "pay.beneficiary.v1";
+option java_outer_classname = "BeneficiaryNodeProto";
+
+// Węzły podstrony "O nas" (dawniej Laravel app/Modules/Storefront/Models/BeneficiaryNode.php).
+// Walidacja biznesowa (długości pól, dozwolone wartości image_side/text_align)
+// zostaje w Laravelu — org-svc to warstwa persystencji, tak jak Organization.
+service BeneficiaryNodeService {
+  rpc Create(CreateBeneficiaryNodeRequest) returns (BeneficiaryNodeResponse);
+  rpc Update(UpdateBeneficiaryNodeRequest) returns (BeneficiaryNodeResponse);
+  rpc Delete(DeleteBeneficiaryNodeRequest) returns (DeleteBeneficiaryNodeResponse);
+  rpc Reorder(ReorderBeneficiaryNodesRequest) returns (ReorderBeneficiaryNodesResponse);
+  // Wszystkie węzły organizacji (panel, incl. nieaktywne), posortowane.
+  rpc ListByOrganization(ListBeneficiaryNodesRequest) returns (ListBeneficiaryNodesResponse);
+  // Tylko aktywne (publiczne strony), posortowane.
+  rpc ListActiveByOrganization(ListBeneficiaryNodesRequest) returns (ListBeneficiaryNodesResponse);
+}
+
+message CreateBeneficiaryNodeRequest {
+  int64 organization_id = 1;
+  string heading = 2;
+  optional string image = 3;
+  string image_side = 4;
+  int32 image_scale = 5;
+  int32 image_x = 6;
+  int32 image_y = 7;
+  string text_align = 8;
+  optional string body_html = 9;
+}
+
+message UpdateBeneficiaryNodeRequest {
+  int64 id = 1;
+  int64 organization_id = 2; // do weryfikacji własności
+  string heading = 3;
+  optional string image = 4;
+  string image_side = 5;
+  int32 image_scale = 6;
+  int32 image_x = 7;
+  int32 image_y = 8;
+  string text_align = 9;
+  optional string body_html = 10;
+}
+
+message DeleteBeneficiaryNodeRequest {
+  int64 id = 1;
+  int64 organization_id = 2;
+}
+
+message DeleteBeneficiaryNodeResponse {
+  bool deleted = 1;
+  // Ścieżka usuniętego obrazu (jeśli była) — wywołujący (Laravel) sam
+  // sprząta plik na swoim dysku (org-svc nie zna GCS/local storage).
+  optional string deleted_image = 2;
+}
+
+message ReorderBeneficiaryNodesRequest {
+  int64 organization_id = 1;
+  repeated int64 ordered_ids = 2; // nowa kolejność; id spoza tej organizacji są ignorowane
+}
+
+message ReorderBeneficiaryNodesResponse {
+  bool reordered = 1;
+}
+
+message ListBeneficiaryNodesRequest {
+  int64 organization_id = 1;
+}
+
+message ListBeneficiaryNodesResponse {
+  repeated BeneficiaryNodeResponse nodes = 1;
+}
+
+message BeneficiaryNodeResponse {
+  int64 id = 1;
+  int64 organization_id = 2;
+  string heading = 3;
+  optional string image = 4;
+  string image_side = 5;
+  int32 image_scale = 6;
+  int32 image_x = 7;
+  int32 image_y = 8;
+  string text_align = 9;
+  optional string body_html = 10;
+  int32 position = 11;
+  bool active = 12;
+}

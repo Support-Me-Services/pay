@@ -2,7 +2,8 @@
 
 namespace App\Modules\Storefront\Http\Controllers;
 
-use App\Modules\Storefront\Models\ShopItem;
+use App\Modules\Storefront\Models\Organization;
+use App\Services\OrgSvcClient;
 use Inertia\Inertia;
 
 class StorefrontController extends Controller
@@ -49,24 +50,28 @@ class StorefrontController extends Controller
             return null;
         }
 
-        $item = ShopItem::with('mecenasOrganization')->where('slug', $slug)->first();
+        // Faza 3 migracji: ShopItem żyje w org-svc — global lookup po slug
+        // (jak dawniej, świadomie bez scope'owania po organizacji, patrz
+        // historia tej metody) przez listAll(), bo org-svc nie ma dziś RPC
+        // "get by slug".
+        $item = collect(app(OrgSvcClient::class)->listShopItems())->firstWhere('slug', $slug);
         if (! $item) {
             return null;
         }
 
-        $mecenas = $item->mecenasOrganization;
-        $hasCustom = $item->thank_you_heading || $item->thank_you_body || $item->thank_you_image || $mecenas;
+        $mecenas = $item['mecenasOrganizationId'] ? Organization::find($item['mecenasOrganizationId']) : null;
+        $hasCustom = $item['thankYouHeading'] || $item['thankYouBody'] || $item['thankYouImage'] || $mecenas;
         if (! $hasCustom) {
             return null;
         }
 
         return [
-            'heading' => $item->thank_you_heading,
+            'heading' => $item['thankYouHeading'],
             // Akapity oddzielone pustą linią (jak w panelu).
-            'body' => $item->thank_you_body
-                ? array_values(array_filter(array_map('trim', preg_split('/\n\s*\n/', $item->thank_you_body))))
+            'body' => $item['thankYouBody']
+                ? array_values(array_filter(array_map('trim', preg_split('/\n\s*\n/', $item['thankYouBody']))))
                 : null,
-            'image' => $item->thank_you_image ? asset($item->thank_you_image) : null,
+            'image' => $item['thankYouImage'] ? asset($item['thankYouImage']) : null,
             // Mecenas = wybrana organizacja — nazwa/logo/URL pochodzą z jej profilu.
             'mecenasName' => $mecenas?->name,
             'mecenasUrl' => $mecenas ? route('user.shop', $mecenas->handle) : null,

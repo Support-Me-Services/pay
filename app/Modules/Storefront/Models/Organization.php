@@ -2,25 +2,21 @@
 
 namespace App\Modules\Storefront\Models;
 
-use App\Models\User;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
+use App\Services\OrgSvcClient;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 /**
  * Organizacja — byt nad kontem (User). Jedno konto może zarządzać wieloma
  * organizacjami; każda ma własne „O nas"/Zbiórki/Praca/Aplikacje/Baza
  * kandydatów oraz samoobsługową widoczność tych 5 sekcji (enabled_sections).
+ *
+ * Faza 6 migracji: dane żyją WYŁĄCZNIE w org-svc — to już nie model Eloquent
+ * (żadnej lokalnej tabeli), tylko zwykła klasa PHP z tym samym publicznym API
+ * (id/name/handle/canSee()/find()/rootOrganization()), żeby reszta kodu
+ * (dziesiątki miejsc czytających organizację) nie musiała się zmieniać.
  */
-class Organization extends Model
+class Organization
 {
-    protected $fillable = ['user_id', 'name', 'handle', 'logo', 'enabled_sections'];
-
-    protected $casts = [
-        'enabled_sections' => 'array',
-    ];
-
     /** Klucze sekcji sterowanych widocznością — mirror User::SECTIONS. */
     public const SECTIONS = [
         'beneficiaries' => 'O nas',
@@ -30,30 +26,75 @@ class Organization extends Model
         'init-codes' => 'Tagi NFC / Kody QR',
     ];
 
-    /** Konto zarządzające tą organizacją. */
-    public function owner(): BelongsTo
+    public int $id;
+    public string $user_id;
+    public string $name;
+    public string $handle;
+    public ?string $logo;
+    public ?array $enabled_sections;
+
+    private function __construct(array $data)
     {
-        return $this->belongsTo(User::class, 'user_id');
+        $this->id = (int) $data['id'];
+        $this->user_id = $data['userId'];
+        $this->name = $data['name'];
+        $this->handle = $data['handle'];
+        $this->logo = $data['logo'] ?? null;
+        $this->enabled_sections = $data['enabledSections'] ?? null;
     }
 
-    public function beneficiaryNodes(): HasMany
+    /** Owija surową odpowiedź org-svc (id, userId, name, handle, logo, enabledSections). */
+    public static function fromOrgSvc(array $orgSvcResponse): self
     {
-        return $this->hasMany(BeneficiaryNode::class);
+        return new self($orgSvcResponse);
     }
 
-    public function shopItems(): HasMany
+    public static function find(int $id): ?self
     {
-        return $this->hasMany(ShopItem::class);
+        try {
+            return self::fromOrgSvc(app(OrgSvcClient::class)->getOrganization($id));
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
-    public function positions(): HasMany
+    public static function findOrFail(int $id): self
     {
-        return $this->hasMany(JobPosition::class);
+        return self::find($id) ?? throw new ModelNotFoundException("Organization {$id} not found");
     }
 
-    public function applications(): HasMany
+    public static function findByHandle(string $handle): ?self
     {
-        return $this->hasMany(JobApplication::class);
+        // org-svc nie ma dziś RPC "po handle" — pobieramy wszystkie i filtrujemy
+        // (te same listy i tak trzeba trzymać w pamięci gdzie indziej; liczba
+        // organizacji w tym systemie jest mała, patrz plan migracji).
+        foreach (app(OrgSvcClient::class)->listAllOrganizations() as $o) {
+            if ($o['handle'] === $handle) {
+                return self::fromOrgSvc($o);
+            }
+        }
+
+        return null;
+    }
+
+    public static function findByHandleOrFail(string $handle): self
+    {
+        return self::findByHandle($handle) ?? throw new ModelNotFoundException("Organization handle={$handle} not found");
+    }
+
+    /** Wszystkie organizacje systemu, posortowane po nazwie (dropdown mecenasa/admina). */
+    public static function allOrderedByName(): array
+    {
+        $items = app(OrgSvcClient::class)->listAllOrganizations();
+        usort($items, fn ($a, $b) => strcmp($a['name'], $b['name']));
+
+        return array_map(fn (array $o) => self::fromOrgSvc($o), $items);
+    }
+
+    /** Organizacje danego konta, posortowane po nazwie (org-svc sortuje po swojej stronie). */
+    public static function byOwnerOrderedByName(string $userId): array
+    {
+        return array_map(fn (array $o) => self::fromOrgSvc($o), app(OrgSvcClient::class)->listOrganizationsByOwner($userId));
     }
 
     /**
@@ -66,30 +107,29 @@ class Organization extends Model
         return $this->enabled_sections === null || in_array($section, $this->enabled_sections, true);
     }
 
-    /** Unikalny handle (slug publicznego URL) z nazwy. */
-    public static function uniqueHandle(?string $name): string
-    {
-        $base = Str::slug((string) $name) ?: 'organizacja';
-        $handle = $base;
-        $i = 2;
-        while (static::where('handle', $handle)->exists()) {
-            $handle = $base.'-'.$i++;
-        }
-
-        return $handle;
-    }
-
     /**
      * Domyślna organizacja na globalnych, wspólnych stronach publicznych
      * (/, /beneficiaries, /praca) — sprzed rejestracji istniało tylko jedno
      * konto/jedna organizacja, więc te strony zostają przypięte do niej.
+     *
+     * Faza 6 migracji: najstarsza (najmniejsze ID) organizacja w org-svc —
+     * wcześniej pytaliśmy najpierw `User::rootOwner()` (MySQL) o e-mail
+     * konta i szukaliśmy JEGO organizacji; to nie tylko zbędny round-trip
+     * do bazy, której już nie potrzebujemy do niczego innego na tych
+     * stronach, ale i wierniejszy oryginalnej intencji komentarza wyżej —
+     * "pierwsza organizacja jaka kiedykolwiek powstała" wprost, bez
+     * pośredniczenia przez konkretny, zahardkodowany e-mail administratora.
      */
     public static function rootOrganization(): ?self
     {
-        $rootOwner = User::rootOwner();
+        return self::allOrderedByIdAsc()[0] ?? null;
+    }
 
-        return $rootOwner
-            ? (static::where('user_id', $rootOwner->id)->orderBy('id')->first() ?? static::orderBy('id')->first())
-            : static::orderBy('id')->first();
+    private static function allOrderedByIdAsc(): array
+    {
+        $items = app(OrgSvcClient::class)->listAllOrganizations();
+        usort($items, fn ($a, $b) => $a['id'] <=> $b['id']);
+
+        return array_map(fn (array $o) => self::fromOrgSvc($o), $items);
     }
 }
