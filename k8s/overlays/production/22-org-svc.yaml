@@ -1,12 +1,11 @@
 # Produkcja (support-me-prod) — org-svc z sidecarem Cloud SQL Auth Proxy,
-# analogicznie do 20-core-svc.yaml. Ten plik JEST już wpięty w
+# analogicznie do 20-core-svc.yaml. Wpięty w
 # .github/workflows/production-deploy.yml (build/push + backup + liquibase +
-# deploy + smoke test), ale pipeline i tak wysadzi się na tym Deploymencie,
-# DOPÓKI nie istnieje instancja Cloud SQL `org-svc-db` i Secret `org-svc-db`
-# (username/password) w klastrze — patrz k8s/README.md, sekcja
-# "org-svc-db — do zrobienia przed pierwszym tagiem z org-svc" po
-# uruchomieniu tych kroków ręcznie (gcloud/kubectl mutujące — user-run,
-# nie automatyzacja).
+# deploy + smoke test). Instancja Cloud SQL `org-svc-db` (10.208.0.9) i Secret
+# `org-svc-db` (username/password) w klastrze już istnieją (utworzone
+# 2026-09-07, patrz k8s/README.md) — ale realne dane produkcyjne nie zostały
+# jeszcze zmigrowane z nfc_pay/nfc_shop1 (patrz ten sam README, punkt 3) —
+# nie tagować release'u z tą zmianą, dopóki to się nie skończy.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

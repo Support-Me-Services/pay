@@ -135,12 +135,9 @@ jobs:
           # próbę odtworzenia już istniejącej tabeli (dokładnie ten błąd, który
           # już raz złapaliśmy ręcznie w core-svc — patrz k8s/README.md, Faza 8.2).
           #
-          # UWAGA org-svc-db: instancja jeszcze NIE istnieje (patrz
-          # k8s/README.md, sekcja provisioning org-svc-db) — adres
-          # 10.208.0.8 to zgadywanka wg wzorca przydziału (.5/.6/.7 już
-          # zajęte), NIE gwarancja. Po utworzeniu instancji zweryfikuj:
-          #   gcloud sql instances describe org-svc-db --project=support-me-prod --format='value(ipAddresses[0].ipAddress)'
-          # i podmień poniższy adres, jeśli się różni, ZANIM otagujesz release.
+          # org-svc-db utworzona 2026-09-07, prywatny IP 10.208.0.9
+          # (potwierdzone: gcloud sql instances describe org-svc-db
+          # --project=support-me-prod --format='value(ipAddresses[0].ipAddress)').
           cat <<EOF | kubectl apply -f -
           apiVersion: batch/v1
           kind: Job
@@ -161,7 +158,7 @@ jobs:
                         liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_pay --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_pay.xml update
                         liquibase --url=jdbc:postgresql://10.208.0.5:5432/nfc_shop1 --username=nfc_pay --password="\$NFC_PAY_PW" --search-path=/changelogs --changelog-file=nfc_shop1.xml update
                         liquibase --url=jdbc:postgresql://10.208.0.7:5432/core_svc --username=core_svc --password="\$CORE_SVC_PW" --search-path=/changelogs-core --changelog-file=db/changelog/db.changelog-master.xml update
-                        liquibase --url=jdbc:postgresql://10.208.0.8:5432/org_svc --username=org_svc --password="\$ORG_SVC_PW" --search-path=/changelogs-org --changelog-file=db/changelog/db.changelog-master.xml update
+                        liquibase --url=jdbc:postgresql://10.208.0.9:5432/org_svc --username=org_svc --password="\$ORG_SVC_PW" --search-path=/changelogs-org --changelog-file=db/changelog/db.changelog-master.xml update
                     env:
                       - name: NFC_PAY_PW
                         valueFrom: { secretKeyRef: { name: laravel-db, key: password } }

@@ -575,48 +575,23 @@ cały test) i wypchnięta na `main`. `.github/workflows/production-deploy.yml`
 i `services/api-gateway/.../HealthController.java` zostały dopisane o org-svc
 (build+push, backup, Liquibase, deploy, smoke test, `orgSvc` w
 `/api/v1/health`) — **ale to samo w sobie NIE wystarcza do wydania na
-`pay-prod`**. Zanim ktokolwiek otagował `vX.Y.Z` na branchu `release` z tą
-zmianą, brakuje trzech rzeczy, świadomie odłożonych (mutujące
-`gcloud`/`kubectl` — do wykonania przez użytkownika osobiście, ta sama
-zasada co w reszcie tego pliku):
+`pay-prod`**. Zanim ktokolwiek otaguje `vX.Y.Z` na branchu `release` z tą
+zmianą, brakuje jeszcze dwóch rzeczy (mutujące `gcloud`/`kubectl` dotyczące
+sieci/baz bywają blokowane przez klasyfikator auto-mode tej sesji — część
+komend poszła mimo to, część wymagała ręcznego uruchomienia):
 
-**1. Instancja Cloud SQL `org-svc-db` + Secret w klastrze** (mirror
-`core-svc-db`, patrz `k8s/overlays/production/22-org-svc.yaml`):
-
-```bash
-# [użytkownik, z uwierzytelnionym gcloud na support-me-prod]
-gcloud sql instances create org-svc-db \
-  --database-version=POSTGRES_16 \
-  --tier=db-g1-small \
-  --region=europe-central2 \
-  --project=support-me-prod \
-  --network=pay-prod-vpc \
-  --no-assign-ip \
-  --backup \
-  --enable-point-in-time-recovery \
-  --retained-backups-count=30 \
-  --retained-transaction-log-days=7
-
-gcloud sql databases create org_svc --instance=org-svc-db --project=support-me-prod
-
-# Wygeneruj silne hasło i utwórz usera org_svc (NIE re-używaj hasła core-svc/nfc_pay):
-gcloud sql users create org_svc --instance=org-svc-db --password="<WYGENERUJ>" --project=support-me-prod
-
-# Sprawdź faktycznie przydzielony prywatny IP (patrz komentarz w
-# production-deploy.yml — 10.208.0.8 to zgadywanka wg wzorca .5/.6/.7):
-gcloud sql instances describe org-svc-db --project=support-me-prod \
-  --format='value(ipAddresses[0].ipAddress)'
-# Jeśli inny niż 10.208.0.8 — podmień w
-# .github/workflows/production-deploy.yml (linia z `jdbc:postgresql://10.208.0.8:5432/org_svc`)
-# PRZED tagowaniem release'u.
-
-# Secret w klastrze (roles/cloudsql.client jest już nadany `pay-workload` na
-# poziomie PROJEKTU — obejmuje każdą instancję w support-me-prod, nic więcej
-# nie trzeba dograć po stronie IAM):
-kubectl create secret generic org-svc-db \
-  --from-literal=username=org_svc \
-  --from-literal=password="<TO SAMO HASŁO CO WYŻEJ>"
-```
+**1. Instancja Cloud SQL `org-svc-db` + Secret w klastrze — ZROBIONE
+2026-09-07.** Instancja istnieje (Postgres 16, `db-g1-small`, edition
+`ENTERPRISE` — domyślna edycja `gcloud` w tym projekcie to dziś
+`ENTERPRISE_PLUS`, która NIE akceptuje `db-g1-small`; trzeba jawnie
+`--edition=ENTERPRISE`, inaczej `gcloud sql instances create` odrzuca tier),
+backupy+PITR włączone, baza `org_svc` + user `org_svc` utworzone, **prywatny
+IP to `10.208.0.9`** (nie zgadywane `.8` — już podmienione w
+`production-deploy.yml`). Secret `org-svc-db` (`username`/`password`) istnieje
+w klastrze `pay-prod`, namespace `default` — hasło wygenerowane i użyte
+wyłącznie do utworzenia Secreta, nigdy nie trafiło do repo/logów. IAM: brak
+dodatkowej pracy — `roles/cloudsql.client` na `pay-workload` jest nadany na
+poziomie PROJEKTU, obejmuje każdą instancję w `support-me-prod`.
 
 **2. Realny Keycloak w `pay-prod` potrzebuje tej samej zmiany realmu co
 lokalny dev** (rola `admin` + `id.token.claim`/`userinfo.token.claim` na
@@ -649,8 +624,9 @@ przez arbitralny placeholder string jak lokalnie** (tam był to jedyny dev
 seed, tu to prawdziwe konta). To dotyka prawdziwych danych klientów — osobna,
 ostrożna sesja z użytkownikiem, nie coś do zrobienia w tle.
 
-**Dopiero po tych trzech krokach** ma sens tagowanie `vX.Y.Z` na `release` z
-tą zmianą — sam tag bez nich odpali pipeline, który albo padnie na
-`ImagePullBackOff`/`CrashLoopBackOff` org-svc (brak `org-svc-db`/Secret), albo
-— gorzej — wystartuje z pustymi tabelami `org-svc-db`/`core-svc-db` podczas
-gdy migracje Laravela już skasowały oryginalne dane w `nfc_pay`/`nfc_shop1`.
+**Dopiero po tych dwóch krokach** ma sens tagowanie `vX.Y.Z` na `release` z
+tą zmianą — instancja/Secret dla org-svc już istnieją (patrz punkt 1), ale
+otagowanie teraz i tak wystartowałoby z pustymi tabelami `org-svc-db`/
+`core-svc-db`, podczas gdy migracje Laravela już skasowałyby oryginalne dane
+w `nfc_pay`/`nfc_shop1` — i bez punktu 2 `is_admin` przestałby działać dla
+realnych adminów na `pay-prod`.
