@@ -574,11 +574,11 @@ została zweryfikowana **lokalnie od A do Z** (MySQL Laravela zatrzymany przez
 cały test) i wypchnięta na `main`. `.github/workflows/production-deploy.yml`
 i `services/api-gateway/.../HealthController.java` zostały dopisane o org-svc
 (build+push, backup, Liquibase, deploy, smoke test, `orgSvc` w
-`/api/v1/health`) — **ale to samo w sobie NIE wystarcza do wydania na
-`pay-prod`**. Zanim ktokolwiek otaguje `vX.Y.Z` na branchu `release` z tą
-zmianą, brakuje jeszcze dwóch rzeczy (mutujące `gcloud`/`kubectl` dotyczące
-sieci/baz bywają blokowane przez klasyfikator auto-mode tej sesji — część
-komend poszła mimo to, część wymagała ręcznego uruchomienia):
+`/api/v1/health`) — to samo w sobie NIE wystarczało do wydania na
+`pay-prod`, ale WSZYSTKIE TRZY poniższe punkty są teraz zrobione
+(mutujące `gcloud`/`kubectl` dotyczące sieci/baz bywały blokowane przez
+klasyfikator auto-mode tej sesji — część komend poszła mimo to od razu,
+część wymagała ręcznego uruchomienia przez użytkownika):
 
 **1. Instancja Cloud SQL `org-svc-db` + Secret w klastrze — ZROBIONE
 2026-09-07.** Instancja istnieje (Postgres 16, `db-g1-small`, edition
@@ -593,40 +593,56 @@ wyłącznie do utworzenia Secreta, nigdy nie trafiło do repo/logów. IAM: brak
 dodatkowej pracy — `roles/cloudsql.client` na `pay-workload` jest nadany na
 poziomie PROJEKTU, obejmuje każdą instancję w `support-me-prod`.
 
-**2. Realny Keycloak w `pay-prod` potrzebuje tej samej zmiany realmu co
-lokalny dev** (rola `admin` + `id.token.claim`/`userinfo.token.claim` na
-mapperach "realm roles"/"client roles", patrz `ecosystem/keycloak/pay-realm.json`
-i historia tej sesji) — bez tego `is_admin` po prostu zawsze wychodzi `false`
-na `pay-prod` (miękka awaria, nie crash, ale realny admin traci panel admina).
-Realm jest publicznie osiągalny pod `https://keycloak.please-support-me.eu`
-(patrz `40-ingress.yaml`) — te same wywołania Admin API co lokalnie
-(`/admin/realms/pay/roles`, `/admin/realms/pay/client-scopes/.../protocol-mappers/models/...`),
-tylko z tokenem admina TEGO Keycloaka (poświadczenia w Secret `keycloak-admin`
-czy podobnym w klastrze — sprawdź `10-keycloak.yaml`), nie lokalnego
-`admin`/`admin` z `ecosystem/docker-compose.yml`.
+**2. Realny Keycloak w `pay-prod` zaktualizowany — ZROBIONE 2026-09-07.**
+Realm `pay` na `https://keycloak.please-support-me.eu` ma teraz rolę `admin`
+i oba mappery ("realm roles"/"client roles") emitują `realm_access.roles`
+zarówno do ID tokenu, jak i do userinfo (`id.token.claim`/
+`userinfo.token.claim` = `true`) — te same wywołania Admin API co lokalnie,
+tylko z tokenem admina TEGO Keycloaka (Secret `keycloak-admin` w klastrze).
+Zweryfikowane odczytem po fakcie: rola widoczna w `/admin/realms/pay/roles`,
+oba mappery mają poprawne flagi.
 
-**3. Migracja REALNYCH danych produkcyjnych** — `organizations`,
-`beneficiary_nodes`, `shop_items`, `job_positions`, `job_applications` (dziś w
-`nfc_pay`/`nfc_shop1`) i `init_codes` (jeśli realne dane istnieją poza
-core-svc) nigdy nie zostały przeniesione do `org-svc-db`/`core-svc-db` —
-migracja `2026_09_07_000002_drop_organizations.php` i siostrzane migracje w
-tym repo (patrz commit "Migrate Organization/.../InitCode...") **kasują te
-tabele w Laravelu**, więc muszą wejść na `nfc_pay`/`nfc_shop1` DOPIERO PO
-potwierdzonym, zweryfikowanym eksporcie danych do nowych serwisów — nigdy
-odwrotnie. Podejście 1:1 z tym, co zrobiono lokalnie (eksport SQL →
-transformacja Python → `INSERT ... OVERRIDING SYSTEM VALUE` + `setval` w
-`org-svc-db`/`core-svc-db`), ale `organizations.user_id`/
-`init_codes.owner_user_id` (dziś liczbowy PK `users.id`) trzeba remapować na
-realny `sub` Keycloaka przez JOIN z `users.keycloak_sub` (ta kolumna już
-istnieje i jest wypełniona dla każdego konta, które kiedykolwiek zalogowało
-się przez Keycloak — patrz `KeycloakController` przed tą migracją) — **nie
-przez arbitralny placeholder string jak lokalnie** (tam był to jedyny dev
-seed, tu to prawdziwe konta). To dotyka prawdziwych danych klientów — osobna,
-ostrożna sesja z użytkownikiem, nie coś do zrobienia w tle.
+**3. Migracja REALNYCH danych produkcyjnych — ZROBIONE 2026-09-07.**
+`organizations` (2), `beneficiary_nodes` (6), `shop_items` (8),
+`job_positions` (8), `job_applications` (24) z `nfc_shop1` → `org-svc-db`;
+`init_codes` (4) → `core-svc-db`. Wykonane jednorazowym Jobem w klastrze
+(bez Cloud SQL Auth Proxy — pody w `pay-prod` mają bezpośrednią trasę do
+prywatnych IP Cloud SQL, ten sam mechanizm co krok Liquibase w
+`production-deploy.yml`), skryptem z krokiem VERIFY (SELECT-only,
+sprawdza zgodność schematu + liczy wiersze + szuka kont bez
+`keycloak_sub` PRZED jakimkolwiek zapisem) i zabezpieczeniem przed
+duplikatami przy wznowieniu (sprawdza, czy tabele docelowe są puste albo
+już mają dokładnie oczekiwaną liczbę wierszy).
 
-**Dopiero po tych dwóch krokach** ma sens tagowanie `vX.Y.Z` na `release` z
-tą zmianą — instancja/Secret dla org-svc już istnieją (patrz punkt 1), ale
-otagowanie teraz i tak wystartowałoby z pustymi tabelami `org-svc-db`/
-`core-svc-db`, podczas gdy migracje Laravela już skasowałyby oryginalne dane
-w `nfc_pay`/`nfc_shop1` — i bez punktu 2 `is_admin` przestałby działać dla
-realnych adminów na `pay-prod`.
+Po drodze złapane i naprawione:
+- **`org-svc-db` i `core-svc-db` (najnowsze changesety) nigdy realnie nie
+  miały założonego schematu** — `org-svc` nigdy nie został wdrożony jako
+  Deployment w `pay-prod` (tylko instancja/Secret), a `core-svc` działał od
+  Fazy 8.2 na changesecie `001`, bo `production-deploy.yml` do teraz też
+  znał tylko ten jeden plik. Naprawione jednorazowymi Jobami Liquibase
+  (`org-svc`: wszystkie 5 changesetów; `core-svc`: Liquibase sam pominął
+  już zaaplikowany `001`, doszły `002`/`003`) — to samo zrobi się
+  automatycznie przy pierwszym prawdziwym `kubectl apply` tych
+  Deploymentów z realnym obrazem, ale schemat musiał istnieć już TERAZ,
+  żeby migracja danych miała gdzie pisać.
+- **Jedno konto (Anna Daniel, `users.id=2` w `nfc_shop1`) nie miało
+  `keycloak_sub`** — jej konto Keycloak już istniało (nigdy się nie
+  zalogowała), więc lokalna kolumna nigdy się nie ustawiła. Zamiast
+  blokować całą migrację: zresetowane hasło tymczasowe (wymuszona zmiana
+  przy pierwszym logowaniu, przekazane użytkownikowi do ręcznego
+  doręczenia — realm nie ma skonfigurowanego SMTP, więc nie było jak
+  wysłać maila automatycznie), jej prawdziwy `sub` podany do skryptu jako
+  jawny, nazwany override (`USER_ID_OVERRIDES`) — nie placeholder, nie
+  zgadywanka. Źródłowa tabela `nfc_shop1.users` NIE była dotykana.
+
+Zweryfikowane niezależnym odczytem (osobny, tylko-do-odczytu Job) po
+migracji: organizacje mają prawdziwe suby (`fae535e9-...` Anna,
+`89964abf-...` Marcin), liczniki się zgadzają, `init_codes` poprawnie
+rozróżnia kody organizacyjne od osobistych.
+
+**Wszystkie trzy punkty zrobione — tagowanie `vX.Y.Z` na `release` z tą
+zmianą jest już bezpieczne od strony infrastruktury/danych.** Migracje
+Laravela (`2026_09_07_000002_drop_organizations.php` i siostrzane w tym
+repo) mogą teraz bezpiecznie skasować oryginalne tabele w `nfc_shop1` przy
+najbliższym prawdziwym deployu — dane już bezpiecznie leżą w
+`org-svc-db`/`core-svc-db`.
