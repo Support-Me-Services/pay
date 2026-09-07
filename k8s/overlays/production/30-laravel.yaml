@@ -89,6 +89,17 @@ spec:
               value: stderr
             - name: PAYMENT_PROVIDER
               value: mock
+            - name: API_GATEWAY_BASE_URL
+              # Bez tego OrgSvcClient defaultuje do http://localhost:8081
+              # (config/services.php) -- poprawne TYLKO gdy api-gateway jest
+              # sidecarem w tym samym podzie (nigdzie w tym repo), nie gdy
+              # to osobny Deployment/Service jak tutaj. Zlapane na zywo:
+              # readinessProbe zwracal 500 (CompanyStoreController ->
+              # Organization::rootOrganization() -> OrgSvcClient -> Guzzle
+              # "Failed to connect to localhost port 8081"), rollout
+              # laravela utknal w petli, stary pod zostal aktywny (rolling
+              # update, zero przestoju), ale nowy nigdy nie wstal.
+              value: "http://api-gateway:8081"
             - name: KEYCLOAK_BASE_URL
               # Adres widziany przez PRZEGLĄDARKĘ (pierwszy hop OIDC —
               # przekierowanie do ekranu logowania). Musi być publicznie
