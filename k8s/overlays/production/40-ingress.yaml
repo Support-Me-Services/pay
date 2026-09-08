@@ -13,6 +13,22 @@ metadata:
 spec:
   domains:
     - please-support-me.eu
+    - keycloak.please-support-me.eu
+---
+# Osobny ManagedCertificate dla auth.please-support-me.eu (zamiast dopisania
+# domeny do please-support-me-eu-cert powyżej) — kontroler GKE IGNORUJE zmiany
+# spec.domains na już aktywnym certyfikacie (złapane na żywo: dopisanie
+# auth.please-support-me.eu do istniejącego, Active certyfikatu wisiało 12+h
+# bez żadnego postępu, mimo poprawnego DNS i braku blokujących CAA — kontroler
+# po prostu nie re-provisionuje istniejącego zasobu dla nowej domeny). Adnotacja
+# managed-certificates na Ingressie poniżej przyjmuje listę po przecinku, więc
+# oba certyfikaty działają równolegle bez przerwy dla już działających domen.
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: auth-please-support-me-eu-cert
+spec:
+  domains:
     - auth.please-support-me.eu
 ---
 apiVersion: networking.k8s.io/v1
@@ -22,7 +38,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "gce"
     kubernetes.io/ingress.global-static-ip-name: "please-support-me-eu-ip"
-    networking.gke.io/managed-certificates: "please-support-me-eu-cert"
+    networking.gke.io/managed-certificates: "please-support-me-eu-cert,auth-please-support-me-eu-cert"
 spec:
   rules:
     - host: please-support-me.eu
